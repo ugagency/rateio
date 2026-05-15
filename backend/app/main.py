@@ -23,8 +23,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(rateio.router)
+    # consultas antes de rateio: a rota específica /rateio/{mes}/eventos precisa
+    # ser avaliada antes da catch-all /rateio/{mes:path} (converter :path é ganancioso).
     app.include_router(consultas.router)
+    app.include_router(rateio.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, str]:
