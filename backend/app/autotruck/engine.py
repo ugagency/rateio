@@ -42,9 +42,12 @@ def calcular_rateio_at(
     eventos: Iterable[EventoAT],
     params: ParametrosAT = PARAMS_DEFAULT,
     exclusoes: dict[str, str] | None = None,
+    historico_cotas: dict[str, list[float]] | None = None,
 ) -> ResultadoRateioAT:
     """Roda o motor. `exclusoes` = {id_evento: justificativa_tecnica} — toda
     exclusão exige justificativa não-vazia e é registrada em log imutável.
+    `historico_cotas` = {segmento: [cotas de meses anteriores]} para o
+    cálculo de estabilização (média dos últimos 3 meses ± var_trimestral_max).
     """
     veiculos_list = list(veiculos)
     eventos_list = list(eventos)
@@ -155,22 +158,36 @@ def calcular_rateio_at(
     bruto_por_seg: dict[str, float] = {}
     recup_por_seg: dict[str, float] = {}
     custo_ratear_seg: dict[str, float] = {}
+    hist_all = historico_cotas or {}
+    alerta_var_global = False
     for seg in VARIAVEIS:
         ci, cp, ds, df, rt, maior = _acc(seg)
         aci, acp, ads, adf, art, _ = _acc(seg, postergados_ids)
-        custo_a_ratear = round(ci + cp - ds - df - rt, 2)
-        custo_alocado = round(aci + acp - ads - adf - art, 2)
+        # N3 (transcrição): terceiro é produto à parte (pote) — NÃO abate a cota
+        # variável. Fórmula = (integrais + parciais − salvados − franquias) / cotas.
+        custo_a_ratear = round(ci + cp - ds - df, 2)
+        custo_alocado = round(aci + acp - ads - adf, 2)
         dif_seg = round(custo_a_ratear - custo_alocado, 2)
         cotas = round(cotas_ativas.get(seg, 0.0), 2)
         valor_cota = round(custo_a_ratear / cotas, 2) if cotas > 0 else 0.0
         bruto = round(ci + cp, 2)
         vol = bruto > 0 and maior > params.pct_volatilidade * bruto
+        # N1: estabilização pela média dos últimos 3 meses (variação ± var_trimestral_max)
+        hist = [h for h in hist_all.get(seg, []) if h > 0][-3:]
+        media_3m = round(sum(hist) / len(hist), 2) if hist else 0.0
+        var_media = round((valor_cota - media_3m) / media_3m, 4) if media_3m > 0 else 0.0
+        alerta_var = media_3m > 0 and abs(var_media) > params.var_trimestral_max
         if valor_cota < params.cota_alvo_min:
             faixa, sug = "ABAIXO", "Cota abaixo do alvo: acelerar pagamentos pendentes (fôlego financeiro)."
         elif valor_cota > params.cota_alvo_max:
             faixa, sug = "ACIMA", "Cota acima do alvo: postergar eventos integrais recentes (estabilização > FIFO)."
         else:
             faixa, sug = "OK", "Cota dentro da faixa de estabilização."
+        if alerta_var:
+            alerta_var_global = True
+            sug = (f"ALERTA Variação trimestral {var_media:+.1%} (limite ±"
+                   f"{params.var_trimestral_max:.0%} vs média 3M R$ {media_3m}) — "
+                   f"assistente de ajuste. ") + sug
         if vol:
             sug = "ALERTA Instabilidade de Cota: sinistro único > 25% do pool — postergar parciais recentes. " + sug
         cota_por_seg[seg] = valor_cota
@@ -187,6 +204,8 @@ def calcular_rateio_at(
                 arrecadado=0.0, reserva_ou_deficit=0.0,
                 alerta_volatilidade=vol, faixa_estabilizacao=faixa, sugestao=sug,
                 diferenca_alvo_vs_alocado=dif_seg,
+                media_cota_3m=media_3m, variacao_vs_media=var_media,
+                alerta_variacao_trimestral=alerta_var,
             )
         )
 
@@ -273,6 +292,7 @@ def calcular_rateio_at(
         eventos_reclassificados_75pct=n_reclass,
         diferenca_total=dif,
         invariante_ok=abs(dif) < 0.01,
+        alerta_variacao_trimestral=alerta_var_global,
     )
     return ResultadoRateioAT(
         mes_ano_ref=mes_ano_ref, consolidado=consolidado, segmentos=segmentos,

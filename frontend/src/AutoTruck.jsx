@@ -132,8 +132,9 @@ function Visao({ res }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card label="Veículos elegíveis" value={`${c.total_veiculos_elegiveis} / ${c.total_veiculos}`} sub="modelo purista (ativo + adimplente)" />
         <Card label="Cotas LEVES / MOTOS" value={`${brl(c.total_cotas_leves)} / ${brl(c.total_cotas_motos)}`} />
-        <Card label="Custo a ratear LEVES" value={`R$ ${brl(c.custo_a_ratear_leves)}`} sub={`bruto ${brl(c.bruto_leves)} − terceiros ${brl(c.recuperacao_terceiros_leves)}`} />
-        <Card label="Custo a ratear MOTOS" value={`R$ ${brl(c.custo_a_ratear_motos)}`} sub={`bruto ${brl(c.bruto_motos)} − terceiros ${brl(c.recuperacao_terceiros_motos)}`} />
+        <Card label="Custo a ratear LEVES" value={`R$ ${brl(c.custo_a_ratear_leves)}`} sub={`integral+parcial (terceiro não abate · pote ${brl(c.recuperacao_terceiros_leves)})`} />
+        <Card label="Custo a ratear MOTOS" value={`R$ ${brl(c.custo_a_ratear_motos)}`} sub={`integral+parcial (terceiro não abate · pote ${brl(c.recuperacao_terceiros_motos)})`} />
+        <Card label="Estabilização trimestral" value={c.alerta_variacao_trimestral ? "⚠ Variação > ±5%" : "OK · dentro de ±5%"} tone={c.alerta_variacao_trimestral ? "warn" : "ok"} sub="cota vs média dos últimos 3 meses" />
         <Card label="Eventos alocados" value={c.eventos_alocados} sub={`${c.eventos_postergados} postergados`} />
         <Card label="Reclassif. regra 75%" value={c.eventos_reclassificados_75pct} sub="parcial → integral (perda total)" />
         <Card label="Pote Caminhão (reserva)" value={`R$ ${brl(c.pote_caminhao_reserva)}`} tone={c.pote_caminhao_reserva >= 0 ? "ok" : "bad"} sub={`arrec ${brl(c.pote_caminhao_arrecadado)} · custo ${brl(c.pote_caminhao_custo)}`} />
@@ -169,14 +170,23 @@ function Segmentos({ mes }) {
             <Row k="Integrais" v={s.custo_integrais} />
             <Row k="Parciais" v={s.custo_parciais} />
             <Row k="Salvados liq." v={-s.deducao_salvados} />
-            <Row k="Recup. terceiros" v={-s.recuperacao_terceiros} />
             <Row k="Custo a ratear" v={s.custo_a_ratear} bold />
             {s.modo === "RATEIO_VARIAVEL" && <Row k="Cotas ativas" v={s.cotas_ativas} plain />}
+            {s.modo === "RATEIO_VARIAVEL" && <Row k="Média 3M (estab.)" v={s.media_cota_3m} />}
+            {s.modo === "RATEIO_VARIAVEL" && (
+              <div className="flex justify-between border-t border-slate-700/60 pt-1">
+                <dt className="text-slate-400">Variação vs média</dt>
+                <dd className={s.alerta_variacao_trimestral ? "font-bold text-amber-300" : "text-slate-200"}>
+                  {(s.variacao_vs_media * 100).toFixed(1)}%
+                </dd>
+              </div>
+            )}
+            <Row k="Terceiros (pote, não abate)" v={s.recuperacao_terceiros} />
             {s.modo === "POTE_FIXO" && <Row k="Arrecadado" v={s.arrecadado} />}
             {s.modo === "POTE_FIXO" && <Row k="Reserva/Déficit" v={s.reserva_ou_deficit} bold />}
           </dl>
-          <div className={`mt-3 text-xs px-2 py-1 rounded ${s.faixa_estabilizacao === "OK" ? "bg-emerald-900/40 text-emerald-300" : "bg-amber-900/40 text-amber-300"}`}>
-            {s.alerta_volatilidade && "⚠ "}{s.sugestao}
+          <div className={`mt-3 text-xs px-2 py-1 rounded ${s.faixa_estabilizacao === "OK" && !s.alerta_variacao_trimestral ? "bg-emerald-900/40 text-emerald-300" : "bg-amber-900/40 text-amber-300"}`}>
+            {(s.alerta_volatilidade || s.alerta_variacao_trimestral) && "⚠ "}{s.sugestao}
           </div>
         </div>
       ))}

@@ -33,18 +33,25 @@ Motivação (spec §2): impedir que o ticket médio baixo das motos onere os car
 ```
                  (Σ Sinistros Integrais + Σ Sinistros Parciais)
  Valor da Cota = ─────────────────────────────────────────────────────────────────
-   (segmento)     − (Salvados Liquidados + Franquias + Recuperação Terceiros Liq.)
+   (segmento)            − (Salvados Liquidados + Franquias)
                   ─────────────────────────────────────────────────────────────────
                           Total de Cotas Ativas e Pagas (segmento)
 ```
 
-Referência numérica (aba ANALITICO, validação):
+> **Decisão N3 (2026-05-15) — governa a transcrição da reunião:** "Danos a Terceiros"
+> é **produto à parte (pote fixo), NÃO entra na divisão de cotas** e **não abate**
+> a cota variável. A recuperação de terceiros segue rastreada (no pote Terceiros e
+> como informativo no segmento), mas **não** subtrai o custo a ratear de LEVES/MOTOS.
+> (O abatimento havia sido inferido da aba ANALITICO; a regra de negócio declarada
+> na reunião prevalece.)
 
-| | Integral | Parcial | Bruto associados | Terceiros (abate) |
+Referência numérica (aba ANALITICO — bruto = custo a ratear; terceiros só rastreado):
+
+| | Integral | Parcial | Bruto = Custo a ratear | Terceiros (pote, não abate) |
 |---|---:|---:|---:|---:|
-| **LEVES** | 1.834.103,63 | 782.113,49 | **2.616.217,12** | −756.464,11 |
-| **MOTOS** | 453.544,15 | 46.638,40 | **500.182,55** | −32.982,25 |
-| **PESADOS** | — | — | (pote fixo) | −14.000,00 |
+| **LEVES** | 1.834.103,63 | 782.113,49 | **2.616.217,12** | 756.464,11 |
+| **MOTOS** | 453.544,15 | 46.638,40 | **500.182,55** | 32.982,25 |
+| **PESADOS** | — | — | (pote fixo) | 14.000,00 |
 
 ## 5. Regras de negócio críticas
 
@@ -62,7 +69,7 @@ Referência numérica (aba ANALITICO, validação):
 
 ## 7. Controle de churn e ajuste inteligente
 
-- Variação **> 5%** na média **trimestral** da cota → dispara assistente de ajuste automático.
+- Variação **> 5%** na média **trimestral** da cota (média dos últimos 3 meses persistidos, por segmento) → dispara o alerta do assistente de ajuste. **Implementado** (N1): o motor recebe o histórico de cotas dos meses anteriores e compara a cota apurada com a média 3M.
 - Cota preliminar **> R$ 35** → sugere remover eventos **integrais** recentes (postergar).
 - Cota preliminar **< R$ 30** → sugere acelerar pagamentos pendentes (usar o fôlego financeiro).
 - **Painel de Simulação:** trocas hipotéticas (ex.: 1 integral por 4 parciais) com recálculo imediato (endpoint de *replay* sem persistir).

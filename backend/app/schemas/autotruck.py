@@ -31,6 +31,9 @@ class SegmentoOut(BaseModel):
     faixa_estabilizacao: str
     sugestao: str
     diferenca_alvo_vs_alocado: float
+    media_cota_3m: float = 0.0
+    variacao_vs_media: float = 0.0
+    alerta_variacao_trimestral: bool = False
 
 
 class ConsolidadoATOut(BaseModel):
@@ -58,6 +61,7 @@ class ConsolidadoATOut(BaseModel):
     eventos_reclassificados_75pct: int
     diferenca_total: float
     invariante_ok: bool
+    alerta_variacao_trimestral: bool = False
 
 
 class EventoRateadoATOut(BaseModel):

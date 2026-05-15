@@ -61,6 +61,9 @@ class SegmentoResultado:
     faixa_estabilizacao: Literal["ABAIXO", "OK", "ACIMA"]
     sugestao: str
     diferenca_alvo_vs_alocado: float
+    media_cota_3m: float = 0.0            # média dos últimos 3 meses (estabilização)
+    variacao_vs_media: float = 0.0        # fração: (cota − média_3m) / média_3m
+    alerta_variacao_trimestral: bool = False  # |variação| > var_trimestral_max (5%)
 
 
 @dataclass(frozen=True)
@@ -131,6 +134,7 @@ class ConsolidadoAT:
     eventos_reclassificados_75pct: int
     diferenca_total: float
     invariante_ok: bool
+    alerta_variacao_trimestral: bool = False  # algum segmento > ±5% vs média 3M
 
 
 @dataclass(frozen=True)

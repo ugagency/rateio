@@ -30,6 +30,7 @@ class AutoTruckService:
             eventos=self.repo.listar_eventos(),
             params=self.params,
             exclusoes=exclusoes,
+            historico_cotas=self.repo.historico_cotas(mes_ano_ref),
         )
 
     def calcular_e_persistir(

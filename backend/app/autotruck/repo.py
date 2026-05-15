@@ -47,3 +47,26 @@ class AutoTruckRepo:
 
     def buscar(self, mes_ano_ref: str) -> ResultadoRateioAT | None:
         return self._resultados.get(mes_ano_ref)
+
+    @staticmethod
+    def _chave_mes(mes_ano_ref: str) -> tuple[int, int]:
+        try:
+            mm, aa = mes_ano_ref.split("/")
+            return int(aa), int(mm)
+        except (ValueError, AttributeError):
+            return (0, 0)
+
+    def historico_cotas(self, mes_excluir: str) -> dict[str, list[float]]:
+        """Cotas LEVES/MOTOS dos meses **anteriores** a `mes_excluir`,
+        ordenadas antiga→recente (para a média trimestral de estabilização)."""
+        alvo = self._chave_mes(mes_excluir)
+        anteriores = sorted(
+            (m for m in self._resultados if m != mes_excluir and self._chave_mes(m) < alvo),
+            key=self._chave_mes,
+        )
+        leves, motos = [], []
+        for m in anteriores:
+            c = self._resultados[m].consolidado
+            leves.append(c.cota_leves)
+            motos.append(c.cota_motos)
+        return {"LEVES": leves, "MOTOS": motos}
