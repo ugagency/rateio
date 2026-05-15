@@ -8,6 +8,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5174,
     proxy: {
+      '/autotruck': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/rateio': {
         target: 'http://localhost:8000',
         changeOrigin: true,

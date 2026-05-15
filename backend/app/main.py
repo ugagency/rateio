@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import consultas, rateio
+from app.api import autotruck, consultas, rateio
 from app.config import get_settings
 
 
@@ -27,6 +27,8 @@ def create_app() -> FastAPI:
     # ser avaliada antes da catch-all /rateio/{mes:path} (converter :path é ganancioso).
     app.include_router(consultas.router)
     app.include_router(rateio.router)
+    # AutoTruck: módulo paralelo, prefixo /autotruck (não colide com rotas ELLO).
+    app.include_router(autotruck.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, str]:
