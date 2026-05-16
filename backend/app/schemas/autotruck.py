@@ -142,6 +142,45 @@ class AuditLogOut(BaseModel):
     timestamp: str
 
 
+# --- N5: fechamento mensal (D+0..D+5) ---
+class AbrirFechamentoRequest(BaseModel):
+    mes_ano_ref: str = Field(default="12/2025", examples=["12/2025"])
+    base_cotas_leves: float = Field(default=81_757.0, description="Base de cotas ativas LEVES informada")
+    base_cotas_motos: float = Field(default=16_135.0, description="Base de cotas ativas MOTOS informada")
+    force: bool = Field(default=False)
+
+
+class HomologarRequest(BaseModel):
+    justificativa: str = Field(..., min_length=3,
+                               description="Justificativa técnica (D&O / LC 213).")
+
+
+class FotoFechamentoOut(BaseModel):
+    id: str
+    mes_ano_ref: str
+    criado_em: str
+    hash_insumos: str
+    origem: str
+    status: str
+    n_veiculos: int
+    n_eventos: int
+    bruto_leves: float
+    bruto_motos: float
+    invariante_ok: bool
+    cota_leves: float
+    cota_motos: float
+    total_boletos_a_emitir: int
+    auditoria: list[AuditLogOut]
+
+
+class IntegridadeOut(BaseModel):
+    id: str
+    intacto: bool
+    hash_foto: str
+    hash_atual: str
+    mensagem: str
+
+
 class ResultadoATOut(BaseModel):
     mes_ano_ref: str
     consolidado: ConsolidadoATOut

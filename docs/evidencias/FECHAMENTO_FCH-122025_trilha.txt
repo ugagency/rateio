@@ -1,0 +1,10 @@
+TRILHA DE FECHAMENTO — FCH-122025 (12/2025)
+Gerado em 2026-05-16T04:28:19.156595+00:00 (UTC)
+Origem: FECHAMENTO.xlsx (FECHAMENTO_referencia.xlsx)
+Hash dos insumos (lacre D+0): 335bb07923625a335123ff4960a9aa235ed1f068d344ddce7ec6665579b7e689
+Status final: EMITIDO
+
+Audit trail (log imutável — LC 213 / D&O):
+  [FOTO_FECHAMENTO_D0] 2026-05-16T04:28:18.558173+00:00  Snapshot lacrado · origem=FECHAMENTO.xlsx (FECHAMENTO_referencia.xlsx) · hash=335bb0792362…
+  [HOMOLOGACAO_D3] 2026-05-16T04:28:18.998571+00:00  Homologado pela diretoria AutoTruck — conferência D+1–D+3 (LC 213).
+  [EMISSAO_D5] 2026-05-16T04:28:18.998693+00:00  Lote emitido: 622 boletos.

@@ -10,15 +10,21 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.autotruck.config import get_autotruck_json_path
 from app.autotruck.domain import ResultadoRateioAT
+from app.autotruck.fechamento import FechamentoError, FechamentoService, FotoFechamento
+from app.autotruck.fontes import FonteMemoria
 from app.autotruck.repo import AutoTruckRepo
 from app.autotruck.service import AutoTruckJaExisteError, AutoTruckService
 from app.schemas.autotruck import (
+    AbrirFechamentoRequest,
     AplicarAjusteRequest,
     AuditLogOut,
     BoletoATOut,
     CalcularATRequest,
     ConsolidadoATOut,
     EventoRateadoATOut,
+    FotoFechamentoOut,
+    HomologarRequest,
+    IntegridadeOut,
     PaginatedAuditOut,
     PaginatedBoletosATOut,
     PaginatedEventosATOut,
@@ -95,6 +101,100 @@ def aplicar_ajuste(body: AplicarAjusteRequest) -> ResultadoATOut:
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return _to_out(r)
+
+
+# ---------------- Fechamento mensal — fluxo D+0..D+5 (N5) ----------------
+
+@lru_cache
+def _fech() -> FechamentoService:
+    return FechamentoService()
+
+
+def _fonte(mes: str) -> FonteMemoria:
+    repo = _service().repo
+    return FonteMemoria(repo.listar_veiculos(), repo.listar_eventos(), mes)
+
+
+def _foto_out(f: FotoFechamento, fs: FechamentoService) -> FotoFechamentoOut:
+    co = f.resultado.consolidado
+    cota = fs.cota(f.id)
+    return FotoFechamentoOut(
+        id=f.id, mes_ano_ref=f.mes_ano_ref, criado_em=f.criado_em,
+        hash_insumos=f.hash_insumos, origem=f.origem, status=f.status,
+        n_veiculos=f.n_veiculos, n_eventos=f.n_eventos,
+        bruto_leves=co.bruto_leves, bruto_motos=co.bruto_motos,
+        invariante_ok=co.invariante_ok,
+        cota_leves=cota["LEVES"]["valor_cota"], cota_motos=cota["MOTOS"]["valor_cota"],
+        total_boletos_a_emitir=len(fs.lote_boletos(f.id)),
+        auditoria=[AuditLogOut(**a.__dict__) for a in f.auditoria_fechamento],
+    )
+
+
+@router.post("/fechamento/abrir", response_model=FotoFechamentoOut,
+             status_code=status.HTTP_201_CREATED)
+def fechamento_abrir(body: AbrirFechamentoRequest) -> FotoFechamentoOut:
+    """D+0 — Foto de Fechamento: lacra os insumos (hash) e calcula."""
+    fs = _fech()
+    try:
+        f = fs.abrir(_fonte(body.mes_ano_ref),
+                     base_cotas_leves=body.base_cotas_leves,
+                     base_cotas_motos=body.base_cotas_motos, force=body.force)
+    except FechamentoError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return _foto_out(f, fs)
+
+
+@router.get("/fechamento/{fid}/integridade", response_model=IntegridadeOut)
+def fechamento_integridade(fid: str) -> IntegridadeOut:
+    fs = _fech()
+    foto = _get_foto(fs, fid)
+    return IntegridadeOut(**fs.verificar_integridade(fid, _fonte(foto.mes_ano_ref)))
+
+
+@router.get("/fechamento/{fid}/lote-boletos", response_model=PaginatedBoletosATOut)
+def fechamento_lote(fid: str) -> PaginatedBoletosATOut:
+    fs = _fech()
+    foto = _get_foto(fs, fid)
+    lote = fs.lote_boletos(fid)
+    return PaginatedBoletosATOut(
+        mes_ano_ref=foto.mes_ano_ref, total=len(lote),
+        items=[BoletoATOut(**b.__dict__) for b in lote[:5000]],
+    )
+
+
+@router.post("/fechamento/{fid}/homologar", response_model=FotoFechamentoOut)
+def fechamento_homologar(fid: str, body: HomologarRequest) -> FotoFechamentoOut:
+    """D+3 — homologação (exige justificativa técnica → audit trail)."""
+    fs = _fech()
+    try:
+        f = fs.homologar(fid, body.justificativa)
+    except FechamentoError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return _foto_out(f, fs)
+
+
+@router.post("/fechamento/{fid}/emitir", response_model=FotoFechamentoOut)
+def fechamento_emitir(fid: str) -> FotoFechamentoOut:
+    """D+5 — emissão do lote (exige HOMOLOGADO)."""
+    fs = _fech()
+    try:
+        f = fs.emitir(fid)
+    except FechamentoError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return _foto_out(f, fs)
+
+
+@router.get("/fechamento/{fid}", response_model=FotoFechamentoOut)
+def fechamento_get(fid: str) -> FotoFechamentoOut:
+    fs = _fech()
+    return _foto_out(_get_foto(fs, fid), fs)
+
+
+def _get_foto(fs: FechamentoService, fid: str) -> FotoFechamento:
+    try:
+        return fs.buscar(fid)
+    except FechamentoError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/{mes_ano_ref:path}/segmentos", response_model=list[SegmentoOut])
