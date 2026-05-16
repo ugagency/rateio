@@ -70,3 +70,28 @@ def test_fechamento_motor_layout_identico_delta_zero(tmp_path) -> None:
     a = wb["ANALITICO"]
     assert float(a.cell(8, 4).value) == round(2_616_217.12, 2)   # D8 RATEIO LEVES
     assert float(a.cell(8, 7).value) == round(500_182.55, 2)     # G8 RATEIO MOTOS
+
+
+def test_simulador_completo_espelha_numeros_deles(tmp_path) -> None:
+    """Planilha-simulador completa: engine reproduz o ANALITICO real deles
+    (Δ=0) em todas as células conferidas; todas as abas presentes."""
+    import openpyxl
+    from tools.gerar_planilha_completa import gerar
+    out = tmp_path / "SIM.xlsx"
+    msg = gerar(str(FIX), str(out))
+    assert "divergências=0" in msg
+    wb = openpyxl.load_workbook(out)
+    for aba in ("INSTRUCOES", "PAINEL", "ANALITICO", "APURACAO", "EVENTOS",
+                "VEICULOS", "CONFERENCIA", "PARAMETROS", "FECHAMENTO", "BASE"):
+        assert aba in wb.sheetnames, f"aba ausente: {aba}"
+    cs = wb["CONFERENCIA"]
+    n = 0
+    for r in range(5, cs.max_row + 1):
+        if cs.cell(r, 1).value == "RESULTADO":
+            break
+        ev, ov = cs.cell(r, 3).value, cs.cell(r, 2).value
+        if isinstance(ev, (int, float)) and isinstance(ov, (int, float)):
+            n += 1
+            assert abs(ev - ov) <= 0.01           # engine == original deles
+    assert n >= 15
+    assert len(list(wb["EVENTOS"].iter_rows())) - 1 >= 250   # 284 eventos reais
