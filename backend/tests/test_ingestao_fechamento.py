@@ -45,3 +45,28 @@ def test_engine_sobre_eventos_deles_reproduz_o_rateio_deles() -> None:
                  "LEVES integral", "MOTOS parcial", "PESADOS terceiros"):
         assert by[item].status == "OK"
         assert abs(by[item].delta) <= 0.01
+
+
+def test_fechamento_motor_layout_identico_delta_zero(tmp_path) -> None:
+    """A planilha de saída no layout deles bate célula a célula (Δ=0)."""
+    import openpyxl
+    from tools.gerar_fechamento_motor import gerar
+    out = tmp_path / "FECHAMENTO_MOTOR.xlsx"
+    msg = gerar(str(FIX), str(out))
+    assert "divergências: 0" in msg
+    wb = openpyxl.load_workbook(out)
+    assert "CONFERENCIA_MOTOR" in wb.sheetnames
+    cs = wb["CONFERENCIA_MOTOR"]
+    n = 0
+    for r in range(5, cs.max_row + 1):
+        if cs.cell(r, 1).value == "RESULTADO":
+            break
+        d = cs.cell(r, 4).value
+        if isinstance(d, (int, float)):
+            n += 1
+            assert abs(d) <= 0.01
+    assert n >= 18  # ~20 células do ANALITICO conferidas
+    # ANALITICO de saída traz os valores do engine nas MESMAS células
+    a = wb["ANALITICO"]
+    assert float(a.cell(8, 4).value) == round(2_616_217.12, 2)   # D8 RATEIO LEVES
+    assert float(a.cell(8, 7).value) == round(500_182.55, 2)     # G8 RATEIO MOTOS
