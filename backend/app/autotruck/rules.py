@@ -30,6 +30,21 @@ class ParametrosAT:
     valor_fixo_terceiros_por_assoc: float = 0.0        # se >0, sobrepõe a estimada
     arrecadacao_caminhao_estimada: float = 0.0
     valor_fixo_caminhao_por_assoc: float = 0.0
+    # N4 — preço por produto (transcrição): "terceiro de 50.000 é 20 e poucos
+    # reais; de 100.000 é R$30". Casco caminhão = valor fixo mensal por associado.
+    preco_terceiros_50k: float = 20.0
+    preco_terceiros_100k: float = 30.0
+    preco_casco_caminhao: float = 0.0  # >0 ativa arrecadação real do pote caminhão
+
+
+PRECO_TERCEIROS = {"NENHUM": 0.0, "50K": 20.0, "100K": 30.0}
+
+
+def preco_cobertura_terceiros(cobertura: str, p: "ParametrosAT") -> float:
+    """Preço mensal do produto Danos a Terceiros pela faixa contratada."""
+    return {"NENHUM": 0.0, "50K": p.preco_terceiros_50k, "100K": p.preco_terceiros_100k}.get(
+        (cobertura or "NENHUM").upper(), 0.0
+    )
 
 
 PARAMS_DEFAULT = ParametrosAT()

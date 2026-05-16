@@ -23,6 +23,7 @@ class VeiculoAT:
     status_ativo: bool         # ativo no SGA (foto de fechamento)
     adimplente: bool           # pagou — modelo purista (entra no denominador)
     servicos_adicionais: float = 0.0  # soma fixa de serviços contratados (Assist 24h, Vidros, etc.)
+    cobertura_terceiros: str = "NENHUM"  # produto Danos a Terceiros: NENHUM | 50K | 100K (N4)
 
 
 @dataclass(frozen=True)

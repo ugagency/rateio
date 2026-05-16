@@ -293,3 +293,102 @@ def test_n2_aplicar_ajuste_loga_auditoria_e_baixa_cota() -> None:
     assert novo.consolidado.cota_leves < cota0
     assert len(novo.auditoria) == len(ids)
     assert all(a.acao == "EXCLUSAO_MANUAL" and a.justificativa for a in novo.auditoria)
+
+
+# --- N4: parametrização real de produtos/potes ---
+
+from app.autotruck.rules import ParametrosAT  # noqa: E402
+
+
+def test_n4_pote_terceiros_por_faixa_de_cobertura() -> None:
+    veic = [
+        VeiculoAT("V1", "A", "LEVES", "AUTOMOVEL", 50_000, True, True, cobertura_terceiros="50K"),
+        VeiculoAT("V2", "B", "LEVES", "AUTOMOVEL", 50_000, True, True, cobertura_terceiros="100K"),
+        VeiculoAT("V3", "C", "LEVES", "AUTOMOVEL", 50_000, True, True, cobertura_terceiros="NENHUM"),
+        VeiculoAT("V4", "D", "LEVES", "AUTOMOVEL", 50_000, False, True, cobertura_terceiros="100K"),  # inativo
+    ]
+    ev = [EventoAT("E1", "P", "Z", "LEVES", "ASSOCIADO", "PARCIAL", 30, 1, 50_000, "2025-03-01")]
+    r = calcular_rateio_at(mes_ano_ref="03/2025", veiculos=veic, eventos=ev)
+    c = r.consolidado
+    # arrecadação só dos elegíveis: 20 (50K) + 30 (100K) + 0 (NENHUM) = 50
+    assert c.pote_terceiros_arrecadado == pytest.approx(50.0, abs=0.01)
+    bol = {b.id_veiculo: b for b in r.boletos}
+    assert bol["V1"].custo_pote_terceiros == pytest.approx(20.0)
+    assert bol["V2"].custo_pote_terceiros == pytest.approx(30.0)
+    assert bol["V3"].custo_pote_terceiros == pytest.approx(0.0)
+    assert bol["V4"].custo_pote_terceiros == pytest.approx(0.0)  # inativo não paga
+
+
+def test_n4_pote_caminhao_valor_fixo_por_associado() -> None:
+    veic = [
+        VeiculoAT("C1", "A", "PESADOS", "CAMINHAO", 300_000, True, True),
+        VeiculoAT("C2", "B", "PESADOS", "CAMINHAO", 300_000, True, True),
+        VeiculoAT("C3", "C", "PESADOS", "CAMINHAO", 300_000, False, True),  # inativo
+    ]
+    # arrecadacao_terceiros_estimada=0 p/ isolar o pote caminhão no boleto
+    p = ParametrosAT(preco_casco_caminhao=1_200.0, arrecadacao_terceiros_estimada=0.0)
+    r = calcular_rateio_at(mes_ano_ref="03/2025", veiculos=veic, eventos=[], params=p)
+    pes = next(s for s in r.segmentos if s.segmento == "PESADOS")
+    assert pes.arrecadado == pytest.approx(2 * 1_200.0, abs=0.01)  # 2 elegíveis
+    bol = {b.id_veiculo: b for b in r.boletos}
+    assert bol["C1"].custo_pote_caminhao == pytest.approx(1_200.0)
+    assert bol["C3"].custo_pote_caminhao == pytest.approx(0.0)  # inativo não paga
+    assert bol["C1"].valor_total_boleto == pytest.approx(1_200.0, abs=0.01)  # só pote (sem rateio variável)
+
+
+def test_n4_anchor_analitico_inalterado(service: AutoTruckService) -> None:
+    """Sem dados de cobertura e preço caminhão=0 → comportamento do anchor
+    (ANALITICO) permanece idêntico: terceiros usa a estimada de R$500k."""
+    c = service.replay("12/2025").consolidado
+    assert c.pote_terceiros_arrecadado == pytest.approx(500_000.0, abs=0.01)
+    assert c.bruto_leves == pytest.approx(ALVO_BRUTO_LEVES, abs=0.01)
+
+
+# --- Cenários de simulação: prova anti-mock (engine == recálculo independente) ---
+
+from app.autotruck.cenarios import build as _build_cen  # noqa: E402
+from app.autotruck.verificacao import recomputar as _recomputar  # noqa: E402
+
+
+@pytest.mark.parametrize("nome", ["A", "B", "C"])
+def test_cenario_engine_igual_recomputo_independente(nome) -> None:
+    c = _build_cen(nome)
+    r = calcular_rateio_at(mes_ano_ref=c.mes_ano_ref, veiculos=c.veiculos,
+                           eventos=c.eventos, params=c.params,
+                           historico_cotas=c.historico_cotas)
+    rec = _recomputar(c.veiculos, c.eventos, c.params)
+    for seg in ("LEVES", "MOTOS"):
+        s = next(x for x in r.segmentos if x.segmento == seg)
+        assert s.custo_a_ratear == pytest.approx(rec[seg]["custo_a_ratear"], abs=0.02)
+        assert s.valor_cota == pytest.approx(rec[seg]["valor_cota"], abs=0.02)
+        assert s.recuperacao_terceiros == pytest.approx(rec[seg]["recuperacao_terceiros"], abs=0.02)
+    assert r.consolidado.pote_terceiros_arrecadado == pytest.approx(
+        rec["POTES"]["terceiros_arrecadado"], abs=0.02)
+    assert r.consolidado.pote_caminhao_arrecadado == pytest.approx(
+        rec["POTES"]["caminhao_arrecadado"], abs=0.02)
+    assert r.consolidado.invariante_ok is True
+
+
+def test_cenarios_comportamento_distinto() -> None:
+    rs = {}
+    for nome in ("A", "B", "C"):
+        c = _build_cen(nome)
+        rs[nome] = calcular_rateio_at(mes_ano_ref=c.mes_ano_ref, veiculos=c.veiculos,
+                                      eventos=c.eventos, params=c.params,
+                                      historico_cotas=c.historico_cotas)
+    A, B, C = rs["A"], rs["B"], rs["C"]
+    LA = next(s for s in A.segmentos if s.segmento == "LEVES")
+    LB = next(s for s in B.segmentos if s.segmento == "LEVES")
+    # A saudável: cota na faixa, sem volatilidade
+    assert LA.faixa_estabilizacao == "OK" and LA.alerta_volatilidade is False
+    # B estresse: volatilidade, regra 75%, cota especial, postergação, cota ACIMA
+    assert LB.alerta_volatilidade is True
+    assert B.consolidado.eventos_reclassificados_75pct >= 1
+    assert B.consolidado.eventos_postergados >= 1
+    assert any(b.cota_especial for b in B.boletos)
+    assert LB.faixa_estabilizacao == "ACIMA"
+    # C purista: elegíveis bem menores que o total
+    assert C.consolidado.total_veiculos_elegiveis < 0.75 * C.consolidado.total_veiculos
+    # cotas distintas entre cenários (prova: saída reage aos inputs)
+    assert len({A.consolidado.cota_leves, B.consolidado.cota_leves,
+                C.consolidado.cota_leves}) == 3

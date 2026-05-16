@@ -27,7 +27,13 @@ from .domain import (
     SugestaoAjuste,
     VeiculoAT,
 )
-from .rules import PARAMS_DEFAULT, ParametrosAT, aplica_regra_75, cotas_por_fipe
+from .rules import (
+    PARAMS_DEFAULT,
+    ParametrosAT,
+    aplica_regra_75,
+    cotas_por_fipe,
+    preco_cobertura_terceiros,
+)
 
 VARIAVEIS = ("LEVES", "MOTOS")
 
@@ -114,12 +120,13 @@ def calcular_rateio_at(
 
     # 3) Eventos rateados — FIFO (postergado → data ASC → tipo → valor DESC),
     #    com teto do pote caminhão (PESADOS associado corta no arrecadado)
-    pote_caminhao_arrec = round(
-        params.valor_fixo_caminhao_por_assoc * n_assoc_eleg.get("PESADOS", 0)
-        if params.valor_fixo_caminhao_por_assoc > 0
-        else params.arrecadacao_caminhao_estimada,
-        2,
-    )
+    n_pes_eleg = n_assoc_eleg.get("PESADOS", 0)
+    if params.preco_casco_caminhao > 0:                       # N4: valor fixo/assoc
+        pote_caminhao_arrec = round(params.preco_casco_caminhao * n_pes_eleg, 2)
+    elif params.valor_fixo_caminhao_por_assoc > 0:
+        pote_caminhao_arrec = round(params.valor_fixo_caminhao_por_assoc * n_pes_eleg, 2)
+    else:
+        pote_caminhao_arrec = round(params.arrecadacao_caminhao_estimada, 2)
     tipo_rank = {"INTEGRAL": 0, "PARCIAL": 1}
     ordenados = sorted(
         eventos_proc,
@@ -232,15 +239,22 @@ def calcular_rateio_at(
         )
     )
 
-    # 6) Pote Danos a Terceiros (50k/100k) — fixo, per-capita.
-    #    Custo proxy = recuperações de terceiros de todos os segmentos.
+    # 6) Pote Danos a Terceiros (50k/100k) — fixo. Custo = recuperações de
+    #    terceiros (payouts). Arrecadação (N4): preço real por faixa de
+    #    cobertura contratada; fallback p/ estimada se não há dados.
     pote_terc_custo = round(sum(recup_por_seg.values()) + pc_rt, 2)
-    pote_terc_arrec = round(
-        params.valor_fixo_terceiros_por_assoc * n_eleg_total
-        if params.valor_fixo_terceiros_por_assoc > 0
-        else params.arrecadacao_terceiros_estimada,
-        2,
+    elig = [v for v in veiculos_list if v.status_ativo and v.adimplente]
+    tem_cobertura = any(
+        (v.cobertura_terceiros or "NENHUM").upper() != "NENHUM" for v in elig
     )
+    if tem_cobertura:
+        pote_terc_arrec = round(
+            sum(preco_cobertura_terceiros(v.cobertura_terceiros, params) for v in elig), 2
+        )
+    elif params.valor_fixo_terceiros_por_assoc > 0:
+        pote_terc_arrec = round(params.valor_fixo_terceiros_por_assoc * n_eleg_total, 2)
+    else:
+        pote_terc_arrec = round(params.arrecadacao_terceiros_estimada, 2)
     pote_terc_reserva = round(pote_terc_arrec - pote_terc_custo, 2)
 
     # 7) Boletos (todos os veículos; gera_boleto só p/ ativo+adimplente)
@@ -252,8 +266,18 @@ def calcular_rateio_at(
         qc, especial = cotas_veic[v.id_veiculo]
         eleg = v.status_ativo and v.adimplente
         rateio = round(qc * cota_por_seg.get(v.segmento, 0.0), 2) if (eleg and v.segmento in VARIAVEIS) else 0.0
-        c_cam = pote_cam_percap if (eleg and v.segmento == "PESADOS") else 0.0
-        c_terc = pote_terc_percap if eleg else 0.0
+        if not (eleg and v.segmento == "PESADOS"):
+            c_cam = 0.0
+        elif params.preco_casco_caminhao > 0:
+            c_cam = round(params.preco_casco_caminhao, 2)
+        else:
+            c_cam = pote_cam_percap
+        if not eleg:
+            c_terc = 0.0
+        elif tem_cobertura:
+            c_terc = round(preco_cobertura_terceiros(v.cobertura_terceiros, params), 2)
+        else:
+            c_terc = pote_terc_percap
         total = round(rateio + c_cam + c_terc + v.servicos_adicionais, 2)
         boletos.append(
             BoletoAT(
