@@ -9,6 +9,7 @@ const TABS = {
   visao: "Visão Geral",
   segmentos: "Segmentos",
   eventos: "Eventos",
+  ajuste: "Ajuste",
   potes: "Potes Fixos",
   boletos: "Boletos",
   auditoria: "Auditoria",
@@ -88,6 +89,7 @@ export default function AutoTruck() {
             {tab === "visao" && <Visao res={res} />}
             {tab === "segmentos" && <Segmentos mes={mes} />}
             {tab === "eventos" && <Eventos mes={mes} />}
+            {tab === "ajuste" && <Ajuste mes={mes} onAplicado={carregar} />}
             {tab === "potes" && <Potes mes={mes} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
@@ -346,6 +348,106 @@ function Auditoria({ mes }) {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+function Ajuste({ mes, onAplicado }) {
+  const [alvo, setAlvo] = useState("")
+  const [incluirParciais, setIncluirParciais] = useState(false)
+  const [sugs, setSugs] = useState(null)
+  const [msg, setMsg] = useState("")
+  const [busy, setBusy] = useState(false)
+
+  const sugerir = () => {
+    setBusy(true); setMsg("")
+    fetch(`${API}/autotruck/sugerir-ajuste`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mes_ano_ref: mes,
+        alvo_cota: alvo === "" ? null : Number(alvo),
+        incluir_parciais: incluirParciais,
+      }),
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(r)))
+      .then(setSugs)
+      .catch(() => setMsg("Falha ao gerar sugestão (calcule o rateio primeiro)."))
+      .finally(() => setBusy(false))
+  }
+
+  const aplicar = (seg, ids) => {
+    if (!ids.length) return
+    setBusy(true); setMsg("")
+    fetch(`${API}/autotruck/aplicar-ajuste`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes_ano_ref: mes, ids_eventos: ids }),
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(r)))
+      .then(() => { setMsg(`Ajuste aplicado em ${seg}: ${ids.length} evento(s) postergado(s) (registrado na auditoria).`); setSugs(null); onAplicado && onAplicado() })
+      .catch(() => setMsg("Falha ao aplicar o ajuste."))
+      .finally(() => setBusy(false))
+  }
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-white mb-1">Assistente de Ajuste</h2>
+      <p className="text-slate-400 text-sm mb-4">Conjunto mínimo de eventos a postergar para a cota atingir o alvo (estabilização &gt; FIFO; integral recente primeiro — oficina/nota fechada raramente se mexe).</p>
+      <div className="flex flex-wrap gap-3 items-center mb-4">
+        <label className="text-sm text-slate-400">Alvo da cota R$
+          <input value={alvo} onChange={e => setAlvo(e.target.value)} placeholder="auto (média 3M ±5%)"
+            className="ml-2 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm w-40" />
+        </label>
+        <label className="text-sm text-slate-300 flex items-center gap-2">
+          <input type="checkbox" checked={incluirParciais} onChange={e => setIncluirParciais(e.target.checked)} />
+          incluir parciais
+        </label>
+        <button onClick={sugerir} disabled={busy}
+          className="px-4 py-1.5 bg-cyan-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
+          {busy ? "…" : "Sugerir"}
+        </button>
+      </div>
+      {msg && <div className="mb-4 bg-slate-800 border border-slate-700 text-slate-200 px-4 py-2 rounded text-sm">{msg}</div>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {(sugs || []).map(s => (
+          <div key={s.segmento} className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div className="flex justify-between items-baseline">
+              <div className="text-lg font-bold text-white">{s.segmento}</div>
+              <span className={`text-xs px-2 py-0.5 rounded ${s.precisa_ajuste ? (s.atingiu_alvo ? "bg-amber-900/40 text-amber-300" : "bg-red-900/40 text-red-300") : "bg-emerald-900/40 text-emerald-300"}`}>
+                {s.precisa_ajuste ? (s.atingiu_alvo ? "ajuste sugerido" : "insuficiente") : "dentro do alvo"}
+              </span>
+            </div>
+            <div className="mt-2 text-sm text-slate-300">
+              Cota atual <b className="text-white">R$ {brl(s.cota_atual)}</b> · alvo <b className="text-white">R$ {brl(s.alvo_cota)}</b>
+              {s.precisa_ajuste && <> → resultante <b className={s.atingiu_alvo ? "text-emerald-300" : "text-amber-300"}>R$ {brl(s.cota_resultante)}</b></>}
+            </div>
+            <div className="mt-2 text-xs text-slate-400">{s.mensagem}</div>
+            {s.eventos_sugeridos.length > 0 && (
+              <>
+                <table className="w-full text-sm mt-3">
+                  <thead className="text-left text-slate-400">
+                    <tr><th className="py-1">Protocolo</th><th>Data aviso</th><th>Tipo</th><th className="text-right">Custo</th></tr>
+                  </thead>
+                  <tbody>
+                    {s.eventos_sugeridos.map((e, i) => (
+                      <tr key={i} className="border-t border-slate-700/60">
+                        <td className="py-1">{e.protocolo}</td>
+                        <td>{e.data_aviso}</td>
+                        <td>{e.tipo_evento}</td>
+                        <td className="text-right">R$ {brl(e.custo_a_ratear)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button onClick={() => aplicar(s.segmento, s.eventos_sugeridos.map(e => e.id_evento))}
+                  disabled={busy}
+                  className="mt-3 px-4 py-1.5 bg-amber-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
+                  Aplicar (postergar {s.eventos_sugeridos.length})
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

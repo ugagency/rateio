@@ -109,6 +109,31 @@ class AuditLog:
 
 
 @dataclass(frozen=True)
+class EventoSugerido:
+    id_evento: str
+    protocolo: str
+    data_aviso: str
+    tipo_evento: TipoEvento
+    custo_a_ratear: float
+
+
+@dataclass(frozen=True)
+class SugestaoAjuste:
+    """Assistente de ajuste (estabilização > FIFO): conjunto mínimo de
+    eventos a postergar para a cota atingir o alvo."""
+    segmento: Segmento
+    cota_atual: float
+    alvo_cota: float
+    precisa_ajuste: bool
+    reducao_necessaria: float
+    eventos_sugeridos: list[EventoSugerido]
+    reducao_obtida: float
+    cota_resultante: float
+    atingiu_alvo: bool
+    mensagem: str
+
+
+@dataclass(frozen=True)
 class ConsolidadoAT:
     mes_ano_ref: str
     cota_leves: float

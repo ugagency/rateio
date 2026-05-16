@@ -70,9 +70,9 @@ Referência numérica (aba ANALITICO — bruto = custo a ratear; terceiros só r
 ## 7. Controle de churn e ajuste inteligente
 
 - Variação **> 5%** na média **trimestral** da cota (média dos últimos 3 meses persistidos, por segmento) → dispara o alerta do assistente de ajuste. **Implementado** (N1): o motor recebe o histórico de cotas dos meses anteriores e compara a cota apurada com a média 3M.
-- Cota preliminar **> R$ 35** → sugere remover eventos **integrais** recentes (postergar).
-- Cota preliminar **< R$ 30** → sugere acelerar pagamentos pendentes (usar o fôlego financeiro).
-- **Painel de Simulação:** trocas hipotéticas (ex.: 1 integral por 4 parciais) com recálculo imediato (endpoint de *replay* sem persistir).
+- **Assistente de ajuste (N2 — implementado):** dado um alvo (default = topo da banda ±5% da média 3M, ou R$35), o motor sugere o **conjunto mínimo de eventos a postergar** — candidatos ASSOCIADO ALOCADO, **só INTEGRAL** por padrão (parcial = oficina/nota fechada, raramente se mexe; opcional via `incluir_parciais`), ordenados por valor DESC (menos eventos) com desempate pelo **mais recente**. Endpoints `POST /autotruck/sugerir-ajuste` e `POST /autotruck/aplicar-ajuste` (aplica postergando via exclusão com justificativa → **audit trail**). Aba "Ajuste" no frontend.
+- Cota preliminar **< R$ 30** → sugere acelerar pagamentos pendentes (usar o fôlego financeiro) — advisory.
+- **Painel de Simulação:** trocas hipotéticas com recálculo imediato (endpoint de *replay* sem persistir).
 
 ## 8. Modelo Purista (denominador) e SGA
 

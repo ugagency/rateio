@@ -14,6 +14,45 @@ class CalcularATRequest(BaseModel):
     )
 
 
+class SugerirAjusteRequest(BaseModel):
+    mes_ano_ref: str = Field(..., examples=["12/2025"])
+    alvo_cota: float | None = Field(
+        default=None, description="Cota-alvo. Default: topo da banda ±5% da média 3M (ou R$35)."
+    )
+    incluir_parciais: bool = Field(
+        default=False, description="Inclui parciais como candidatos (oficina/nota fechada — raro)."
+    )
+
+
+class AplicarAjusteRequest(BaseModel):
+    mes_ano_ref: str = Field(..., examples=["12/2025"])
+    ids_eventos: list[str] = Field(..., min_length=1)
+    justificativa: str | None = Field(
+        default=None, description="Justificativa técnica (audit trail). Default automático."
+    )
+
+
+class EventoSugeridoOut(BaseModel):
+    id_evento: str
+    protocolo: str
+    data_aviso: str
+    tipo_evento: str
+    custo_a_ratear: float
+
+
+class SugestaoAjusteOut(BaseModel):
+    segmento: str
+    cota_atual: float
+    alvo_cota: float
+    precisa_ajuste: bool
+    reducao_necessaria: float
+    eventos_sugeridos: list[EventoSugeridoOut]
+    reducao_obtida: float
+    cota_resultante: float
+    atingiu_alvo: bool
+    mensagem: str
+
+
 class SegmentoOut(BaseModel):
     segmento: str
     modo: str

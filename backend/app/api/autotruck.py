@@ -13,6 +13,7 @@ from app.autotruck.domain import ResultadoRateioAT
 from app.autotruck.repo import AutoTruckRepo
 from app.autotruck.service import AutoTruckJaExisteError, AutoTruckService
 from app.schemas.autotruck import (
+    AplicarAjusteRequest,
     AuditLogOut,
     BoletoATOut,
     CalcularATRequest,
@@ -23,6 +24,8 @@ from app.schemas.autotruck import (
     PaginatedEventosATOut,
     ResultadoATOut,
     SegmentoOut,
+    SugerirAjusteRequest,
+    SugestaoAjusteOut,
 )
 
 router = APIRouter(prefix="/autotruck", tags=["autotruck"])
@@ -68,6 +71,30 @@ def calcular(body: CalcularATRequest) -> ResultadoATOut:
 def replay(body: CalcularATRequest) -> ResultadoATOut:
     """Painel de simulação — recalcula sem persistir (trocas hipotéticas)."""
     return _to_out(_service().replay(body.mes_ano_ref, exclusoes=body.exclusoes))
+
+
+@router.post("/sugerir-ajuste", response_model=list[SugestaoAjusteOut])
+def sugerir_ajuste(body: SugerirAjusteRequest) -> list[SugestaoAjusteOut]:
+    """Assistente de ajuste: conjunto mínimo de eventos a postergar p/ a
+    cota atingir o alvo (estabilização > FIFO; integral recente primeiro)."""
+    sugs = _service().sugerir_ajuste(
+        body.mes_ano_ref, alvo_cota=body.alvo_cota, incluir_parciais=body.incluir_parciais
+    )
+    return [SugestaoAjusteOut(**s.__dict__ | {
+        "eventos_sugeridos": [e.__dict__ for e in s.eventos_sugeridos]
+    }) for s in sugs]
+
+
+@router.post("/aplicar-ajuste", response_model=ResultadoATOut, status_code=status.HTTP_201_CREATED)
+def aplicar_ajuste(body: AplicarAjusteRequest) -> ResultadoATOut:
+    """Aplica a sugestão: posterga os eventos (audit trail) e re-persiste."""
+    try:
+        r = _service().aplicar_ajuste(
+            body.mes_ano_ref, body.ids_eventos, justificativa=body.justificativa
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return _to_out(r)
 
 
 @router.get("/{mes_ano_ref:path}/segmentos", response_model=list[SegmentoOut])

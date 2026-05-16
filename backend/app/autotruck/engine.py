@@ -21,8 +21,10 @@ from .domain import (
     ConsolidadoAT,
     EventoAT,
     EventoRateadoAT,
+    EventoSugerido,
     ResultadoRateioAT,
     SegmentoResultado,
+    SugestaoAjuste,
     VeiculoAT,
 )
 from .rules import PARAMS_DEFAULT, ParametrosAT, aplica_regra_75, cotas_por_fipe
@@ -298,3 +300,93 @@ def calcular_rateio_at(
         mes_ano_ref=mes_ano_ref, consolidado=consolidado, segmentos=segmentos,
         eventos_rateados=eventos_rateados, boletos=boletos, auditoria=auditoria,
     )
+
+
+def _alvo_default(s: SegmentoResultado, params: ParametrosAT) -> float:
+    """Alvo padrão: topo da banda aceitável da média 3M (menor perturbação);
+    se não há histórico, o teto da faixa de estabilização (R$35)."""
+    if s.media_cota_3m > 0:
+        return round(s.media_cota_3m * (1 + params.var_trimestral_max), 2)
+    return params.cota_alvo_max
+
+
+def sugerir_ajuste(
+    resultado: ResultadoRateioAT,
+    *,
+    params: ParametrosAT = PARAMS_DEFAULT,
+    alvo_cota: float | None = None,
+    incluir_parciais: bool = False,
+    segmentos_alvo: tuple[str, ...] = VARIAVEIS,
+) -> list[SugestaoAjuste]:
+    """Assistente de ajuste (regra de ouro: estabilização > FIFO).
+
+    Para cada segmento variável com cota acima do alvo, escolhe o conjunto
+    **mínimo** de eventos a postergar: candidatos = eventos ASSOCIADO
+    ALOCADO; INTEGRAL primeiro (parcial é oficina/nota fechada, raramente
+    se mexe — só entra se `incluir_parciais`); ordem por valor DESC (menos
+    eventos para cobrir a redução), desempate pelo mais recente.
+    """
+    por_seg = {s.segmento: s for s in resultado.segmentos}
+    sugestoes: list[SugestaoAjuste] = []
+    for seg in segmentos_alvo:
+        s = por_seg.get(seg)
+        if s is None or s.modo != "RATEIO_VARIAVEL" or s.cotas_ativas <= 0:
+            continue
+        alvo = round(alvo_cota, 2) if alvo_cota is not None else _alvo_default(s, params)
+        if s.valor_cota <= alvo + 0.005:
+            sugestoes.append(
+                SugestaoAjuste(
+                    segmento=seg, cota_atual=s.valor_cota, alvo_cota=alvo,
+                    precisa_ajuste=False, reducao_necessaria=0.0,
+                    eventos_sugeridos=[], reducao_obtida=0.0,
+                    cota_resultante=s.valor_cota, atingiu_alvo=True,
+                    mensagem=f"Cota R$ {s.valor_cota} já está dentro do alvo (R$ {alvo}).",
+                )
+            )
+            continue
+        reducao = round((s.valor_cota - alvo) * s.cotas_ativas, 2)
+        cand = [
+            er for er in resultado.eventos_rateados
+            if er.segmento == seg and er.envolvimento == "ASSOCIADO"
+            and er.status == "ALOCADO"
+            and (er.tipo_evento == "INTEGRAL" or incluir_parciais)
+        ]
+        # estável: ordena por recência (desc) e depois por valor (desc) →
+        # valor desc é primário (mínimo de eventos), desempate = mais recente.
+        cand.sort(key=lambda e: e.data_aviso, reverse=True)
+        cand.sort(key=lambda e: e.custo_a_ratear, reverse=True)
+        escolhidos: list[EventoSugerido] = []
+        acumulado = 0.0
+        for e in cand:
+            if acumulado >= reducao - 0.005:
+                break
+            escolhidos.append(
+                EventoSugerido(
+                    id_evento=e.id_evento, protocolo=e.protocolo,
+                    data_aviso=e.data_aviso, tipo_evento=e.tipo_evento,
+                    custo_a_ratear=e.custo_a_ratear,
+                )
+            )
+            acumulado = round(acumulado + e.custo_a_ratear, 2)
+        custo_result = round(s.custo_a_ratear - acumulado, 2)
+        cota_result = round(custo_result / s.cotas_ativas, 2) if s.cotas_ativas > 0 else 0.0
+        atingiu = cota_result <= alvo + 0.005
+        if not escolhidos:
+            msg = (f"Cota R$ {s.valor_cota} acima do alvo (R$ {alvo}), mas não há "
+                   f"eventos {'integrais' if not incluir_parciais else ''} elegíveis para postergar.")
+        elif atingiu:
+            msg = (f"Postergue {len(escolhidos)} evento(s) (≈ R$ {acumulado}): "
+                   f"cota R$ {s.valor_cota} → R$ {cota_result} (alvo R$ {alvo}).")
+        else:
+            msg = (f"Postergando {len(escolhidos)} evento(s) (≈ R$ {acumulado}) a cota cai "
+                   f"para R$ {cota_result}, ainda acima do alvo R$ {alvo} — considerar "
+                   f"incluir parciais ou aprovação especial da diretoria.")
+        sugestoes.append(
+            SugestaoAjuste(
+                segmento=seg, cota_atual=s.valor_cota, alvo_cota=alvo,
+                precisa_ajuste=True, reducao_necessaria=reducao,
+                eventos_sugeridos=escolhidos, reducao_obtida=acumulado,
+                cota_resultante=cota_result, atingiu_alvo=atingiu, mensagem=msg,
+            )
+        )
+    return sugestoes

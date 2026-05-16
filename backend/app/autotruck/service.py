@@ -5,8 +5,8 @@ Síncrono e isolado (não usa o RateioService do ELLO).
 
 import threading
 
-from .domain import ResultadoRateioAT
-from .engine import calcular_rateio_at
+from .domain import ResultadoRateioAT, SugestaoAjuste
+from .engine import calcular_rateio_at, sugerir_ajuste
 from .repo import AutoTruckRepo
 from .rules import PARAMS_DEFAULT, ParametrosAT
 
@@ -48,3 +48,37 @@ class AutoTruckService:
             resultado = self.replay(mes_ano_ref, exclusoes=exclusoes)
             self.repo.persistir(resultado)
             return resultado
+
+    def sugerir_ajuste(
+        self,
+        mes_ano_ref: str,
+        *,
+        alvo_cota: float | None = None,
+        incluir_parciais: bool = False,
+    ) -> list[SugestaoAjuste]:
+        """Assistente de ajuste sobre o resultado persistido (ou replay)."""
+        resultado = self.repo.buscar(mes_ano_ref) or self.replay(mes_ano_ref)
+        return sugerir_ajuste(
+            resultado,
+            params=self.params,
+            alvo_cota=alvo_cota,
+            incluir_parciais=incluir_parciais,
+        )
+
+    def aplicar_ajuste(
+        self,
+        mes_ano_ref: str,
+        ids_eventos: list[str],
+        *,
+        justificativa: str | None = None,
+    ) -> ResultadoRateioAT:
+        """Posterga os eventos sugeridos (via exclusão com justificativa →
+        registrado no audit trail) e re-persiste o fechamento."""
+        just = (justificativa or "").strip() or (
+            f"Postergado pelo assistente de ajuste (estabilização > FIFO) — "
+            f"fechamento {mes_ano_ref}"
+        )
+        exclusoes = {eid: just for eid in ids_eventos if eid}
+        if not exclusoes:
+            raise ValueError("Nenhum evento informado para o ajuste.")
+        return self.calcular_e_persistir(mes_ano_ref, force=True, exclusoes=exclusoes)

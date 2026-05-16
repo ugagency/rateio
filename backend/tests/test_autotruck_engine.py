@@ -219,3 +219,77 @@ def test_n1_service_monta_historico_dos_meses_anteriores() -> None:
     # dataset fixo → cota constante; média 3M ≈ cota atual, variação ~0, sem alerta
     assert leves.media_cota_3m == pytest.approx(leves.valor_cota, abs=0.01)
     assert leves.alerta_variacao_trimestral is False
+
+
+# --- N2: assistente de ajuste inteligente (mínimo de eventos, integral recente) ---
+
+from app.autotruck.engine import sugerir_ajuste  # noqa: E402
+
+
+def _cenario_ajuste():
+    """1 veículo (1 cota) → cota = soma dos custos. Integrais de valores
+    distintos + 1 parcial, para testar seleção mínima e preferência."""
+    veic = [VeiculoAT("V1", "X", "LEVES", "AUTOMOVEL", 9_000, True, True)]
+    evs = [
+        EventoAT("I1", "P1", "X", "LEVES", "ASSOCIADO", "INTEGRAL", 0, 0, 50, "2025-01-10"),
+        EventoAT("I2", "P2", "X", "LEVES", "ASSOCIADO", "INTEGRAL", 0, 0, 30, "2025-03-20"),
+        EventoAT("I3", "P3", "X", "LEVES", "ASSOCIADO", "INTEGRAL", 0, 0, 30, "2025-02-05"),
+        EventoAT("PA", "P4", "X", "LEVES", "ASSOCIADO", "PARCIAL", 20, 1, 9_000, "2025-03-25"),
+    ]
+    return calcular_rateio_at(mes_ano_ref="03/2025", veiculos=veic, eventos=evs)
+
+
+def test_n2_minimo_de_eventos_e_atinge_alvo() -> None:
+    r = _cenario_ajuste()  # cota = 50+30+30+20 = 130
+    s = sugerir_ajuste(r, alvo_cota=70.0)
+    leves = next(x for x in s if x.segmento == "LEVES")
+    assert leves.cota_atual == pytest.approx(130.0)
+    assert leves.precisa_ajuste is True
+    # precisa reduzir >= 60 → mínimo de eventos: I1(50) + (I2 ou I3, 30) = 80 ≥ 60
+    ids = [e.id_evento for e in leves.eventos_sugeridos]
+    assert ids[0] == "I1"                       # maior valor primeiro (mínimo de eventos)
+    assert len(leves.eventos_sugeridos) == 2
+    assert leves.atingiu_alvo is True
+    assert leves.cota_resultante <= 70.0 + 0.01
+    assert all(e.tipo_evento == "INTEGRAL" for e in leves.eventos_sugeridos)  # não mexe parcial
+
+
+def test_n2_desempate_pelo_mais_recente() -> None:
+    r = _cenario_ajuste()
+    leves = next(x for x in sugerir_ajuste(r, alvo_cota=70.0) if x.segmento == "LEVES")
+    # I2 e I3 têm o mesmo custo (30); o mais recente (I2, 2025-03-20) vem antes de I3 (02-05)
+    assert leves.eventos_sugeridos[1].id_evento == "I2"
+
+
+def test_n2_dentro_do_alvo_nao_sugere() -> None:
+    r = _cenario_ajuste()
+    leves = next(x for x in sugerir_ajuste(r, alvo_cota=200.0) if x.segmento == "LEVES")
+    assert leves.precisa_ajuste is False
+    assert leves.eventos_sugeridos == []
+    assert leves.cota_resultante == pytest.approx(leves.cota_atual)
+
+
+def test_n2_so_integrais_por_padrao_e_parcial_opcional() -> None:
+    veic = [VeiculoAT("V1", "X", "LEVES", "AUTOMOVEL", 9_000, True, True)]
+    evs = [EventoAT("PA", "P1", "X", "LEVES", "ASSOCIADO", "PARCIAL", 100, 1, 9_000, "2025-03-01")]
+    r = calcular_rateio_at(mes_ano_ref="03/2025", veiculos=veic, eventos=evs)  # cota 100
+    so_int = next(x for x in sugerir_ajuste(r, alvo_cota=10.0) if x.segmento == "LEVES")
+    assert so_int.precisa_ajuste is True and so_int.eventos_sugeridos == []  # nada integral
+    assert so_int.atingiu_alvo is False
+    com_par = next(x for x in sugerir_ajuste(r, alvo_cota=10.0, incluir_parciais=True)
+                   if x.segmento == "LEVES")
+    assert [e.id_evento for e in com_par.eventos_sugeridos] == ["PA"]
+
+
+def test_n2_aplicar_ajuste_loga_auditoria_e_baixa_cota() -> None:
+    svc = AutoTruckService(AutoTruckRepo(""))
+    base = svc.calcular_e_persistir("12/2025", force=True)
+    cota0 = base.consolidado.cota_leves
+    sug = next(s for s in svc.sugerir_ajuste("12/2025", alvo_cota=cota0 * 0.8)
+               if s.segmento == "LEVES")
+    ids = [e.id_evento for e in sug.eventos_sugeridos]
+    assert ids
+    novo = svc.aplicar_ajuste("12/2025", ids)
+    assert novo.consolidado.cota_leves < cota0
+    assert len(novo.auditoria) == len(ids)
+    assert all(a.acao == "EXCLUSAO_MANUAL" and a.justificativa for a in novo.auditoria)

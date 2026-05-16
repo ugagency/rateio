@@ -4,15 +4,15 @@
 
 ## Veredito
 
-| Dimensão | Aderência (inicial → após ajustes N3/N1) |
+| Dimensão | Aderência (inicial → após N3/N1 → após N2) |
 |---|---|
-| **Núcleo de cálculo** (fórmula, segmentação, cotas, 75%, purista, FIFO, potes, salvado, boleto) | ~95% → **~98%** (N3 alinhado à transcrição) |
-| **Governança / estabilização / automação assistida** | ~55% → **~75%** (N1 implementado) |
-| **Global (ponderado)** | ~85% → **~92%** |
+| **Núcleo de cálculo** (fórmula, segmentação, cotas, 75%, purista, FIFO, potes, salvado, boleto) | ~95% → ~98% → **~98%** |
+| **Governança / estabilização / automação assistida** | ~55% → ~75% → **~88%** (N2 implementado) |
+| **Global (ponderado)** | ~85% → ~92% → **~95%** |
 
-> **Atualização 2026-05-15:** ajustes **N3** (terceiro não abate a cota — segue a transcrição) e **N1** (estabilização por média trimestral ±5%) **implementados e validados** (commit dos ajustes; suíte 27 testes verde, ELLO intacto). Restam **N2/N4/N5** (parciais, fase 2) e **N6** (observação de contrato de dados).
+> **Atualização 2026-05-15:** **N3** (terceiro não abate a cota — segue a transcrição), **N1** (estabilização por média trimestral ±5%) e **N2** (assistente de ajuste inteligente: conjunto mínimo de eventos, integral recente, aplicar c/ audit trail) **implementados e validados** (suíte 32 testes verde, ELLO intacto). Restam **N4/N5** (fase 2 — parametrização de produtos e integração SGA) e **N6** (observação de contrato de dados).
 
-24 requisitos de rateio avaliados: **20 conformes**, **3 parciais**, **0 não conforme**, **1 observação de modelagem**.
+24 requisitos de rateio avaliados: **21 conformes**, **2 parciais**, **0 não conforme**, **1 observação de modelagem**.
 
 ---
 
@@ -44,7 +44,7 @@
 | # | Ponto | Status | Detalhe e ação recomendada |
 |---|---|---|---|
 | **N1** | Estabilização por **média dos últimos 3 meses ± 5%** | **✅ Resolvido (conforme)** | Implementado: o motor recebe `historico_cotas` (cotas dos meses anteriores persistidos, montadas pelo service a partir do repo), calcula `media_cota_3m`, `variacao_vs_media` e `alerta_variacao_trimestral` (|var| > 5%) por segmento; sugestão e flag agregado no consolidado. Coberto por testes. |
-| **N2** | **Ajuste inteligente**: sugerir o conjunto **mínimo de eventos** para sair de 37→30, priorizando integral recente; "oficina é nota fechada, raramente mexe" | **Parcial** | Hoje há exclusão manual + replay + texto consultivo, mas **não** o otimizador que escolhe os eventos a postergar para atingir a meta com mínimo de trocas, nem a regra de preferência (integral recente; não mexer em oficina/nota fechada). **Ação:** implementar recomendador (greedy/knapsack) com essas prioridades. |
+| **N2** | **Ajuste inteligente**: sugerir o conjunto **mínimo de eventos** para sair de 37→30, priorizando integral recente; "oficina é nota fechada, raramente mexe" | **✅ Resolvido (conforme)** | Implementado `sugerir_ajuste` (engine puro) + endpoints `POST /autotruck/sugerir-ajuste` e `/aplicar-ajuste`: calcula a redução necessária p/ o alvo, escolhe o **conjunto mínimo** de eventos (ASSOCIADO ALOCADO, **só INTEGRAL** por padrão — parcial/oficina nota fechada opcional via `incluir_parciais`; valor DESC p/ mínimo de eventos, desempate pelo **mais recente**), devolve cota resultante e se atingiu o alvo. Aplicar posterga via exclusão com justificativa → **audit trail**. Aba "Ajuste" no frontend. Coberto por testes. |
 | **N3** | **Recuperação de terceiros abatendo a cota variável** | **✅ Resolvido (conforme à transcrição)** | Decisão tomada: a transcrição governa — terceiro é produto à parte (pote), **não abate** a cota. Removido `− recuperacao_terceiros` da fórmula variável; recuperação segue rastreada (pote Terceiros + informativo no segmento). Cota LEVES passou de ~R$53,84 → ~R$75,75. Invariante = 0 mantido. |
 | **N4** | Parametrização dos potes (Terceiros R$20/faixa 50k, R$30/faixa 100k; arrecadação caminhão) | **Parcial** | A mecânica de teto/postergação/gordura existe, mas os defaults deixam o pote caminhão inerte (`arrecadacao_caminhao_estimada=0`) e o valor fixo por faixa de cobertura de terceiro não é modelado por produto. **Ação:** tabela de preço de produto (terceiro 50k/100k, casco caminhão) e arrecadação por base. |
 | **N5** | Fluxo **D+5 / database / lock / inativação automática** | **Parcial (fora do escopo do motor)** | O cálculo é instantâneo (habilita o D+5) e o PRD §10 documenta o fluxo, mas o workflow de database (último dia do mês), lock do snapshot e inativação de inadimplentes é da ferramenta de gestão de cobrança do SGA — não implementado aqui. **Ação:** integração SGA (ingestão/lock) em fase posterior. |
@@ -60,4 +60,4 @@
 
 ## 4. Conclusão
 
-O **núcleo de cálculo do rateio AutoTruck está fiel à reunião** (~98%): segmentação, fórmula, cotas por patrimônio, cota especial, regra dos 75%, FIFO, modelo purista, potes fixos, salvado e composição do boleto — todos conformes. Os ajustes **N3** (terceiro não abate a cota — segue a transcrição) e **N1** (estabilização por média trimestral ±5%) foram implementados e validados, elevando a aderência global para **~92%**. As lacunas remanescentes são **incrementos de fase 2**: N2 (otimizador de ajuste inteligente), N4 (tabela de preço dos produtos/potes) e N5 (integração SGA / fluxo D+5 com lock), além de N6 (definir contrato de dados bruto vs. líquido). Nenhuma invalida o motor.
+O **núcleo de cálculo do rateio AutoTruck está fiel à reunião** (~98%): segmentação, fórmula, cotas por patrimônio, cota especial, regra dos 75%, FIFO, modelo purista, potes fixos, salvado e composição do boleto — todos conformes. Os ajustes **N3** (terceiro não abate a cota — segue a transcrição), **N1** (estabilização por média trimestral ±5%) e **N2** (assistente de ajuste inteligente) foram implementados e validados, elevando a aderência global para **~95%**. As lacunas remanescentes são **incrementos de fase 2**: N4 (tabela de preço dos produtos/potes) e N5 (integração SGA / fluxo D+5 com lock), além de N6 (definir contrato de dados bruto vs. líquido). Nenhuma invalida o motor.
