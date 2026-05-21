@@ -15,7 +15,6 @@ const TABS = {
   segmentos: "Segmentos",
   eventos: "Eventos",
   ajuste: "Ajuste",
-  potes: "Potes Fixos",
   boletos: "Boletos",
   auditoria: "Auditoria",
   rodarmes: "Rodar Mês",
@@ -116,7 +115,6 @@ export default function AutoTruck() {
             {tab === "segmentos" && <Segmentos mes={mes} />}
             {tab === "eventos" && <Eventos mes={mes} />}
             {tab === "ajuste" && <Ajuste mes={mes} onAplicado={carregar} />}
-            {tab === "potes" && <Potes mes={mes} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
             {tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />}
