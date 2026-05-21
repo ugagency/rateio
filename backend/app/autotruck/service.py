@@ -4,8 +4,9 @@ Síncrono e isolado (não usa o RateioService do ELLO).
 """
 
 import threading
+from typing import Iterable
 
-from .domain import ResultadoRateioAT, SugestaoAjuste
+from .domain import EventoAT, ResultadoRateioAT, SugestaoAjuste, VeiculoAT
 from .engine import calcular_rateio_at, sugerir_ajuste
 from .repo import AutoTruckRepo
 from .rules import PARAMS_DEFAULT, ParametrosAT
@@ -46,6 +47,32 @@ class AutoTruckService:
                     f"Rateio AutoTruck para {mes_ano_ref} já existe. Use force=true para sobrescrever."
                 )
             resultado = self.replay(mes_ano_ref, exclusoes=exclusoes)
+            self.repo.persistir(resultado)
+            return resultado
+
+    def rodar_externos_e_persistir(
+        self,
+        mes_ano_ref: str,
+        veiculos: Iterable[VeiculoAT],
+        eventos: Iterable[EventoAT],
+        *,
+        force: bool = True,
+    ) -> ResultadoRateioAT:
+        """Roda o engine com veículos+eventos vindos de fora (upload) e
+        persiste — não toca no dataset embutido do repo. Sempre force=True
+        por default (upload sempre sobrescreve)."""
+        with self._lock:
+            if not force and self.repo.existe(mes_ano_ref):
+                raise AutoTruckJaExisteError(
+                    f"Rateio AutoTruck para {mes_ano_ref} já existe. Use force=true para sobrescrever."
+                )
+            resultado = calcular_rateio_at(
+                mes_ano_ref=mes_ano_ref,
+                veiculos=veiculos,
+                eventos=eventos,
+                params=self.params,
+                historico_cotas=self.repo.historico_cotas(mes_ano_ref),
+            )
             self.repo.persistir(resultado)
             return resultado
 

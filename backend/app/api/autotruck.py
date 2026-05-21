@@ -4,14 +4,18 @@ Sub-rotas específicas declaradas ANTES da catch-all GET /{mes_ano_ref:path}
 (converter :path é ganancioso — mesma lição do fix de roteamento do ELLO).
 """
 
+import tempfile
 from functools import lru_cache
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel
 
 from app.autotruck.config import get_autotruck_json_path
 from app.autotruck.domain import ResultadoRateioAT
 from app.autotruck.fechamento import FechamentoError, FechamentoService, FotoFechamento
 from app.autotruck.fontes import FonteMemoria
+from app.autotruck.ingestao_partes import ParteIngestaoResumo, compor, validar_slot
 from app.autotruck.repo import AutoTruckRepo
 from app.autotruck.service import AutoTruckJaExisteError, AutoTruckService
 from app.schemas.autotruck import (
@@ -60,6 +64,80 @@ def _buscar(mes_ano_ref: str) -> ResultadoRateioAT:
     if not r:
         raise HTTPException(status_code=404, detail=f"Rateio AutoTruck não encontrado para {mes_ano_ref}")
     return r
+
+
+# ---------------- Rodar Mês: ingestão de BASE+RATEIO+PRODUTOS separados ----------------
+
+
+class RodarMesOut(BaseModel):
+    """Saída do endpoint /autotruck/rodar-mes — ingestão de arquivos
+    separados (BASE + RATEIO + PRODUTOS opcional) e cálculo do mês."""
+
+    resultado: ResultadoATOut
+    ingestao: dict
+
+
+@router.post("/rodar-mes", response_model=RodarMesOut, status_code=status.HTTP_201_CREATED)
+async def rodar_mes(
+    base: UploadFile = File(..., description="Planilha BASE (cotas/boletos por situação)."),
+    rateio: UploadFile = File(..., description="Planilha RATEIO (eventos sinistrados do mês)."),
+    produtos: UploadFile | None = File(default=None, description="Catálogo de produtos (opcional)."),
+    mes_ano_ref: str = Form(..., description="Mês de referência MM/AAAA (ex.: 04/2026)."),
+    cotas_leves: int | None = Form(default=None, description="Override de cotas LEVES adimplentes (a BASE do Rodrigo costuma não trazer)."),
+    cotas_motos: int | None = Form(default=None, description="Override de cotas MOTOS adimplentes."),
+) -> RodarMesOut:
+    """Recebe BASE+RATEIO (e opcionalmente PRODUTOS) como upload, compõe
+    insumos do engine, calcula o rateio e persiste no repo do mês indicado.
+    Após o sucesso, os endpoints `/autotruck/{mes}/*` (segmentos, eventos,
+    boletos, …) já refletem o resultado."""
+    tmpdir = Path(tempfile.mkdtemp(prefix="rodar-mes-"))
+    try:
+        base_path = tmpdir / "base.xlsx"
+        rateio_path = tmpdir / "rateio.xlsx"
+        base_path.write_bytes(await base.read())
+        rateio_path.write_bytes(await rateio.read())
+        produtos_path = None
+        if produtos is not None and (produtos.filename or "").strip():
+            produtos_path = tmpdir / "produtos.xlsx"
+            produtos_path.write_bytes(await produtos.read())
+        # validação anti-troca-de-slot (antes de qualquer parsing pesado)
+        erros: list[str] = []
+        for slot, p in (("BASE", base_path), ("RATEIO", rateio_path)):
+            msg = validar_slot(slot, str(p))
+            if msg:
+                erros.append(msg)
+        if produtos_path:
+            msg = validar_slot("PRODUTOS", str(produtos_path))
+            if msg:
+                erros.append(msg)
+        if erros:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=" • ".join(erros))
+        try:
+            veiculos, eventos, _produtos_cat, _base_counts, resumo = compor(
+                str(base_path), str(rateio_path),
+                produtos_path=str(produtos_path) if produtos_path else None,
+                cotas_leves_override=cotas_leves,
+                cotas_motos_override=cotas_motos,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Falha lendo planilhas: {exc}") from exc
+        resultado = _service().rodar_externos_e_persistir(
+            mes_ano_ref, veiculos, eventos, force=True
+        )
+        return RodarMesOut(resultado=_to_out(resultado), ingestao=resumo.__dict__)
+    finally:
+        # limpa o tmp dir
+        for p in tmpdir.iterdir():
+            try:
+                p.unlink()
+            except OSError:
+                pass
+        try:
+            tmpdir.rmdir()
+        except OSError:
+            pass
 
 
 @router.post("/calcular", response_model=ResultadoATOut, status_code=status.HTTP_201_CREATED)

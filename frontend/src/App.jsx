@@ -5,7 +5,7 @@ const API = ""
 
 function App() {
   const [tab, setTab] = useState("overview")
-  const [data, setData] = useState(null)
+  const [mes, setMes] = useState("05/2025")
 
   useEffect(() => {
     fetch(`${API}/health`).then(r => r.json()).then(console.log).catch(console.error)
@@ -21,47 +21,47 @@ function App() {
           </div>
           <div className="text-right text-xs text-slate-500">Mutualiza - LC 213/2025</div>
         </div>
-        <nav className="max-w-7xl mx-auto px-6 pb-4 flex gap-2 flex-wrap">
-          {["overview","potinhos","eventos","boletos","auditoria"].map(t => (
+        <nav className="max-w-7xl mx-auto px-6 pb-4 flex gap-2 flex-wrap items-center">
+          {["overview","potinhos","eventos","boletos","auditoria","rodarmes"].map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 rounded text-sm font-semibold ${tab===t ? "bg-amber-500 text-slate-900" : "bg-slate-700 text-slate-200"}`}>
-              {{overview:"Visao Geral",potinhos:"Potinhos",eventos:"Eventos",boletos:"Boletos",auditoria:"Auditoria"}[t]}
+              {{overview:"Visao Geral",potinhos:"Potinhos",eventos:"Eventos",boletos:"Boletos",auditoria:"Auditoria",rodarmes:"Rodar Mês"}[t]}
             </button>
           ))}
+          <span className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-slate-500">Mês</span>
+            <input value={mes} onChange={e => setMes(e.target.value)}
+              className="px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm w-24"
+              placeholder="MM/AAAA" />
+          </span>
         </nav>
       </header>
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === "overview" && <Overview />}
-        {tab === "potinhos" && <Potinhos />}
-        {tab === "eventos" && <Eventos />}
-        {tab === "boletos" && <Boletos />}
-        {tab === "auditoria" && <Auditoria />}
+        {tab === "overview" && <Overview mes={mes} />}
+        {tab === "potinhos" && <Potinhos mes={mes} />}
+        {tab === "eventos" && <Eventos mes={mes} />}
+        {tab === "boletos" && <Boletos mes={mes} />}
+        {tab === "auditoria" && <Auditoria mes={mes} />}
+        {tab === "rodarmes" && <RodarMesELLO mes={mes} setMes={setMes} onRodado={() => setTab("overview")} />}
       </main>
     </div>
   )
 }
 
-function Overview() {
+function Overview({ mes }) {
   const [consol, setConsol] = useState(null)
   useEffect(() => {
-    const m = new Date().toISOString().slice(0,7)
-    fetch(`${API}/rateio/${m}`)
-      .then(r => r.json())
-      .then(d => setConsol(d))
-      .catch(e => console.error("No rateio yet:", e))
-  }, [])
-  
+    setConsol(null)
+    fetch(`${API}/rateio/${encodeURIComponent(mes)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setConsol(d && d.valor_alvo_total !== undefined ? d : null))
+      .catch(() => setConsol(null))
+  }, [mes])
+
   if (!consol) return (
     <div className="text-center py-20">
-      <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio calculado ainda</h2>
-      <p className="text-slate-300 mb-6">Clique no botao abaixo para calcular o rateio do mes.</p>
-      <button onClick={() => {
-        fetch(`${API}/rateio/calcular`, {method:"POST"})
-          .then(r => r.json()).then(d => {alert("Rateio calculado!"); window.location.reload()})
-          .catch(e => alert("Erro: " + e.message))
-      }} className="px-6 py-3 bg-amber-500 text-slate-900 font-bold rounded-lg hover:bg-amber-400">
-        Calcular Rateio
-      </button>
+      <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio para {mes}</h2>
+      <p className="text-slate-300 mb-6">Vá na aba "Rodar Mês" para carregar as planilhas do mês desejado.</p>
     </div>
   )
 
@@ -88,32 +88,40 @@ function Overview() {
   )
 }
 
-function Potinhos() {
+function Potinhos({ mes }) {
   const [consol, setConsol] = useState(null)
   useEffect(() => {
-    const m = new Date().toISOString().slice(0,7)
-    fetch(`${API}/rateio/${m}`).then(r => r.json()).then(setConsol).catch(() => {})
-  }, [])
-  
-  const pots = consol?.valor_distribuido ? [
-    {i:1,n:"P1 Roubo/Furto", v:consol.valor_distribuido.p1 || 0, d:14},
-    {i:2,n:"P2 Moto FIP", v:consol.valor_distribuido.p2 || 0, d:4},
-    {i:3,n:"P3 Venture 1", v:consol.valor_distribuido.p3 || 0, d:18},
-    {i:4,n:"P4 Venture 2", v:consol.valor_distribuido.p4 || 0, d:18},
-  ] : [{n:"...",v:0}]
+    setConsol(null)
+    fetch(`${API}/rateio/${encodeURIComponent(mes)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setConsol(d && d.valor_alvo_total !== undefined ? d : null))
+      .catch(() => setConsol(null))
+  }, [mes])
+
+  const pots = consol ? [
+    { n: "P1 Roubo/Furto", v: consol.valor_p1_roubo_furto || 0, d: 14 },
+    { n: "P2 Moto FIP",    v: consol.valor_p2_moto_fip    || 0, d: 4  },
+    { n: "P3 Venture 1",   v: consol.valor_p3_venture_1   || 0, d: 18 },
+    { n: "P4 Venture 2",   v: consol.valor_p4_venture_2   || 0, d: 18 },
+  ] : []
+  const total = pots.reduce((a, p) => a + p.v, 0)
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-4">Motor: 4 Potinhos</h2>
+      <h2 className="text-2xl font-bold text-white mb-1">Motor — 4 Potinhos</h2>
+      <p className="text-slate-400 text-sm mb-4">
+        {consol ? `Mês ${mes} · soma dos 4 potinhos = R$ ${total.toLocaleString('pt-BR')}` : `Sem rateio para ${mes}.`}
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-        {pots.map((p,i) => (
+        {pots.map((p, i) => (
           <div key={i} className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-            <div className="text-xs text-amber-400">Potinho {p.n}</div>
+            <div className="text-xs text-amber-400">{p.n}</div>
             <div className="text-2xl text-white font-black mt-2">
-              R$ {typeof p.v === 'number' ? p.v.toLocaleString('pt-BR') : p.v}
+              R$ {p.v.toLocaleString('pt-BR')}
             </div>
             <div className="mt-3 bg-black/30 rounded h-24 flex items-end overflow-hidden">
-              <div className="w-full bg-emerald-500 transition-all" style={{height: '80%'}}></div>
+              <div className="w-full bg-emerald-500 transition-all"
+                style={{ height: total > 0 ? `${Math.max(5, (p.v / total) * 100)}%` : '0%' }} />
             </div>
             <div className="mt-3 text-xs text-slate-300">Degrau: R$ {p.d}/cota</div>
           </div>
@@ -123,43 +131,73 @@ function Potinhos() {
   )
 }
 
-function Eventos() {
-  const [events, setEvents] = useState([])
+function Eventos({ mes }) {
+  const [data, setData] = useState({ items: [], total: 0 })
+  const [erro, setErro] = useState("")
   useEffect(() => {
-    const m = new Date().toISOString().slice(0,7)
-    fetch(`${API}/rateio/${m}/eventos`).then(r => r.json()).then(setEvents).catch(() => {})
-  }, [])
+    setData({ items: [], total: 0 })
+    setErro("")
+    fetch(`${API}/rateio/${encodeURIComponent(mes)}/eventos`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(d => setData({ items: Array.isArray(d?.items) ? d.items : [], total: d?.total ?? 0 }))
+      .catch(e => setErro(typeof e === "string" ? e : "Falha ao carregar eventos."))
+  }, [mes])
+  const items = data.items
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-4">Eventos Rateados</h2>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 max-h-[500px] overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-700">
-            <tr><th className="px-3 py-2 text-left">ID</th><th className="px-3 py-2 text-left">Data</th><th className="px-3 py-2 text-right">Valor</th><th className="px-3 py-2 text-left">Status</th></tr>
-          </thead>
-          <tbody>
-            {events.map((e,i) => (
-              <tr key={i} className="border-t border-slate-600">
-                <td className="px-3 py-1.5">{e.id_evento}</td>
-                <td className="px-3 py-1.5">{e.data_ocorrencia_evento}</td>
-                <td className="px-3 py-1.5 text-right">R$ {e.valor_rateado_neste_mes?.toLocaleString('pt-BR')}</td>
-                <td className="px-3 py-1.5">{e.status_evento}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex justify-between items-baseline mb-4">
+        <h2 className="text-2xl font-bold text-white">Eventos Rateados</h2>
+        <span className="text-sm text-slate-400">{data.total} eventos · mês {mes}</span>
       </div>
+      {erro && <div className="mb-4 bg-red-900/40 border border-red-700 text-red-200 px-4 py-2 rounded text-sm">{erro}</div>}
+      {items.length === 0 && !erro ? (
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center text-slate-400">
+          Nenhum evento rateado para {mes}. Vá em "Rodar Mês" e calcule o rateio primeiro.
+        </div>
+      ) : (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 max-h-[520px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-slate-700 text-left">
+              <tr>
+                <th className="px-3 py-2">ID Evento</th>
+                <th className="px-3 py-2">Data ocorrência</th>
+                <th className="px-3 py-2 text-right">Valor total</th>
+                <th className="px-3 py-2 text-right">Saldo antes</th>
+                <th className="px-3 py-2 text-right">Rateado neste mês</th>
+                <th className="px-3 py-2 text-right">Saldo após</th>
+                <th className="px-3 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.slice(0, 500).map((e, i) => (
+                <tr key={i} className="border-t border-slate-600">
+                  <td className="px-3 py-1.5">{e.id_evento}</td>
+                  <td className="px-3 py-1.5">{e.data_ocorrencia}</td>
+                  <td className="px-3 py-1.5 text-right">R$ {e.valor_total_evento?.toLocaleString('pt-BR')}</td>
+                  <td className="px-3 py-1.5 text-right">R$ {e.valor_saldo_antes?.toLocaleString('pt-BR')}</td>
+                  <td className="px-3 py-1.5 text-right">R$ {e.valor_rateado_neste_mes?.toLocaleString('pt-BR')}</td>
+                  <td className="px-3 py-1.5 text-right">R$ {e.valor_saldo_apos?.toLocaleString('pt-BR')}</td>
+                  <td className={`px-3 py-1.5 ${e.status_evento === 'LIQUIDADO' ? 'text-emerald-300' : 'text-amber-300'}`}>{e.status_evento}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
-function Boletos() {
+function Boletos({ mes }) {
   const [boletos, setBoletos] = useState([])
   const [filt, setFilt] = useState("")
   useEffect(() => {
-    const m = new Date().toISOString().slice(0,7)
-    fetch(`${API}/boletos/${m}`).then(r => r.json()).then(d => setBoletos(d.items || d)).catch(() => {})
-  }, [])
+    setBoletos([])
+    fetch(`${API}/boletos/${encodeURIComponent(mes)}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(d => setBoletos(Array.isArray(d?.items) ? d.items : (Array.isArray(d) ? d : [])))
+      .catch(() => setBoletos([]))
+  }, [mes])
   const filtered = boletos.filter(b => !filt || b.id_veiculo?.includes(filt))
   return (
     <div>
@@ -188,17 +226,18 @@ function Boletos() {
   )
 }
 
-function Auditoria() {
+function Auditoria({ mes }) {
   const [vid, setVid] = useState("")
   const [extrato, setExtrato] = useState(null)
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-4">Auditoria</h2>
+      <h2 className="text-2xl font-bold text-white mb-4">Auditoria · mês {mes}</h2>
       <input className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white mr-2"
         placeholder="VEI-000001" value={vid} onChange={e => setVid(e.target.value)} />
       <button onClick={() => {
-        const m = new Date().toISOString().slice(0,7)
-        fetch(`${API}/veiculos/${vid}/extrato/${m}`).then(r => r.json()).then(setExtrato).catch(() => {})
+        if (!vid) return
+        fetch(`${API}/veiculos/${vid}/extrato/${encodeURIComponent(mes)}`)
+          .then(r => r.ok ? r.json() : null).then(setExtrato).catch(() => setExtrato(null))
       }} className="px-4 py-2 bg-slate-700 rounded text-xs">Buscar</button>
       {extrato && (
         <div className="mt-4 bg-slate-800 p-6 rounded-xl">
@@ -210,6 +249,134 @@ function Auditoria() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function RodarMesELLO({ onRodado }) {
+  const [veiculos, setVeiculos] = useState(null)
+  const [eventos, setEventos] = useState(null)
+  const [servicos, setServicos] = useState(null)
+  const [mes, setMes] = useState("05/2025")
+  const [busy, setBusy] = useState(false)
+  const [resp, setResp] = useState(null)
+  const [erro, setErro] = useState("")
+
+  const brl = (v) => typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v
+
+  const calcular = (e) => {
+    e?.preventDefault()
+    if (!veiculos || !eventos || !servicos) {
+      setErro("Selecione os 3 arquivos: veículos, eventos e serviços.")
+      return
+    }
+    setBusy(true); setErro(""); setResp(null)
+    const fd = new FormData()
+    fd.append("veiculos", veiculos)
+    fd.append("eventos", eventos)
+    fd.append("servicos", servicos)
+    fd.append("mes_ano_ref", mes)
+    fetch(`${API}/rateio/rodar-mes`, { method: "POST", body: fd })
+      .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)))
+      .then(d => setResp(d))
+      .catch(t => setErro(typeof t === "string" ? t : "Falha ao processar."))
+      .finally(() => setBusy(false))
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-white mb-1">Rodar Mês — upload de planilhas (ELLO)</h2>
+      <p className="text-slate-400 text-sm mb-4">
+        Selecione as 3 planilhas de entrada (Veículos, Eventos, Serviços Fixos) e o mês.
+        O motor lê tudo, calcula o rateio dos 4 potinhos e abre o resultado nas demais abas.
+      </p>
+
+      <form onSubmit={calcular} className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
+        <FileRowELLO label="Veículos — cadastro elegível" required value={veiculos} onChange={setVeiculos}
+          hint="Colunas: ID_Veiculo, Status_Ativo, Data_Quebra, Tipo_Categoria_Risco, Qtd_Cotas, Tipo_Pagamento, Is_Funcionario" />
+        <FileRowELLO label="Eventos — sinistros pendentes" required value={eventos} onChange={setEventos}
+          hint="Colunas: ID_Evento, Data_Ocorrencia_Evento, Valor_Total_Evento, Valor_Saldo_Pendente" />
+        <FileRowELLO label="Serviços fixos — produtos por veículo" required value={servicos} onChange={setServicos}
+          hint="Colunas: ID_Veiculo, Taxa_Administrativa, Valor_Assistencia_24h, Valor_Outros_Produtos" />
+
+        <div className="pt-3 border-t border-slate-700">
+          <label className="text-sm">
+            <span className="text-slate-400 block mb-1">Mês de referência (MM/AAAA)</span>
+            <input value={mes} onChange={e => setMes(e.target.value)} placeholder="05/2025"
+              className="w-full md:w-48 px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
+          </label>
+        </div>
+
+        <div className="flex gap-3 items-center pt-3">
+          <button type="submit" disabled={busy}
+            className="px-5 py-2 bg-amber-500 text-slate-900 font-bold rounded disabled:opacity-50">
+            {busy ? "Processando…" : "Calcular Rateio"}
+          </button>
+          {erro && <div className="text-red-300 text-sm">{erro}</div>}
+        </div>
+      </form>
+
+      {resp && (
+        <div className="mt-6 bg-slate-800 border border-emerald-700/40 rounded-xl p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <div className="text-xs uppercase tracking-widest text-emerald-400">Resultado processado</div>
+              <h3 className="text-lg font-bold text-white">Mês {resp.resultado.mes_ano_ref} · {resp.ingestao.veiculos.toLocaleString('pt-BR')} veículos · {resp.ingestao.eventos} eventos</h3>
+            </div>
+            <button onClick={onRodado} className="px-4 py-1.5 bg-emerald-500 text-slate-900 font-bold rounded text-sm">
+              Abrir na Visão Geral →
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <CardELLO label="Alvo do mês" value={`R$ ${brl(resp.resultado.consolidado.valor_alvo_total)}`} tone="ok" />
+            <CardELLO label="Veículos elegíveis" value={resp.ingestao.veiculos_elegiveis.toLocaleString('pt-BR')} sub={`de ${resp.ingestao.veiculos.toLocaleString('pt-BR')} cadastrados`} />
+            <CardELLO label="Cotas apuradas" value={resp.resultado.consolidado.total_cotas_apuradas?.toLocaleString('pt-BR')} />
+            <CardELLO label="Invariante" value={resp.resultado.consolidado.diferenca_alvo_vs_alocado === 0 ? "OK · Δ 0,00" : `Δ ${brl(resp.resultado.consolidado.diferenca_alvo_vs_alocado)}`} tone={resp.resultado.consolidado.diferenca_alvo_vs_alocado === 0 ? "ok" : "bad"} />
+            <CardELLO label="P1 Roubo/Furto" value={`R$ ${brl(resp.resultado.consolidado.valor_p1_roubo_furto)}`} />
+            <CardELLO label="P2 Moto FIP" value={`R$ ${brl(resp.resultado.consolidado.valor_p2_moto_fip)}`} />
+            <CardELLO label="P3 Venture 1" value={`R$ ${brl(resp.resultado.consolidado.valor_p3_venture_1)}`} />
+            <CardELLO label="P4 Venture 2" value={`R$ ${brl(resp.resultado.consolidado.valor_p4_venture_2)}`} />
+            <CardELLO label="Eventos alocados" value={resp.resultado.consolidado.eventos_alocados} sub={`${resp.resultado.consolidado.eventos_liquidados} liquidados · ${resp.resultado.consolidado.eventos_parciais} parciais`} />
+            <CardELLO label="Boletos a emitir" value={resp.resultado.total_boletos_a_emitir} sub={`de ${resp.resultado.total_boletos} total`} />
+            <CardELLO label="Receita esperada" value={`R$ ${brl(resp.resultado.receita_total_esperada)}`} />
+            <CardELLO label="Saldo p/ próximo mês" value={`R$ ${brl(resp.resultado.consolidado.saldo_para_proximo_mes)}`} />
+          </div>
+          <details className="mt-4 text-xs text-slate-400">
+            <summary className="cursor-pointer hover:text-slate-200">Detalhes da ingestão</summary>
+            <pre className="mt-2 p-3 bg-slate-900 rounded overflow-x-auto">{JSON.stringify(resp.ingestao, null, 2)}</pre>
+          </details>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FileRowELLO({ label, hint, value, onChange, required }) {
+  return (
+    <div>
+      <label className="block">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-semibold text-slate-200">
+            {label}{required && <span className="text-red-400 ml-1">*</span>}
+          </span>
+          {value && <span className="text-xs text-emerald-300">✓ {value.name}</span>}
+        </div>
+        <input type="file" accept=".xlsx,.xls"
+          onChange={e => onChange(e.target.files?.[0] || null)}
+          className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-amber-300 hover:file:bg-slate-600" />
+        {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+      </label>
+    </div>
+  )
+}
+
+function CardELLO({ label, value, sub, tone = "slate" }) {
+  const tones = { slate: "text-white", ok: "text-emerald-300", warn: "text-amber-300", bad: "text-red-300" }
+  return (
+    <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+      <div className="text-xs text-slate-400">{label}</div>
+      <div className={`text-xl font-bold mt-1 ${tones[tone]}`}>{value}</div>
+      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
     </div>
   )
 }

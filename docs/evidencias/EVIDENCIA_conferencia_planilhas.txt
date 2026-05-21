@@ -1,5 +1,5 @@
 EVIDÊNCIA — Conferência das planilhas de simulação AutoTruck
-Gerado em 2026-05-16T00:51:06.291037+00:00 (UTC)
+Gerado em 2026-05-16T02:48:17.818510+00:00 (UTC)
 
 Método: o motor de fórmulas 'formulas' avalia as FÓRMULAS NATIVAS do
 Excel (SUMIFS/COUNTIFS/CEILING/IF) escritas na aba CONFERENCIA, que

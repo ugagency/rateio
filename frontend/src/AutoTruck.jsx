@@ -13,6 +13,7 @@ const TABS = {
   potes: "Potes Fixos",
   boletos: "Boletos",
   auditoria: "Auditoria",
+  rodarmes: "Rodar Mês",
 }
 
 export default function AutoTruck() {
@@ -93,8 +94,10 @@ export default function AutoTruck() {
             {tab === "potes" && <Potes mes={mes} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
+            {tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onRodado={() => { carregar(); setTab("visao") }} />}
           </>
         )}
+        {!res && tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onRodado={() => { carregar(); setTab("visao") }} />}
       </main>
     </div>
   )
@@ -348,6 +351,136 @@ function Auditoria({ mes }) {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+function RodarMes({ mes, setMes, onRodado }) {
+  const [baseFile, setBaseFile] = useState(null)
+  const [rateioFile, setRateioFile] = useState(null)
+  const [produtosFile, setProdutosFile] = useState(null)
+  const [cotasLeves, setCotasLeves] = useState("")
+  const [cotasMotos, setCotasMotos] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [resp, setResp] = useState(null)
+  const [erro, setErro] = useState("")
+
+  const calcular = (e) => {
+    e?.preventDefault()
+    if (!baseFile || !rateioFile) {
+      setErro("Selecione pelo menos os arquivos BASE e RATEIO.")
+      return
+    }
+    setBusy(true); setErro(""); setResp(null)
+    const fd = new FormData()
+    fd.append("base", baseFile)
+    fd.append("rateio", rateioFile)
+    if (produtosFile) fd.append("produtos", produtosFile)
+    fd.append("mes_ano_ref", mes)
+    if (cotasLeves) fd.append("cotas_leves", cotasLeves)
+    if (cotasMotos) fd.append("cotas_motos", cotasMotos)
+    fetch(`${API}/autotruck/rodar-mes`, { method: "POST", body: fd })
+      .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)))
+      .then(d => setResp(d))
+      .catch(t => setErro(typeof t === "string" ? t : "Falha ao processar."))
+      .finally(() => setBusy(false))
+  }
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-white mb-1">Rodar Mês — upload de planilhas</h2>
+      <p className="text-slate-400 text-sm mb-4">
+        Selecione os arquivos do mês (BASE + RATEIO; PRODUTOS opcional) que vieram da AutoTruck.
+        O motor lê tudo, recalcula o rateio e abre o resultado nas demais abas.
+      </p>
+
+      <form onSubmit={calcular} className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
+        <FileRow label="BASE — Pagamentos recebidos × pendentes" required value={baseFile} onChange={setBaseFile}
+          hint="Aba 'BASE' com 3 segmentos lado a lado (LEVES/MOTOS/PESADOS), valores por situação de boleto." />
+        <FileRow label="RATEIO — Eventos sinistrados do mês" required value={rateioFile} onChange={setRateioFile}
+          hint="Lista de eventos por seção (PESADOS TERCEIROS, MOTOS ASSOCIADOS, LEVES ASSOCIADOS, etc.) com Valor Rateado." />
+        <FileRow label="PRODUTOS — Catálogo fornecedor (opcional)" value={produtosFile} onChange={setProdutosFile}
+          hint="FORNECEDOR/SERVIÇO/PRODUTO/TIPO/QTD/VALOR/TOTAL — usado para fechamento de fornecedores." />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-700">
+          <label className="text-sm">
+            <span className="text-slate-400 block mb-1">Mês de referência (MM/AAAA)</span>
+            <input value={mes} onChange={e => setMes(e.target.value)} placeholder="04/2026"
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
+          </label>
+          <label className="text-sm">
+            <span className="text-slate-400 block mb-1">Cotas LEVES (override — opc.)</span>
+            <input value={cotasLeves} onChange={e => setCotasLeves(e.target.value)} placeholder="quando a BASE não traz"
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
+          </label>
+          <label className="text-sm">
+            <span className="text-slate-400 block mb-1">Cotas MOTOS (override — opc.)</span>
+            <input value={cotasMotos} onChange={e => setCotasMotos(e.target.value)} placeholder="usa BASE se vazio"
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
+          </label>
+        </div>
+
+        <div className="flex gap-3 items-center pt-3">
+          <button type="submit" disabled={busy}
+            className="px-5 py-2 bg-cyan-500 text-slate-900 font-bold rounded disabled:opacity-50">
+            {busy ? "Processando…" : "Calcular Rateio"}
+          </button>
+          {erro && <div className="text-red-300 text-sm">{erro}</div>}
+        </div>
+      </form>
+
+      {resp && <RodarMesResultado resp={resp} onAbrir={onRodado} />}
+    </div>
+  )
+}
+
+function FileRow({ label, hint, value, onChange, required }) {
+  return (
+    <div>
+      <label className="block">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-semibold text-slate-200">
+            {label}{required && <span className="text-red-400 ml-1">*</span>}
+          </span>
+          {value && <span className="text-xs text-emerald-300">✓ {value.name}</span>}
+        </div>
+        <input type="file" accept=".xlsx,.xls"
+          onChange={e => onChange(e.target.files?.[0] || null)}
+          className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-cyan-300 hover:file:bg-slate-600" />
+        {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+      </label>
+    </div>
+  )
+}
+
+function RodarMesResultado({ resp, onAbrir }) {
+  const c = resp.resultado.consolidado
+  const ing = resp.ingestao
+  return (
+    <div className="mt-6 bg-slate-800 border border-emerald-700/40 rounded-xl p-6">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <div className="text-xs uppercase tracking-widest text-emerald-400">Resultado processado</div>
+          <h3 className="text-lg font-bold text-white">Mês {resp.resultado.mes_ano_ref} · {ing.eventos_total} eventos · {ing.veiculos_total.toLocaleString('pt-BR')} veículos sintetizados</h3>
+        </div>
+        <button onClick={onAbrir} className="px-4 py-1.5 bg-emerald-500 text-slate-900 font-bold rounded text-sm">
+          Abrir na Visão Geral →
+        </button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card label="Cota LEVES" value={`R$ ${brl(c.cota_leves)}`} sub={`${ing.cotas_leves.toLocaleString('pt-BR')} cotas`} tone="ok" />
+        <Card label="Cota MOTOS" value={`R$ ${brl(c.cota_motos)}`} sub={`${ing.cotas_motos.toLocaleString('pt-BR')} cotas`} tone="ok" />
+        <Card label="Bruto LEVES" value={`R$ ${brl(c.bruto_leves)}`} sub={`+ terceiros R$ ${brl(c.recuperacao_terceiros_leves)}`} />
+        <Card label="Bruto MOTOS" value={`R$ ${brl(c.bruto_motos)}`} sub={`+ terceiros R$ ${brl(c.recuperacao_terceiros_motos)}`} />
+        <Card label="Invariante" value={c.invariante_ok ? "OK · Δ 0,00" : `Δ ${brl(c.diferenca_total)}`} tone={c.invariante_ok ? "ok" : "bad"} />
+        <Card label="Eventos alocados" value={c.eventos_alocados} sub={`${c.eventos_postergados} postergados`} />
+        <Card label="Reclassif. 75%" value={c.eventos_reclassificados_75pct} sub="parcial → integral" />
+        <Card label="Pote Terceiros" value={`R$ ${brl(c.pote_terceiros_reserva)}`} tone={c.pote_terceiros_reserva >= 0 ? "ok" : "bad"} sub={`arrec R$ ${brl(c.pote_terceiros_arrecadado)}`} />
+      </div>
+      <details className="mt-4 text-xs text-slate-400">
+        <summary className="cursor-pointer hover:text-slate-200">Detalhes da ingestão (seções, valores recebidos, catálogo)</summary>
+        <pre className="mt-2 p-3 bg-slate-900 rounded overflow-x-auto">{JSON.stringify(ing, null, 2)}</pre>
+      </details>
     </div>
   )
 }
