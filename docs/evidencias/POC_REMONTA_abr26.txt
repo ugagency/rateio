@@ -1,0 +1,49 @@
+======================================================================
+PoC REMONTA — Motor AutoTruck rodando sobre BASE + RATEIO do Rodrigo
+Gerado em: 2026-05-21T15:34:48
+======================================================================
+
+FONTES
+  - Remonta/BASE_Reconstruida.xlsx  → denominador (cotas baixadas)
+  - Remonta/Rateio_POC_Completo.xlsx → numerador (eventos abr/26)
+
+DENOMINADOR (cotas ativas e adimplentes)
+  LEVES    cotas=  30000   inadimplentes=    0   fonte: fallback estimado = 30000
+  MOTOS    cotas=   2580   inadimplentes=305.0   fonte: BASE
+  PESADOS  cotas=    296   inadimplentes=  9.0   fonte: BASE
+
+EVENTOS DO MÊS (numerador) — Rateio_POC_Completo.xlsx
+  LEVES    ASSOCIADO INTEGRAL  n= 11  Σ VR=R$   903,640.97  Σ Participação=R$  72,565.60
+  LEVES    ASSOCIADO PARCIAL   n=  9  Σ VR=R$   183,558.41  Σ Participação=R$  30,286.20
+  LEVES    TERCEIRO  INTEGRAL  n=  4  Σ VR=R$    75,412.85  Σ Participação=R$       0.00
+  LEVES    TERCEIRO  PARCIAL   n= 29  Σ VR=R$   150,946.67  Σ Participação=R$       0.00
+  MOTOS    ASSOCIADO INTEGRAL  n= 16  Σ VR=R$   281,807.65  Σ Participação=R$  47,999.35
+  MOTOS    ASSOCIADO PARCIAL   n= 12  Σ VR=R$    64,768.60  Σ Participação=R$  12,280.42
+  MOTOS    TERCEIRO  PARCIAL   n=  9  Σ VR=R$    41,251.22  Σ Participação=R$       0.00
+  PESADOS  TERCEIRO  PARCIAL   n=  2  Σ VR=R$   112,293.90  Σ Participação=R$  24,806.10
+
+FÓRMULA APLICADA (rateio variável LEVES/MOTOS)
+  Custo a Ratear = Σ INTEGRAL ASSOC + Σ PARCIAL ASSOC − Σ salvados − Σ franquias
+  Cota Mensal    = Custo a Ratear  ÷  Cotas ativas adimplentes
+  Terceiros: NÃO abatem a cota (vão para o pote 'Danos a Terceiros').
+  PESADOS: pote fixo (casco caminhão) — não entra no rateio variável.
+
+RESULTADO POR SEGMENTO
+  LEVES     custo=R$ 1,087,199.38  cotas=   30,000  cota=R$   36.24  faixa=ACIMA
+  MOTOS     custo=R$   346,576.25  cotas=    2,580  cota=R$  134.33  faixa=ACIMA
+  PESADOS   POTE FIXO casco caminhão  custo=R$       0.00  arrecadado=R$ 0.00  reserva=R$ 0.00
+
+INVARIANTE DE AUDITORIA
+  Δ (custo apurado − custo alocado) = R$ 0.00
+  invariante_ok = True
+  eventos alocados/postergados = 92/0
+
+PARÂMETROS DO MOTOR
+  faixa estabilização R$ 30.00–R$ 35.00
+  regra dos 75% (perda total) limiar=75%
+  arrec. terceiros estimada=R$ 500000.00
+
+OBSERVAÇÕES (engenharia reversa)
+  - INTEGRAL: valor_fipe = Valor Rateado + Participação; franquia = Participação.
+  - PARCIAL : valor_evento = VR + Part; valor_fipe inflado p/ não disparar regra 75%.
+  - 1 veículo sintético = 1 cota (FIPE 10k) — denominador escalável diretamente.

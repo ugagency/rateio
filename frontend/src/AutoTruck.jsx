@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const API = ""
-const MES_PADRAO = "12/2025"
+const mesAnteriorPadrao = () => {
+  const d = new Date()
+  d.setDate(1); d.setMonth(d.getMonth() - 1)
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+}
+const MES_PADRAO = mesAnteriorPadrao()
 const enc = (m) => encodeURIComponent(m)
 const brl = (v) => (typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v)
 
@@ -45,6 +50,15 @@ export default function AutoTruck() {
       .finally(() => setCarregando(false))
   }
 
+  const carregarPocRemonta = () => {
+    setCarregando(true); setErro("")
+    fetch(`${API}/autotruck/poc-remonta?mes_ano_ref=04/2026`, { method: "POST" })
+      .then(r => (r.ok ? r.json() : r.json().then(j => Promise.reject(j))))
+      .then(d => { setMes("04/2026"); setRes(d.resultado); setTab("visao") })
+      .catch(e => setErro(`PoC Remonta: ${e?.detail || "falha ao carregar"}`))
+      .finally(() => setCarregando(false))
+  }
+
   return (
     <div className="bg-slate-900 text-slate-200 min-h-[calc(100vh-44px)]">
       <header className="border-b border-slate-700">
@@ -70,6 +84,11 @@ export default function AutoTruck() {
               className="px-4 py-1.5 bg-cyan-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
               {carregando ? "Calculando…" : "Calcular / Recalcular"}
             </button>
+            <button onClick={carregarPocRemonta} disabled={carregando}
+              title="Carrega Remonta/BASE + Rateio_POC e roda o motor em 04/2026"
+              className="px-4 py-1.5 bg-amber-400 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
+              PoC Remonta
+            </button>
           </span>
         </nav>
       </header>
@@ -80,10 +99,16 @@ export default function AutoTruck() {
           <div className="text-center py-20">
             <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio AutoTruck para {mes}</h2>
             <p className="text-slate-300 mb-6">Bases separadas LEVES / MOTOS (variável) e PESADOS (pote fixo de casco caminhão).</p>
-            <button onClick={calcular} disabled={carregando}
-              className="px-6 py-3 bg-cyan-500 text-slate-900 font-bold rounded-lg disabled:opacity-50">
-              {carregando ? "Calculando…" : "Calcular Rateio"}
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button onClick={calcular} disabled={carregando}
+                className="px-6 py-3 bg-cyan-500 text-slate-900 font-bold rounded-lg disabled:opacity-50">
+                {carregando ? "Calculando…" : "Calcular Rateio"}
+              </button>
+              <button onClick={carregarPocRemonta} disabled={carregando}
+                className="px-6 py-3 bg-amber-400 text-slate-900 font-bold rounded-lg disabled:opacity-50">
+                Carregar PoC Remonta (04/2026)
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -94,10 +119,10 @@ export default function AutoTruck() {
             {tab === "potes" && <Potes mes={mes} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
-            {tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onRodado={() => { carregar(); setTab("visao") }} />}
+            {tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />}
           </>
         )}
-        {!res && tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onRodado={() => { carregar(); setTab("visao") }} />}
+        {!res && tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />}
       </main>
     </div>
   )
@@ -355,33 +380,66 @@ function Auditoria({ mes }) {
   )
 }
 
-function RodarMes({ mes, setMes, onRodado }) {
-  const [baseFile, setBaseFile] = useState(null)
-  const [rateioFile, setRateioFile] = useState(null)
-  const [produtosFile, setProdutosFile] = useState(null)
+function RodarMes({ mes, setMes, onRodado, onCalculado }) {
+  const [base, setBase] = useState(slotInicial())
+  const [rateio, setRateio] = useState(slotInicial())
+  const [produtos, setProdutos] = useState(slotInicial())
   const [cotasLeves, setCotasLeves] = useState("")
   const [cotasMotos, setCotasMotos] = useState("")
+  // se o usuário digitar manualmente, marcamos para não sobrescrever com auto-fill
+  const [cotasLevesManual, setCotasLevesManual] = useState(false)
+  const [cotasMotosManual, setCotasMotosManual] = useState(false)
   const [busy, setBusy] = useState(false)
   const [resp, setResp] = useState(null)
   const [erro, setErro] = useState("")
 
+  // inspeção no onChange — valida + (se BASE) auto-preenche cotas
+  const inspecionar = async (file, slot, setSlot) => {
+    if (!file) { setSlot(slotInicial()); return }
+    setSlot({ file, status: "inspecionando", tipo: null, erro: null })
+    try {
+      const fd = new FormData()
+      fd.append("arquivo", file)
+      fd.append("slot_esperado", slot)
+      const r = await fetch(`${API}/autotruck/inspecionar-arquivo`, { method: "POST", body: fd })
+      const d = await r.json()
+      setSlot({ file, status: d.valido ? "ok" : "erro", tipo: d.tipo_detectado, erro: d.erro })
+      // auto-preenche cotas se BASE válida e usuário ainda não digitou nada
+      if (slot === "BASE" && d.valido && d.extras?.cotas_baixadas) {
+        const cm = d.extras.cotas_baixadas.MOTOS
+        if (cm && !cotasMotosManual) setCotasMotos(String(cm))
+        // LEVES não vem da BASE do Rodrigo — deixa o usuário preencher
+      }
+    } catch (e) {
+      setSlot({ file, status: "erro", tipo: null, erro: "Falha na inspeção." })
+    }
+  }
+
   const calcular = (e) => {
     e?.preventDefault()
-    if (!baseFile || !rateioFile) {
+    if (!base.file || !rateio.file) {
       setErro("Selecione pelo menos os arquivos BASE e RATEIO.")
+      return
+    }
+    if (base.status === "erro" || rateio.status === "erro" || produtos.status === "erro") {
+      setErro("Há arquivos no slot errado. Corrija antes de calcular.")
       return
     }
     setBusy(true); setErro(""); setResp(null)
     const fd = new FormData()
-    fd.append("base", baseFile)
-    fd.append("rateio", rateioFile)
-    if (produtosFile) fd.append("produtos", produtosFile)
+    fd.append("base", base.file)
+    fd.append("rateio", rateio.file)
+    if (produtos.file) fd.append("produtos", produtos.file)
     fd.append("mes_ano_ref", mes)
     if (cotasLeves) fd.append("cotas_leves", cotasLeves)
     if (cotasMotos) fd.append("cotas_motos", cotasMotos)
     fetch(`${API}/autotruck/rodar-mes`, { method: "POST", body: fd })
       .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)))
-      .then(d => setResp(d))
+      .then(d => {
+        setResp(d)
+        // após sucesso, sincroniza o estado do pai (popula as outras abas)
+        if (typeof onCalculado === "function") onCalculado()
+      })
       .catch(t => setErro(typeof t === "string" ? t : "Falha ao processar."))
       .finally(() => setBusy(false))
   }
@@ -391,31 +449,38 @@ function RodarMes({ mes, setMes, onRodado }) {
       <h2 className="text-xl font-bold text-white mb-1">Rodar Mês — upload de planilhas</h2>
       <p className="text-slate-400 text-sm mb-4">
         Selecione os arquivos do mês (BASE + RATEIO; PRODUTOS opcional) que vieram da AutoTruck.
-        O motor lê tudo, recalcula o rateio e abre o resultado nas demais abas.
+        Validação acontece já na seleção. Se a BASE trouxer cotas, os overrides preenchem sozinhos.
       </p>
 
       <form onSubmit={calcular} className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
-        <FileRow label="BASE — Pagamentos recebidos × pendentes" required value={baseFile} onChange={setBaseFile}
+        <FileRow label="BASE — Pagamentos recebidos × pendentes" required slot={base}
+          onPick={f => inspecionar(f, "BASE", setBase)}
           hint="Aba 'BASE' com 3 segmentos lado a lado (LEVES/MOTOS/PESADOS), valores por situação de boleto." />
-        <FileRow label="RATEIO — Eventos sinistrados do mês" required value={rateioFile} onChange={setRateioFile}
+        <FileRow label="RATEIO — Eventos sinistrados do mês" required slot={rateio}
+          onPick={f => inspecionar(f, "RATEIO", setRateio)}
           hint="Lista de eventos por seção (PESADOS TERCEIROS, MOTOS ASSOCIADOS, LEVES ASSOCIADOS, etc.) com Valor Rateado." />
-        <FileRow label="PRODUTOS — Catálogo fornecedor (opcional)" value={produtosFile} onChange={setProdutosFile}
+        <FileRow label="PRODUTOS — Catálogo fornecedor (opcional)" slot={produtos}
+          onPick={f => inspecionar(f, "PRODUTOS", setProdutos)}
           hint="FORNECEDOR/SERVIÇO/PRODUTO/TIPO/QTD/VALOR/TOTAL — usado para fechamento de fornecedores." />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-700">
           <label className="text-sm">
             <span className="text-slate-400 block mb-1">Mês de referência (MM/AAAA)</span>
-            <input value={mes} onChange={e => setMes(e.target.value)} placeholder="04/2026"
+            <input value={mes} onChange={e => setMes(e.target.value)} placeholder={MES_PADRAO}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
           <label className="text-sm">
             <span className="text-slate-400 block mb-1">Cotas LEVES (override — opc.)</span>
-            <input value={cotasLeves} onChange={e => setCotasLeves(e.target.value)} placeholder="quando a BASE não traz"
+            <input value={cotasLeves}
+              onChange={e => { setCotasLeves(e.target.value); setCotasLevesManual(true) }}
+              placeholder="quando a BASE não traz"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
           <label className="text-sm">
             <span className="text-slate-400 block mb-1">Cotas MOTOS (override — opc.)</span>
-            <input value={cotasMotos} onChange={e => setCotasMotos(e.target.value)} placeholder="usa BASE se vazio"
+            <input value={cotasMotos}
+              onChange={e => { setCotasMotos(e.target.value); setCotasMotosManual(true) }}
+              placeholder="auto-preenche pela BASE"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
         </div>
@@ -434,7 +499,16 @@ function RodarMes({ mes, setMes, onRodado }) {
   )
 }
 
-function FileRow({ label, hint, value, onChange, required }) {
+const slotInicial = () => ({ file: null, status: "vazio", tipo: null, erro: null })
+
+function FileRow({ label, hint, slot, onPick, required }) {
+  const { file, status, tipo, erro } = slot
+  const badge = {
+    vazio:         null,
+    inspecionando: <span className="text-xs text-slate-400">inspecionando…</span>,
+    ok:            <span className="text-xs text-emerald-300">✓ {file?.name} · detectado: {tipo}</span>,
+    erro:          <span className="text-xs text-red-300">✗ {file?.name} · {tipo || "?"}</span>,
+  }[status]
   return (
     <div>
       <label className="block">
@@ -442,12 +516,13 @@ function FileRow({ label, hint, value, onChange, required }) {
           <span className="text-sm font-semibold text-slate-200">
             {label}{required && <span className="text-red-400 ml-1">*</span>}
           </span>
-          {value && <span className="text-xs text-emerald-300">✓ {value.name}</span>}
+          {badge}
         </div>
         <input type="file" accept=".xlsx,.xls"
-          onChange={e => onChange(e.target.files?.[0] || null)}
+          onChange={e => onPick(e.target.files?.[0] || null)}
           className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-cyan-300 hover:file:bg-slate-600" />
-        {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+        {hint && !erro && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+        {erro && <p className="text-xs text-red-300 mt-1">{erro}</p>}
       </label>
     </div>
   )

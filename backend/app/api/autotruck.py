@@ -15,7 +15,13 @@ from app.autotruck.config import get_autotruck_json_path
 from app.autotruck.domain import ResultadoRateioAT
 from app.autotruck.fechamento import FechamentoError, FechamentoService, FotoFechamento
 from app.autotruck.fontes import FonteMemoria
-from app.autotruck.ingestao_partes import ParteIngestaoResumo, compor, validar_slot
+from app.autotruck.ingestao_partes import (
+    ParteIngestaoResumo,
+    compor,
+    detectar_tipo,
+    ler_base,
+    validar_slot,
+)
 from app.autotruck.repo import AutoTruckRepo
 from app.autotruck.service import AutoTruckJaExisteError, AutoTruckService
 from app.schemas.autotruck import (
@@ -67,6 +73,59 @@ def _buscar(mes_ano_ref: str) -> ResultadoRateioAT:
 
 
 # ---------------- Rodar Mês: ingestão de BASE+RATEIO+PRODUTOS separados ----------------
+
+
+class InspecionarArquivoOut(BaseModel):
+    """Resposta da inspeção rápida (1 arquivo, sem rodar engine)."""
+
+    tipo_detectado: str          # BASE | RATEIO | PRODUTOS | DESCONHECIDO
+    valido: bool
+    erro: str | None = None
+    extras: dict = {}            # se BASE: cotas_baixadas/abertas (para auto-preencher form)
+
+
+@router.post("/inspecionar-arquivo", response_model=InspecionarArquivoOut)
+async def inspecionar_arquivo(
+    arquivo: UploadFile = File(...),
+    slot_esperado: str = Form(..., description="BASE | RATEIO | PRODUTOS"),
+) -> InspecionarArquivoOut:
+    """Lê **um único** xlsx, devolve tipo detectado, validade e (se BASE) as
+    cotas já pré-extraídas. Frontend chama no onChange do file input para
+    validar slot + auto-preencher overrides — sem rodar o motor."""
+    slot = slot_esperado.strip().upper()
+    if slot not in ("BASE", "RATEIO", "PRODUTOS"):
+        raise HTTPException(status_code=400, detail=f"slot_esperado inválido: {slot_esperado}")
+    tmpdir = Path(tempfile.mkdtemp(prefix="inspect-"))
+    try:
+        path = tmpdir / "arquivo.xlsx"
+        path.write_bytes(await arquivo.read())
+        msg = validar_slot(slot, str(path))
+        tipo = detectar_tipo(str(path))
+        extras: dict = {}
+        if tipo == "BASE" and msg is None:
+            try:
+                bc = ler_base(str(path))
+                extras = {
+                    "cotas_baixadas": bc.cotas_baixadas,
+                    "cotas_abertas": bc.cotas_abertas,
+                    "boletos_baixados": bc.boletos_baixados,
+                    "boletos_abertos": bc.boletos_abertos,
+                }
+            except Exception:
+                pass  # detecção valeu; extras é só bônus
+        return InspecionarArquivoOut(
+            tipo_detectado=tipo, valido=(msg is None), erro=msg, extras=extras,
+        )
+    finally:
+        for p in tmpdir.iterdir():
+            try:
+                p.unlink()
+            except OSError:
+                pass
+        try:
+            tmpdir.rmdir()
+        except OSError:
+            pass
 
 
 class RodarMesOut(BaseModel):
@@ -138,6 +197,45 @@ async def rodar_mes(
             tmpdir.rmdir()
         except OSError:
             pass
+
+
+# Caminho dos arquivos da reunião 19/05 com o Rodrigo (Remonta/) — o usuário
+# os mantém versionados localmente; o endpoint abaixo serve para uma demo
+# 1-clique sem precisar reupload manual a cada sessão.
+_REMONTA_DIR = Path(__file__).resolve().parents[3] / "Remonta"
+_REMONTA_BASE = _REMONTA_DIR / "BASE_Reconstruida.xlsx"
+_REMONTA_RATEIO = _REMONTA_DIR / "Rateio_POC_Completo.xlsx"
+_REMONTA_COTAS_LEVES_FALLBACK = 30_000  # idem tools/poc_remonta.py
+
+
+@router.post("/poc-remonta", response_model=RodarMesOut, status_code=status.HTTP_201_CREATED)
+def poc_remonta(
+    mes_ano_ref: str = Query("04/2026", description="Mês de referência da PoC."),
+    cotas_leves: int = Query(_REMONTA_COTAS_LEVES_FALLBACK,
+                              description="Override de cotas LEVES (a BASE do Rodrigo não traz)."),
+) -> RodarMesOut:
+    """Carrega 1-clique os arquivos da reunião com a AutoTruck (Remonta/) e
+    roda o motor em `mes_ano_ref`. Idêntico ao `/rodar-mes`, mas sem upload —
+    útil para demonstrar a PoC na plataforma sem fricção."""
+    if not _REMONTA_BASE.exists() or not _REMONTA_RATEIO.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivos Remonta ausentes em {_REMONTA_DIR}",
+        )
+    try:
+        veiculos, eventos, _produtos_cat, _base_counts, resumo = compor(
+            str(_REMONTA_BASE), str(_REMONTA_RATEIO),
+            produtos_path=None,
+            cotas_leves_override=cotas_leves,
+            cotas_motos_override=None,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Falha lendo planilhas Remonta: {exc}") from exc
+    resultado = _service().rodar_externos_e_persistir(
+        mes_ano_ref, veiculos, eventos, force=True,
+    )
+    return RodarMesOut(resultado=_to_out(resultado), ingestao=resumo.__dict__)
 
 
 @router.post("/calcular", response_model=ResultadoATOut, status_code=status.HTTP_201_CREATED)
