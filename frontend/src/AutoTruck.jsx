@@ -463,7 +463,7 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
       fd.append("slot_esperado", slot)
       const r = await fetch(`${API}/autotruck/inspecionar-arquivo`, { method: "POST", body: fd })
       const d = await r.json()
-      setSlot({ file, status: d.valido ? "ok" : "erro", tipo: d.tipo_detectado, erro: d.erro })
+      setSlot({ file, status: d.valido ? "ok" : "erro", tipo: d.tipo_detectado, erro: d.erro, extras: d.extras })
       // auto-preenche cotas se BASE válida e usuário ainda não digitou nada
       if (slot === "BASE" && d.valido && d.extras?.cotas_baixadas) {
         const cm = d.extras.cotas_baixadas.MOTOS
@@ -483,6 +483,20 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
     }
     if (base.status === "erro" || rateio.status === "erro" || produtos.status === "erro") {
       setErro("Há arquivos no slot errado. Corrija antes de calcular.")
+      return
+    }
+    // Guard: RATEIO com eventos de um segmento cujo total de cotas não vem da
+    // BASE e o override está vazio → a cota ficaria indefinida (custo ÷ 0).
+    const segsRateio = rateio.extras?.segmentos || []
+    const baseCotas = base.extras?.cotas_baixadas || {}
+    const faltando = []
+    if (segsRateio.includes("LEVES") && !cotasLeves && !baseCotas.LEVES) faltando.push("LEVES")
+    if (segsRateio.includes("MOTOS") && !cotasMotos && !baseCotas.MOTOS) faltando.push("MOTOS")
+    if (faltando.length) {
+      setErro(
+        `Há eventos ${faltando.join(" e ")} no RATEIO, mas a BASE não traz essas cotas e o override está vazio. ` +
+        `A cota ficaria indefinida (custo ÷ 0). Preencha "Cotas ${faltando.join('" e "Cotas ')}" antes de processar.`
+      )
       return
     }
     setBusy(true); setErro(""); setResp(null)
@@ -560,7 +574,7 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
   )
 }
 
-const slotInicial = () => ({ file: null, status: "vazio", tipo: null, erro: null })
+const slotInicial = () => ({ file: null, status: "vazio", tipo: null, erro: null, extras: null })
 
 function FileRow({ label, hint, slot, onPick, required }) {
   const { file, status, tipo, erro } = slot
@@ -603,6 +617,11 @@ function RodarMesResultado({ resp, onAbrir }) {
           Abrir na Visão Geral →
         </button>
       </div>
+      {(ing.alertas || []).length > 0 && (
+        <div className="mb-4 bg-amber-900/40 border border-amber-600 text-amber-100 rounded-lg p-3 text-sm space-y-1">
+          {ing.alertas.map((a, i) => <div key={i}>⚠ {a}</div>)}
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card label="Cota LEVES" value={`R$ ${brl(c.cota_leves)}`} sub={`${ing.cotas_leves.toLocaleString('pt-BR')} cotas`} tone="ok" />
         <Card label="Cota MOTOS" value={`R$ ${brl(c.cota_motos)}`} sub={`${ing.cotas_motos.toLocaleString('pt-BR')} cotas`} tone="ok" />

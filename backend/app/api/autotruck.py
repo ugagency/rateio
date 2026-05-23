@@ -21,6 +21,7 @@ from app.autotruck.ingestao_partes import (
     compor,
     detectar_tipo,
     ler_base,
+    ler_rateio_partes,
     validar_slot,
 )
 from app.autotruck.repo import AutoTruckRepo
@@ -114,6 +115,13 @@ async def inspecionar_arquivo(
                 }
             except Exception:
                 pass  # detecção valeu; extras é só bônus
+        elif tipo == "RATEIO" and msg is None:
+            try:
+                evs = ler_rateio_partes(str(path))
+                # segmentos com eventos → o frontend usa p/ guard de cota faltante
+                extras = {"segmentos": sorted({e.segmento for e in evs})}
+            except Exception:
+                pass
         return InspecionarArquivoOut(
             tipo_detectado=tipo, valido=(msg is None), erro=msg, extras=extras,
         )

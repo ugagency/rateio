@@ -427,6 +427,10 @@ class ParteIngestaoResumo:
     valor_recebido_motos: float
     valor_recebido_pesados: float
     secoes_rateio: list[str]
+    # Alertas de coerência insumo↔denominador (ex.: há eventos LEVES mas
+    # nenhuma cota LEVES → a cota fica indefinida, custo/0). String pronta
+    # para exibir; vazia = sem problema.
+    alertas: list[str] = field(default_factory=list)
 
 
 def compor(
@@ -446,6 +450,24 @@ def compor(
         cotas_motos_override=cotas_motos_override,
     )
     secoes = sorted({f"{e.segmento}/{e.envolvimento}/{e.tipo_evento}" for e in eventos})
+
+    # Alerta: segmento de RATEIO VARIÁVEL (LEVES/MOTOS) com eventos mas 0 cotas
+    # → cota = custo/0 (indefinida). A BASE do Rodrigo não traz LEVES, então o
+    # caso típico é esquecer o override "Cotas LEVES".
+    cotas_resolvidas = {
+        "LEVES": cotas_leves_override if cotas_leves_override is not None else base.cotas_baixadas.get("LEVES", 0),
+        "MOTOS": cotas_motos_override if cotas_motos_override is not None else base.cotas_baixadas.get("MOTOS", 0),
+    }
+    segs_com_evento = {e.segmento for e in eventos}
+    alertas: list[str] = []
+    for seg in ("LEVES", "MOTOS"):
+        if seg in segs_com_evento and cotas_resolvidas[seg] <= 0:
+            alertas.append(
+                f"Há eventos {seg} no RATEIO mas nenhuma cota {seg} informada "
+                f"(a BASE não traz {seg}). A cota {seg} ficará indefinida (custo ÷ 0). "
+                f"Preencha o campo 'Cotas {seg} (override)' e reprocesse."
+            )
+
     resumo = ParteIngestaoResumo(
         cotas_leves=cotas_leves_override if cotas_leves_override is not None else base.cotas_baixadas.get("LEVES", 0),
         cotas_motos=cotas_motos_override if cotas_motos_override is not None else base.cotas_baixadas.get("MOTOS", 0),
@@ -457,5 +479,6 @@ def compor(
         valor_recebido_motos=base.valor_recebido.get("MOTOS", 0.0),
         valor_recebido_pesados=base.valor_recebido.get("PESADOS", 0.0),
         secoes_rateio=secoes,
+        alertas=alertas,
     )
     return veiculos, eventos, produtos, base, resumo
