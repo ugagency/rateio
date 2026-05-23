@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.core.ingestao_xlsx import (
     IngestaoError,
+    detectar_tipo,
     ler_eventos,
     ler_servicos,
     ler_veiculos,
@@ -23,6 +24,41 @@ from app.schemas.rateio import (
 from app.services.rateio_service import RateioJaExisteError, RateioService
 
 router = APIRouter(prefix="/rateio", tags=["rateio"])
+
+
+class InspecionarArquivoELLOOut(BaseModel):
+    tipo_detectado: str          # VEICULOS | EVENTOS | SERVICOS | DESCONHECIDO
+    valido: bool
+    erro: str | None = None
+
+
+@router.post("/inspecionar-arquivo", response_model=InspecionarArquivoELLOOut)
+async def inspecionar_arquivo_ello(
+    arquivo: UploadFile = File(...),
+    slot_esperado: str = Form(..., description="VEICULOS | EVENTOS | SERVICOS"),
+) -> InspecionarArquivoELLOOut:
+    """Lê 1 arquivo e devolve tipo detectado + validade. Frontend chama no
+    onChange do file input para feedback imediato (✓/✗) sem rodar engine."""
+    slot = slot_esperado.strip().upper()
+    if slot not in ("VEICULOS", "EVENTOS", "SERVICOS"):
+        raise HTTPException(status_code=400, detail=f"slot_esperado inválido: {slot_esperado}")
+    tmpdir = Path(tempfile.mkdtemp(prefix="inspect-ello-"))
+    try:
+        path = tmpdir / "arquivo.xlsx"
+        path.write_bytes(await arquivo.read())
+        msg = validar_slot(slot, str(path))
+        tipo = detectar_tipo(str(path))
+        return InspecionarArquivoELLOOut(tipo_detectado=tipo, valido=(msg is None), erro=msg)
+    finally:
+        for p in tmpdir.iterdir():
+            try:
+                p.unlink()
+            except OSError:
+                pass
+        try:
+            tmpdir.rmdir()
+        except OSError:
+            pass
 
 
 class RodarMesELLOOut(BaseModel):

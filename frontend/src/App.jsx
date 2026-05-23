@@ -3,9 +3,16 @@ import AutoTruck from './AutoTruck'
 
 const API = ""
 
+const mesAnteriorPadrao = () => {
+  const d = new Date()
+  d.setDate(1); d.setMonth(d.getMonth() - 1)
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+}
+const MES_PADRAO_ELLO = mesAnteriorPadrao()
+
 function App() {
   const [tab, setTab] = useState("overview")
-  const [mes, setMes] = useState("05/2025")
+  const [mes, setMes] = useState(MES_PADRAO_ELLO)
 
   useEffect(() => {
     fetch(`${API}/health`).then(r => r.json()).then(console.log).catch(console.error)
@@ -42,7 +49,7 @@ function App() {
         {tab === "eventos" && <Eventos mes={mes} />}
         {tab === "boletos" && <Boletos mes={mes} />}
         {tab === "auditoria" && <Auditoria mes={mes} />}
-        {tab === "rodarmes" && <RodarMesELLO mes={mes} setMes={setMes} onRodado={() => setTab("overview")} />}
+        {tab === "rodarmes" && <RodarMesELLO mes={mes} setMes={setMes} onRodado={() => { setTab("overview") }} />}
       </main>
     </div>
   )
@@ -253,28 +260,48 @@ function Auditoria({ mes }) {
   )
 }
 
-function RodarMesELLO({ onRodado }) {
-  const [veiculos, setVeiculos] = useState(null)
-  const [eventos, setEventos] = useState(null)
-  const [servicos, setServicos] = useState(null)
-  const [mes, setMes] = useState("05/2025")
+const slotInicialELLO = () => ({ file: null, status: "vazio", tipo: null, erro: null })
+
+function RodarMesELLO({ mes, setMes, onRodado }) {
+  const [veiculos, setVeiculos] = useState(slotInicialELLO())
+  const [eventos, setEventos] = useState(slotInicialELLO())
+  const [servicos, setServicos] = useState(slotInicialELLO())
   const [busy, setBusy] = useState(false)
   const [resp, setResp] = useState(null)
   const [erro, setErro] = useState("")
 
   const brl = (v) => typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v
 
+  const inspecionar = async (file, slot, setSlot) => {
+    if (!file) { setSlot(slotInicialELLO()); return }
+    setSlot({ file, status: "inspecionando", tipo: null, erro: null })
+    try {
+      const fd = new FormData()
+      fd.append("arquivo", file)
+      fd.append("slot_esperado", slot)
+      const r = await fetch(`${API}/rateio/inspecionar-arquivo`, { method: "POST", body: fd })
+      const d = await r.json()
+      setSlot({ file, status: d.valido ? "ok" : "erro", tipo: d.tipo_detectado, erro: d.erro })
+    } catch (e) {
+      setSlot({ file, status: "erro", tipo: null, erro: "Falha na inspeção." })
+    }
+  }
+
   const calcular = (e) => {
     e?.preventDefault()
-    if (!veiculos || !eventos || !servicos) {
+    if (!veiculos.file || !eventos.file || !servicos.file) {
       setErro("Selecione os 3 arquivos: veículos, eventos e serviços.")
+      return
+    }
+    if ([veiculos, eventos, servicos].some(s => s.status === "erro")) {
+      setErro("Há arquivos no slot errado. Corrija antes de calcular.")
       return
     }
     setBusy(true); setErro(""); setResp(null)
     const fd = new FormData()
-    fd.append("veiculos", veiculos)
-    fd.append("eventos", eventos)
-    fd.append("servicos", servicos)
+    fd.append("veiculos", veiculos.file)
+    fd.append("eventos", eventos.file)
+    fd.append("servicos", servicos.file)
     fd.append("mes_ano_ref", mes)
     fetch(`${API}/rateio/rodar-mes`, { method: "POST", body: fd })
       .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)))
@@ -287,22 +314,25 @@ function RodarMesELLO({ onRodado }) {
     <div>
       <h2 className="text-2xl font-bold text-white mb-1">Rodar Mês — upload de planilhas (ELLO)</h2>
       <p className="text-slate-400 text-sm mb-4">
-        Selecione as 3 planilhas de entrada (Veículos, Eventos, Serviços Fixos) e o mês.
-        O motor lê tudo, calcula o rateio dos 4 potinhos e abre o resultado nas demais abas.
+        Selecione as 3 planilhas de entrada (Veículos, Eventos, Serviços Fixos).
+        Validação acontece já na seleção. O mês de referência vem do header (default: mês anterior).
       </p>
 
       <form onSubmit={calcular} className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
-        <FileRowELLO label="Veículos — cadastro elegível" required value={veiculos} onChange={setVeiculos}
+        <FileRowELLO label="Veículos — cadastro elegível" required slot={veiculos}
+          onPick={f => inspecionar(f, "VEICULOS", setVeiculos)}
           hint="Colunas: ID_Veiculo, Status_Ativo, Data_Quebra, Tipo_Categoria_Risco, Qtd_Cotas, Tipo_Pagamento, Is_Funcionario" />
-        <FileRowELLO label="Eventos — sinistros pendentes" required value={eventos} onChange={setEventos}
+        <FileRowELLO label="Eventos — sinistros pendentes" required slot={eventos}
+          onPick={f => inspecionar(f, "EVENTOS", setEventos)}
           hint="Colunas: ID_Evento, Data_Ocorrencia_Evento, Valor_Total_Evento, Valor_Saldo_Pendente" />
-        <FileRowELLO label="Serviços fixos — produtos por veículo" required value={servicos} onChange={setServicos}
+        <FileRowELLO label="Serviços fixos — produtos por veículo" required slot={servicos}
+          onPick={f => inspecionar(f, "SERVICOS", setServicos)}
           hint="Colunas: ID_Veiculo, Taxa_Administrativa, Valor_Assistencia_24h, Valor_Outros_Produtos" />
 
         <div className="pt-3 border-t border-slate-700">
           <label className="text-sm">
-            <span className="text-slate-400 block mb-1">Mês de referência (MM/AAAA)</span>
-            <input value={mes} onChange={e => setMes(e.target.value)} placeholder="05/2025"
+            <span className="text-slate-400 block mb-1">Mês de referência (MM/AAAA — sincroniza com o header)</span>
+            <input value={mes} onChange={e => setMes(e.target.value)} placeholder={MES_PADRAO_ELLO}
               className="w-full md:w-48 px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
         </div>
@@ -351,7 +381,14 @@ function RodarMesELLO({ onRodado }) {
   )
 }
 
-function FileRowELLO({ label, hint, value, onChange, required }) {
+function FileRowELLO({ label, hint, slot, onPick, required }) {
+  const { file, status, tipo, erro } = slot
+  const badge = {
+    vazio:         null,
+    inspecionando: <span className="text-xs text-slate-400">inspecionando…</span>,
+    ok:            <span className="text-xs text-emerald-300">✓ {file?.name} · detectado: {tipo}</span>,
+    erro:          <span className="text-xs text-red-300">✗ {file?.name} · {tipo || "?"}</span>,
+  }[status]
   return (
     <div>
       <label className="block">
@@ -359,12 +396,13 @@ function FileRowELLO({ label, hint, value, onChange, required }) {
           <span className="text-sm font-semibold text-slate-200">
             {label}{required && <span className="text-red-400 ml-1">*</span>}
           </span>
-          {value && <span className="text-xs text-emerald-300">✓ {value.name}</span>}
+          {badge}
         </div>
         <input type="file" accept=".xlsx,.xls"
-          onChange={e => onChange(e.target.files?.[0] || null)}
+          onChange={e => onPick(e.target.files?.[0] || null)}
           className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-amber-300 hover:file:bg-slate-600" />
-        {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+        {hint && !erro && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+        {erro && <p className="text-xs text-red-300 mt-1">{erro}</p>}
       </label>
     </div>
   )
