@@ -166,6 +166,15 @@ function Visao({ res }) {
             {c.invariante_ok ? "OK · Δ 0,00" : `Δ ${brl(c.diferenca_total)}`}
           </div>
         </div>
+        <div className="flex items-center">
+          <a
+            href={`${API}/autotruck/${enc(res.mes_ano_ref)}/export-analitico`}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-3 font-bold text-white shadow-lg transition-colors"
+            title="Exporta a aba ANALITICO no layout do FECHAMENTO, preenchida com os números deste mês. Campos de faturamento (VALOR RECEBIDO, RESUMO, FORNECEDOR) saem em branco com nota de origem."
+          >
+            ⬇ Exportar ANALITICO (.xlsx)
+          </a>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card label="Veículos elegíveis" value={`${c.total_veiculos_elegiveis} / ${c.total_veiculos}`} sub="modelo purista (ativo + adimplente)" />

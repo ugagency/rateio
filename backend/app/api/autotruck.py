@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.autotruck.config import get_autotruck_json_path
@@ -432,6 +433,23 @@ def auditoria(mes_ano_ref: str) -> PaginatedAuditOut:
     return PaginatedAuditOut(
         mes_ano_ref=mes_ano_ref, total=len(logs),
         items=[AuditLogOut(**a.__dict__) for a in logs],
+    )
+
+
+@router.get("/{mes_ano_ref:path}/export-analitico")
+def export_analitico(mes_ano_ref: str) -> Response:
+    """Exporta a aba ANALITICO **preenchida com os números do mês** (do motor),
+    fiel ao FECHAMENTO (posições/labels/cores/formatos). Campos de faturamento
+    (VALOR RECEBIDO, RESUMO, FORNECEDOR) saem em branco com uma NOTA de origem
+    em cada célula — o motor de rateio não os calcula."""
+    from app.autotruck.export_analitico import gerar_analitico_xlsx
+
+    conteudo = gerar_analitico_xlsx(_buscar(mes_ano_ref))
+    nome = f"ANALITICO_AutoTruck_{mes_ano_ref.replace('/', '-')}.xlsx"
+    return Response(
+        content=conteudo,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'},
     )
 
 
