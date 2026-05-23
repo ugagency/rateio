@@ -101,7 +101,12 @@ export default function AutoTruck() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {erro && <div className="mb-4 bg-red-900/40 border border-red-700 text-red-200 px-4 py-2 rounded">{erro}</div>}
-        {!res ? (
+        {/* RodarMes vive num ÚNICO lugar estável da árvore — independente de `res` —
+            senão a transição res null→objeto após "Processar" remonta o componente
+            e zera os arquivos escolhidos + os <input> nativos. */}
+        {tab === "rodarmes" ? (
+          <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />
+        ) : !res ? (
           <div className="text-center py-20">
             <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio AutoTruck para {mes}</h2>
             <p className="text-slate-300 mb-6">Bases separadas LEVES / MOTOS (variável) e PESADOS (pote fixo de casco caminhão).</p>
@@ -124,10 +129,8 @@ export default function AutoTruck() {
             {tab === "ajuste" && <Ajuste mes={mes} onAplicado={carregar} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
-            {tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />}
           </>
         )}
-        {!res && tab === "rodarmes" && <RodarMes mes={mes} setMes={setMes} onCalculado={carregar} onRodado={() => { carregar(); setTab("visao") }} />}
       </main>
     </div>
   )
@@ -535,8 +538,9 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
 
         <div className="flex gap-3 items-center pt-3">
           <button type="submit" disabled={busy}
+            title="Ingere as planilhas selecionadas (BASE + RATEIO + PRODUTOS) e roda o motor sobre elas"
             className="px-5 py-2 bg-cyan-500 text-slate-900 font-bold rounded disabled:opacity-50">
-            {busy ? "Processando…" : "Calcular Rateio"}
+            {busy ? "Processando…" : "Processar planilhas"}
           </button>
           {erro && <div className="text-red-300 text-sm">{erro}</div>}
         </div>
