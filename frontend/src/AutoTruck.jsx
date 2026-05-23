@@ -231,10 +231,48 @@ function Row({ k, v, bold, plain }) {
   )
 }
 
+// Tipos das colunas ordenáveis: "num" compara numérico, "str" alfabético.
+const COLS_ORDENAVEIS = { data_aviso: "str", tipo_evento: "str", custo_a_ratear: "num" }
+
 function Eventos({ mes }) {
   const [seg, setSeg] = useState("")
+  // sortKey === null → ordem natural FIFO (vinda do backend)
+  const [sortKey, setSortKey] = useState(null)
+  const [sortDir, setSortDir] = useState("asc")
   const data = useFetch(`${API}/autotruck/${enc(mes)}/eventos${seg ? `?segmento=${seg}` : ""}`)
   const items = data?.items || []
+
+  function toggleSort(key) {
+    if (sortKey === key) { setSortDir(d => (d === "asc" ? "desc" : "asc")) }
+    else { setSortKey(key); setSortDir("asc") }
+  }
+
+  let ordenados = items
+  if (sortKey) {
+    const tipo = COLS_ORDENAVEIS[sortKey]
+    const fator = sortDir === "asc" ? 1 : -1
+    ordenados = [...items].sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey]
+      // valores ausentes vão sempre para o fim, independente da direção
+      const na = va === null || va === undefined || va === ""
+      const nb = vb === null || vb === undefined || vb === ""
+      if (na && nb) return 0
+      if (na) return 1
+      if (nb) return -1
+      const cmp = tipo === "num" ? (va - vb) : String(va).localeCompare(String(vb), "pt-BR")
+      return cmp * fator
+    })
+  }
+
+  // Cabeçalho clicável com indicador de ordenação
+  const ThSort = ({ k, children, alinhaDir }) => (
+    <th onClick={() => toggleSort(k)} title="Clique para ordenar"
+      className={`px-3 py-2 cursor-pointer select-none hover:bg-slate-600 ${alinhaDir ? "text-right" : ""}`}>
+      {children}
+      <span className="ml-1 text-cyan-400">{sortKey === k ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>
+    </th>
+  )
+
   return (
     <div>
       <div className="flex gap-2 mb-4">
@@ -244,19 +282,24 @@ function Eventos({ mes }) {
             {s || "Todos"}
           </button>
         ))}
-        <span className="ml-auto text-sm text-slate-400 self-center">{data?.total ?? 0} eventos (FIFO)</span>
+        <span className="ml-auto text-sm text-slate-400 self-center">
+          {data?.total ?? 0} eventos {sortKey ? `(ordenado: ${sortKey === "custo_a_ratear" ? "custo" : sortKey === "data_aviso" ? "data" : "tipo"} ${sortDir === "asc" ? "↑" : "↓"})` : "(FIFO)"}
+        </span>
       </div>
       <div className="bg-slate-800 rounded-xl border border-slate-700 max-h-[520px] overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-slate-700 text-left">
             <tr>
               <th className="px-3 py-2">#FIFO</th><th className="px-3 py-2">Protocolo</th><th className="px-3 py-2">Seg</th>
-              <th className="px-3 py-2">Envolv.</th><th className="px-3 py-2">Data aviso</th><th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2 text-right">Custo a ratear</th><th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2">Envolv.</th>
+              <ThSort k="data_aviso">Data aviso</ThSort>
+              <ThSort k="tipo_evento">Tipo</ThSort>
+              <ThSort k="custo_a_ratear" alinhaDir>Custo a ratear</ThSort>
+              <th className="px-3 py-2">Status</th>
             </tr>
           </thead>
           <tbody>
-            {items.slice(0, 300).map((e, i) => (
+            {ordenados.slice(0, 300).map((e, i) => (
               <tr key={i} className="border-t border-slate-600">
                 <td className="px-3 py-1.5">{e.ordem_fifo}</td>
                 <td className="px-3 py-1.5">{e.protocolo}</td>
