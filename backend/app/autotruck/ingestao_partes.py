@@ -78,14 +78,20 @@ def detectar_tipo(path: str) -> str:
     - PRODUTOS → L1 tem 'FORNECEDOR' e 'SERVIÇO' como cabeçalhos.
     """
     try:
-        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        # NÃO usar read_only=True: arquivos re-salvos por outros programas
+        # (ex.: Google Sheets) podem omitir a tag <dimension>, e nesse modo
+        # ws.max_row/max_column vêm None → quebra a janela abaixo. Sem read_only
+        # o openpyxl calcula as dimensões a partir das células (igual ao leitor).
+        wb = openpyxl.load_workbook(path, data_only=True)
     except Exception:
         return "DESCONHECIDO"
     ws = wb.worksheets[0]
     # coleta strings em UPPER da janela inicial (linhas 1..30, cols 1..20)
+    max_row = ws.max_row or 0
+    max_col = ws.max_column or 0
     cels: dict[tuple[int, int], str] = {}
-    for r in range(1, min(31, ws.max_row + 1)):
-        for c in range(1, min(21, ws.max_column + 1)):
+    for r in range(1, min(31, max_row + 1)):
+        for c in range(1, min(21, max_col + 1)):
             v = ws.cell(r, c).value
             if isinstance(v, str) and v.strip():
                 cels[(r, c)] = v.strip().upper()
