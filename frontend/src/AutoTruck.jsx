@@ -34,7 +34,13 @@ export default function AutoTruck() {
       .catch(() => setRes(null))
   }, [mes])
 
-  useEffect(() => { carregar() }, [carregar])
+  // App começa ZERADO: nada é carregado no mount. As telas só populam após o
+  // usuário disparar o rateio (Calcular/Recalcular, PoC Remonta, Processar
+  // planilhas). Por isso NÃO há auto-load aqui.
+
+  // Trocar o mês também zera as telas — evita mostrar dados de um mês sob o
+  // rótulo de outro. Só recarrega ao clicar num botão-gatilho.
+  const trocarMes = (novo) => { setMes(novo); setRes(null); setErro("") }
 
   const calcular = () => {
     setCarregando(true); setErro("")
@@ -76,10 +82,11 @@ export default function AutoTruck() {
             </button>
           ))}
           <span className="ml-auto flex gap-2 items-center">
-            <input value={mes} onChange={e => setMes(e.target.value)}
+            <input value={mes} onChange={e => trocarMes(e.target.value)}
               className="px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm w-24"
               placeholder="MM/AAAA" />
             <button onClick={calcular} disabled={carregando}
+              title="Recalcula sobre os dados já carregados no servidor para este mês (não usa os arquivos da aba Rodar Mês)"
               className="px-4 py-1.5 bg-cyan-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
               {carregando ? "Calculando…" : "Calcular / Recalcular"}
             </button>
