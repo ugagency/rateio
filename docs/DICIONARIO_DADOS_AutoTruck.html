@@ -1,0 +1,737 @@
+<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Dicionário de Dados — AutoTruck</title><style>
+:root { --green:#0a7d4b; --ink:#1f2933; --line:#cbd5e1; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+       font-size: 15px; line-height: 1.6; color: var(--ink); background:#f8fafc; margin:0; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 40px 28px 80px; background:#fff;
+        box-shadow: 0 1px 4px rgba(0,0,0,.08); min-height:100vh; }
+h1 { font-size: 30px; color: var(--green); border-bottom: 3px solid var(--green); padding-bottom: 10px; margin-top:0; }
+h2 { font-size: 21px; margin-top: 36px; color: var(--green); border-bottom:1px solid var(--line); padding-bottom:5px; }
+h3 { font-size: 17px; margin-top: 24px; color:#334155; }
+p { margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: 13.5px; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--green); color: #fff; font-weight: 600; position: sticky; top:0; }
+tr:nth-child(even) td { background: #f1f5f9; }
+tr:hover td { background:#ecfdf5; }
+code { background: #eef2f7; padding: 1.5px 5px; border-radius: 4px;
+       font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; color: #b21e6f; }
+blockquote { border-left: 4px solid var(--green); background:#f0fdf4; margin: 16px 0; padding: 10px 16px; color:#334155; border-radius:0 6px 6px 0; }
+blockquote code { background:#dcfce7; }
+hr { border: none; border-top: 1px solid #e2e8f0; margin: 22px 0; }
+ul { margin: 8px 0; padding-left: 24px; }
+li { margin: 4px 0; }
+strong { color:#0f172a; }
+@media (max-width: 640px){ body{font-size:14px;} table{font-size:12px;} .wrap{padding:24px 14px;} }
+@media print { body{background:#fff;} .wrap{box-shadow:none; max-width:100%; padding:0;} th{position:static;} }
+</style></head><body><div class='wrap'><h1 id="dicionario-de-dados-motor-de-rateio-autotruck">Dicionário de Dados — Motor de Rateio AutoTruck</h1>
+<p>Documenta <strong>cada campo do sistema</strong> com <strong>nome</strong>, <strong>origem</strong> (de onde o valor vem) e
+<strong>cálculo / regra de preenchimento</strong>. Organizado pelo fluxo do motor:
+<strong>Entradas</strong> (planilhas BASE / RATEIO / PRODUTOS) → <strong>Parâmetros</strong> → <strong>Saídas</strong>
+(eventos rateados, segmentos, boletos, consolidado, assistente de ajuste, auditoria).</p>
+<p>Referências de código entre parênteses (<code>arquivo:linha</code>). Toda lógica de cálculo
+vive em <code>backend/app/autotruck/</code> (<code>engine.py</code>, <code>rules.py</code>, <code>domain.py</code>,
+<code>ingestao_partes.py</code>); os contratos de API em <code>backend/app/schemas/autotruck.py</code>.</p>
+<blockquote>
+<p><strong>Ligação com o relatório Hinova.</strong> As contagens de entrada (cotas/boletos por
+situação) vêm do bloco <em>"Valor/Cota por Situação de Boleto"</em> do FECHAMENTO/BASE
+exportado da Hinova. O motor lê <strong>a coluna BAIXADO</strong> (cotas efetivamente
+cobradas e quitadas) — <strong>não</strong> a coluna TOTAL (valor nominal de tabela). Por isso
+TOTAL e BAIXADO divergem na origem (ver discussão de reconciliação).</p>
+</blockquote>
+<hr />
+<h2 id="convencoes">Convenções</h2>
+<ul>
+<li><strong>Segmento</strong>: <code>LEVES</code> | <code>MOTOS</code> (rateio variável, bases separadas) | <code>PESADOS</code>
+  (casco caminhão = pote/valor fixo segregado). Derivado do tipo do veículo
+  (<code>rules.py:57</code> <code>segmento_por_tipo</code>).</li>
+<li><strong>Moeda</strong>: <code>float</code> em reais; arredondamento a 2 casas em todo ponto de saída
+  (<code>round(x, 2)</code>).</li>
+<li><strong>Data</strong>: ISO <code>YYYY-MM-DD</code>; normalizada de <code>dd/mm/YYYY</code> na ingestão (<code>ingestao_partes.py:41</code> <code>_data</code>).</li>
+<li><strong>Mês de referência</strong> (<code>mes_ano_ref</code>): string <code>MM/YYYY</code>.</li>
+</ul>
+<hr />
+<h2 id="1-entradas-base-contagens-hinovasga">1. Entradas — BASE (contagens Hinova/SGA)</h2>
+<p><code>BaseCounts</code> (<code>ingestao_partes.py:56</code>). Lido do bloco com cabeçalho
+<code>DESCRIÇÃO/ABERTO/BAIXADO/CANCELADO/TOTAL</code> da aba BASE/FECHAMENTO.</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Regra de preenchimento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cotas_baixadas[seg]</code></td>
+<td>Coluna <strong>BAIXADO</strong> de <em>"Cota por Situação de Boleto"</em></td>
+<td>Nº de cotas em boletos quitados, por segmento. <strong>É a base do denominador de rateio.</strong></td>
+</tr>
+<tr>
+<td><code>cotas_abertas[seg]</code></td>
+<td>Coluna <strong>ABERTO</strong> de <em>"Cota por Situação"</em></td>
+<td>Cotas em boletos não pagos (informativo; não entra no denominador purista).</td>
+</tr>
+<tr>
+<td><code>boletos_baixados[seg]</code></td>
+<td>Coluna <strong>BAIXADO</strong> de <em>"Quantidade de Boletos"</em></td>
+<td>Contagem de boletos quitados.</td>
+</tr>
+<tr>
+<td><code>boletos_abertos[seg]</code></td>
+<td>Coluna <strong>ABERTO</strong> de <em>"Quantidade de Boletos"</em></td>
+<td>Contagem de boletos em aberto.</td>
+</tr>
+<tr>
+<td><code>valor_recebido[seg]</code></td>
+<td><em>"Resumo de Boletos" → VALOR TOTAL PAGO / VALOR RECEBIDO</em></td>
+<td>Valor financeiro efetivamente recebido.</td>
+</tr>
+<tr>
+<td><code>valor_inadimplencia[seg]</code></td>
+<td><em>"Resumo de Boletos"</em> (aberto/diferença)</td>
+<td>Valor não recebido.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>A divergência <strong>TOTAL × BAIXADO</strong> observada no relatório é da origem (Hinova):
+colunas por situação = <em>valor lançado no boleto</em>; TOTAL = <em>valor nominal do
+produto</em>. O motor usa apenas BAIXADO.</p>
+</blockquote>
+<hr />
+<h2 id="2-entradas-rateio-eventossinistros">2. Entradas — RATEIO (eventos/sinistros)</h2>
+<p><code>EventoAT</code> (<code>domain.py:30</code>). Layout <code>Rateio_POC_Completo.xlsx</code> lido por
+<code>ler_rateio_partes</code> (<code>ingestao_partes.py:271</code>); colunas mapeadas em <code>_RC</code> (<code>ingestao_partes.py:264</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Regra de preenchimento / cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id_evento</code></td>
+<td>Gerado</td>
+<td>Sequencial <code>UP-00001…</code> na ordem de leitura (<code>ingestao_partes.py:319</code>).</td>
+</tr>
+<tr>
+<td><code>protocolo</code></td>
+<td>Coluna 1 (Protocolo)</td>
+<td>Texto do protocolo do sinistro.</td>
+</tr>
+<tr>
+<td><code>placa</code></td>
+<td>Coluna 6 (Placa)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>segmento</code></td>
+<td>Marcador de seção na coluna A (<code>"MOTOS ASSOCIADOS"</code>, <code>"PESADOS TERCEIROS"</code>…)</td>
+<td>Detectado pelo cabeçalho de seção (<code>ingestao_partes.py:287</code>).</td>
+</tr>
+<tr>
+<td><code>envolvimento</code></td>
+<td>Marcador de seção</td>
+<td><code>ASSOCIADO</code> (custo) se a seção termina em "ASSOCIADOS"; <code>TERCEIRO</code> (recuperação) se "TERCEIROS" (<code>ingestao_partes.py:294</code>).</td>
+</tr>
+<tr>
+<td><code>tipo_evento</code></td>
+<td>Coluna B "INDENIZAÇÃO INTEGRAL/PARCIAL"</td>
+<td><code>INTEGRAL</code> ou <code>PARCIAL</code> lido da linha (<code>ingestao_partes.py:301</code>). Pode ser reclassificado pela regra dos 75% no motor.</td>
+</tr>
+<tr>
+<td><code>valor_evento</code></td>
+<td>Coluna 11 (Valor Rateado)</td>
+<td>Valor bruto do evento; base de custo do PARCIAL.</td>
+</tr>
+<tr>
+<td><code>valor_fipe</code></td>
+<td>Coluna 11 (derivado)</td>
+<td>INTEGRAL: = valor rateado. PARCIAL: <code>valor_rateado / 0,5</code> (FIPE alto para <strong>não</strong> disparar a regra dos 75% de forma espúria) (<code>ingestao_partes.py:315-317</code>).</td>
+</tr>
+<tr>
+<td><code>orcamento_reparo</code></td>
+<td>—</td>
+<td><code>0.0</code> no layout atual (base da regra dos 75% quando informado).</td>
+</tr>
+<tr>
+<td><code>data_aviso</code></td>
+<td>Coluna 8 (Data Comunicação)</td>
+<td>Chave de ordenação <strong>FIFO</strong>; normalizada para ISO.</td>
+</tr>
+<tr>
+<td><code>franquia</code></td>
+<td>—</td>
+<td><code>0.0</code> (deduz do custo a ratear quando informado).</td>
+</tr>
+<tr>
+<td><code>valor_salvado</code></td>
+<td>—</td>
+<td><code>0.0</code> (crédito de salvado).</td>
+</tr>
+<tr>
+<td><code>salvado_liquidado</code></td>
+<td>—</td>
+<td><code>False</code>. Crédito do salvado <strong>só</strong> abate no mês da liquidação financeira (<code>domain.py:43</code>).</td>
+</tr>
+<tr>
+<td><code>postergado</code></td>
+<td>Estado entre meses</td>
+<td><code>True</code> se o evento foi cortado em mês anterior → <strong>prioridade FIFO #1 absoluta</strong> (<code>domain.py:44</code>, <code>engine.py:134</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-entradas-veiculo">3. Entradas — Veículo</h2>
+<p><code>VeiculoAT</code> (<code>domain.py:17</code>). Na PoC Remonta são <strong>sintetizados</strong> a partir das
+contagens da BASE (<code>sintetizar_veiculos</code>, <code>ingestao_partes.py:374</code>, FIPE=5000 ⇒ 1 cota cada).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Regra de preenchimento / cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id_veiculo</code></td>
+<td>Cadastro / gerado</td>
+<td>Identificador único.</td>
+</tr>
+<tr>
+<td><code>placa</code></td>
+<td>Cadastro</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>segmento</code></td>
+<td>Tipo do veículo</td>
+<td><code>segmento_por_tipo(tipo_veiculo)</code> (<code>rules.py:57</code>).</td>
+</tr>
+<tr>
+<td><code>tipo_veiculo</code></td>
+<td>Cadastro</td>
+<td>AUTOMOVEL, UTILITÁRIO, PREMIUM, MOTOCICLETA, CAMINHAO, SEMI REBOQUE.</td>
+</tr>
+<tr>
+<td><code>valor_fipe</code></td>
+<td>Cadastro/FIPE</td>
+<td>Base do nº de cotas e do valor integral em perda total.</td>
+</tr>
+<tr>
+<td><code>status_ativo</code></td>
+<td>SGA (foto de fechamento)</td>
+<td>Ativo no mês.</td>
+</tr>
+<tr>
+<td><code>adimplente</code></td>
+<td>Situação de boleto (BAIXADO)</td>
+<td>Pagou → <strong>entra no denominador purista</strong> (<code>engine.py:82</code>).</td>
+</tr>
+<tr>
+<td><code>servicos_adicionais</code></td>
+<td>Contratos (Assist 24h, Vidros…)</td>
+<td>Soma fixa somada direto no boleto.</td>
+</tr>
+<tr>
+<td><code>cobertura_terceiros</code></td>
+<td>Produto Danos a Terceiros</td>
+<td><code>NENHUM</code> | <code>50K</code> | <code>100K</code> — define o preço do pote terceiros.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-parametros-do-motor">4. Parâmetros do motor</h2>
+<p><code>ParametrosAT</code> (<code>rules.py:12</code>). Mudam limiares <strong>globalmente</strong>, nunca a forma do cálculo.</p>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Default</th>
+<th>Significado / uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cota_base</code></td>
+<td><code>1,0</code></td>
+<td>Cota de veículo ≤ R$10.000.</td>
+</tr>
+<tr>
+<td><code>passo_cota</code></td>
+<td><code>0,5</code></td>
+<td>Incremento de cota a cada faixa de R$10k.</td>
+</tr>
+<tr>
+<td><code>faixa_fipe</code></td>
+<td><code>10.000</code></td>
+<td>Tamanho da faixa de progressão.</td>
+</tr>
+<tr>
+<td><code>fipe_cota_especial</code></td>
+<td><code>450.000</code></td>
+<td>Acima disso → cota especial (não progride linear).</td>
+</tr>
+<tr>
+<td><code>multiplicador_especial</code></td>
+<td><code>20,0</code></td>
+<td>Cota fixa do high-end (faixa permitida 15–20).</td>
+</tr>
+<tr>
+<td><code>threshold_perda_total</code></td>
+<td><code>0,75</code></td>
+<td>Regra dos 75%: orçamento &gt; 75%·FIPE ⇒ INTEGRAL.</td>
+</tr>
+<tr>
+<td><code>cota_alvo_min</code> / <code>cota_alvo_max</code></td>
+<td><code>30</code> / <code>35</code></td>
+<td>Faixa de estabilização da cota.</td>
+</tr>
+<tr>
+<td><code>var_trimestral_max</code></td>
+<td><code>0,05</code></td>
+<td>Variação &gt; ±5% vs média 3M dispara alerta/ajuste.</td>
+</tr>
+<tr>
+<td><code>pct_volatilidade</code></td>
+<td><code>0,25</code></td>
+<td>1 sinistro &gt; 25% do pool ⇒ alerta de instabilidade.</td>
+</tr>
+<tr>
+<td><code>arrecadacao_terceiros_estimada</code></td>
+<td><code>500.000</code></td>
+<td>Fallback do pote Terceiros.</td>
+</tr>
+<tr>
+<td><code>preco_terceiros_50k</code> / <code>preco_terceiros_100k</code></td>
+<td><code>20</code> / <code>30</code></td>
+<td>Preço mensal do produto Danos a Terceiros por faixa.</td>
+</tr>
+<tr>
+<td><code>preco_casco_caminhao</code></td>
+<td><code>0,0</code></td>
+<td>&gt;0 ativa arrecadação real do pote caminhão (valor fixo/assoc).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cálculos derivados de parâmetro:</strong>
+- <strong>Cotas por FIPE</strong> (<code>cotas_por_fipe</code>, <code>rules.py:66</code>): se <code>fipe &gt; 450k</code> → <code>(20, especial=True)</code>; senão <code>cota_base + passo_cota·max(0, ⌈fipe/10k⌉−1)</code>.
+- <strong>Regra dos 75%</strong> (<code>aplica_regra_75</code>, <code>rules.py:78</code>): <code>fipe&gt;0 and orcamento &gt; 0,75·fipe</code>.
+- <strong>Preço terceiros</strong> (<code>preco_cobertura_terceiros</code>, <code>rules.py:43</code>): <code>NENHUM→0</code>, <code>50K→20</code>, <code>100K→30</code>.</p>
+<hr />
+<h2 id="5-saida-evento-rateado">5. Saída — Evento Rateado</h2>
+<p><code>EventoRateadoAT</code> (<code>domain.py:71</code>) / <code>EventoRateadoATOut</code>. Um por evento processado;
+ordenado por FIFO (<code>engine.py:131</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mes_ano_ref</code></td>
+<td>Parâmetro de execução</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>id_evento</code>, <code>protocolo</code>, <code>segmento</code>, <code>envolvimento</code>, <code>data_aviso</code></td>
+<td>Evento de entrada</td>
+<td>Cópia.</td>
+</tr>
+<tr>
+<td><code>tipo_evento</code></td>
+<td>Evento + regra 75%</td>
+<td>Tipo <strong>efetivo</strong> após reclassificação (<code>engine.py:95</code>).</td>
+</tr>
+<tr>
+<td><code>reclassificado_75pct</code></td>
+<td>Regra dos 75%</td>
+<td><code>True</code> se PARCIAL virou INTEGRAL por <code>aplica_regra_75</code> (<code>engine.py:96</code>).</td>
+</tr>
+<tr>
+<td><code>valor_evento</code></td>
+<td>Evento</td>
+<td>Valor bruto (2 casas).</td>
+</tr>
+<tr>
+<td><code>custo_a_ratear</code></td>
+<td>Calculado</td>
+<td>INTEGRAL→<code>valor_fipe</code>; PARCIAL→<code>valor_evento</code> (<code>_custo_evento</code>, <code>engine.py:41</code>).</td>
+</tr>
+<tr>
+<td><code>ordem_fifo</code></td>
+<td>Calculado</td>
+<td>Posição na fila: postergado primeiro → <code>data_aviso</code> ASC → INTEGRAL antes de PARCIAL → maior custo → id (<code>engine.py:131-140</code>).</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Calculado</td>
+<td><code>ALOCADO</code>; vira <code>POSTERGADO</code> em PESADOS/ASSOCIADO quando estoura o teto do pote caminhão (<code>engine.py:148-152</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-saida-resultado-por-segmento">6. Saída — Resultado por Segmento</h2>
+<p><code>SegmentoResultado</code> (<code>domain.py:48</code>) / <code>SegmentoOut</code>. Loop de apuração <code>engine.py:172</code> (variáveis) e <code>engine.py:226</code> (PESADOS).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>segmento</code></td>
+<td>—</td>
+<td>LEVES / MOTOS / PESADOS.</td>
+</tr>
+<tr>
+<td><code>modo</code></td>
+<td>—</td>
+<td><code>RATEIO_VARIAVEL</code> (LEVES/MOTOS) ou <code>POTE_FIXO</code> (PESADOS).</td>
+</tr>
+<tr>
+<td><code>custo_integrais</code> (ci)</td>
+<td>Soma</td>
+<td>Σ custo dos eventos ASSOCIADO INTEGRAL do segmento (<code>_acc</code>, <code>engine.py:111</code>).</td>
+</tr>
+<tr>
+<td><code>custo_parciais</code> (cp)</td>
+<td>Soma</td>
+<td>Σ custo dos eventos ASSOCIADO PARCIAL.</td>
+</tr>
+<tr>
+<td><code>deducao_salvados</code> (ds)</td>
+<td>Soma</td>
+<td>Σ <code>valor_salvado</code> <strong>apenas</strong> dos salvados liquidados (<code>engine.py:115</code>).</td>
+</tr>
+<tr>
+<td><code>deducao_franquias</code> (df)</td>
+<td>Soma</td>
+<td>Σ <code>franquia</code> dos eventos do segmento.</td>
+</tr>
+<tr>
+<td><code>recuperacao_terceiros</code> (rt)</td>
+<td>Soma</td>
+<td>Σ custo dos eventos com envolvimento TERCEIRO — <strong>NÃO abate a cota</strong> (vai pro pote Terceiros) (<code>engine.py:108</code>).</td>
+</tr>
+<tr>
+<td><code>custo_a_ratear</code></td>
+<td>Calculado</td>
+<td><code>ci + cp − ds − df</code> (<code>engine.py:177</code>).</td>
+</tr>
+<tr>
+<td><code>cotas_ativas</code></td>
+<td>BASE</td>
+<td>Σ cotas de veículos ativos <strong>e</strong> adimplentes do segmento (<code>engine.py:83</code>).</td>
+</tr>
+<tr>
+<td><strong><code>valor_cota</code></strong></td>
+<td>Calculado</td>
+<td><strong><code>custo_a_ratear / cotas_ativas</code></strong> (0 se sem cotas) (<code>engine.py:181</code>). É a "cota" do mês.</td>
+</tr>
+<tr>
+<td><code>arrecadado</code></td>
+<td>Pote</td>
+<td><code>0,0</code> nos variáveis; arrecadação do pote nos PESADOS.</td>
+</tr>
+<tr>
+<td><code>reserva_ou_deficit</code></td>
+<td>Calculado</td>
+<td><code>0</code> nos variáveis; <code>arrecadado − custo</code> nos PESADOS (<code>engine.py:225</code>).</td>
+</tr>
+<tr>
+<td><code>alerta_volatilidade</code></td>
+<td>Calculado</td>
+<td><code>True</code> se maior sinistro &gt; 25% do bruto do pool (<code>engine.py:183</code>).</td>
+</tr>
+<tr>
+<td><code>faixa_estabilizacao</code></td>
+<td>Calculado</td>
+<td><code>ABAIXO</code> (&lt;30), <code>OK</code> (30–35), <code>ACIMA</code> (&gt;35) (<code>engine.py:189-194</code>).</td>
+</tr>
+<tr>
+<td><code>sugestao</code></td>
+<td>Calculado</td>
+<td>Texto-guia conforme faixa + alertas (volatilidade / variação trimestral) (<code>engine.py:190-201</code>).</td>
+</tr>
+<tr>
+<td><code>diferenca_alvo_vs_alocado</code></td>
+<td>Invariante</td>
+<td><code>custo_a_ratear − custo_alocado</code> (deve ser 0; <strong>invariante de auditoria</strong>) (<code>engine.py:179</code>).</td>
+</tr>
+<tr>
+<td><code>media_cota_3m</code></td>
+<td>Histórico</td>
+<td>Média das cotas dos últimos 3 meses (<code>engine.py:186</code>).</td>
+</tr>
+<tr>
+<td><code>variacao_vs_media</code></td>
+<td>Calculado</td>
+<td><code>(valor_cota − media_3m) / media_3m</code> (<code>engine.py:187</code>).</td>
+</tr>
+<tr>
+<td><code>alerta_variacao_trimestral</code></td>
+<td>Calculado</td>
+<td><code>True</code> se <code>|variacao| &gt; 5%</code> e há histórico (<code>engine.py:188</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-saida-boleto">7. Saída — Boleto</h2>
+<p><code>BoletoAT</code> (<code>domain.py:87</code>) / <code>BoletoATOut</code>. Um por veículo (<code>engine.py:265</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Origem</th>
+<th>Cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id_veiculo</code>, <code>placa</code>, <code>mes_ano_ref</code>, <code>segmento</code>, <code>valor_fipe</code></td>
+<td>Veículo</td>
+<td>Cópia.</td>
+</tr>
+<tr>
+<td><code>qtd_cotas</code></td>
+<td>Calculado</td>
+<td><code>cotas_por_fipe(valor_fipe)</code> (<code>engine.py:266</code>).</td>
+</tr>
+<tr>
+<td><code>cota_especial</code></td>
+<td>Calculado</td>
+<td><code>True</code> se FIPE &gt; teto especial.</td>
+</tr>
+<tr>
+<td><code>custo_rateio</code></td>
+<td>Calculado</td>
+<td><code>qtd_cotas · valor_cota</code> do segmento (só se elegível e segmento variável) (<code>engine.py:268</code>).</td>
+</tr>
+<tr>
+<td><code>custo_pote_caminhao</code></td>
+<td>Calculado</td>
+<td>PESADOS elegível: <code>preco_casco_caminhao</code> (N4) ou rateio per-capita do pote (<code>engine.py:269-274</code>).</td>
+</tr>
+<tr>
+<td><code>custo_pote_terceiros</code></td>
+<td>Calculado</td>
+<td>Preço da cobertura contratada, ou per-capita do pote estimado (<code>engine.py:275-280</code>).</td>
+</tr>
+<tr>
+<td><code>servicos_adicionais</code></td>
+<td>Veículo</td>
+<td>Soma fixa de serviços contratados.</td>
+</tr>
+<tr>
+<td><code>valor_total_boleto</code></td>
+<td>Calculado</td>
+<td><code>custo_rateio + custo_pote_caminhao + custo_pote_terceiros + servicos_adicionais</code> (<code>engine.py:281</code>).</td>
+</tr>
+<tr>
+<td><code>gera_boleto</code></td>
+<td>Calculado</td>
+<td><code>status_ativo AND adimplente</code> (<code>engine.py:267</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-saida-consolidado-do-mes">8. Saída — Consolidado do mês</h2>
+<p><code>ConsolidadoAT</code> (<code>domain.py:138</code>) / <code>ConsolidadoATOut</code>. Montado em <code>engine.py:296</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cota_leves</code> / <code>cota_motos</code></td>
+<td><code>valor_cota</code> de cada segmento variável.</td>
+</tr>
+<tr>
+<td><code>custo_a_ratear_leves</code> / <code>_motos</code></td>
+<td><code>custo_a_ratear</code> por segmento.</td>
+</tr>
+<tr>
+<td><code>bruto_leves</code> / <code>_motos</code></td>
+<td><code>ci + cp</code> (antes de salvados/franquias) (<code>engine.py:182</code>).</td>
+</tr>
+<tr>
+<td><code>recuperacao_terceiros_leves</code> / <code>_motos</code></td>
+<td><code>rt</code> por segmento.</td>
+</tr>
+<tr>
+<td><code>pote_caminhao_arrecadado</code></td>
+<td><code>preco_casco_caminhao·n_pes</code> ou <code>valor_fixo·n_pes</code> ou estimada (<code>engine.py:124-129</code>).</td>
+</tr>
+<tr>
+<td><code>pote_caminhao_custo</code></td>
+<td><code>ci+cp−ds−df</code> dos PESADOS (<code>engine.py:224</code>).</td>
+</tr>
+<tr>
+<td><code>pote_caminhao_reserva</code></td>
+<td><code>arrecadado − custo</code> (<code>engine.py:225</code>).</td>
+</tr>
+<tr>
+<td><code>pote_terceiros_arrecadado</code></td>
+<td>Σ preço das coberturas elegíveis, ou <code>valor_fixo·n</code>, ou estimada (<code>engine.py:250-257</code>).</td>
+</tr>
+<tr>
+<td><code>pote_terceiros_custo</code></td>
+<td>Σ recuperações de terceiros (todos os segmentos + PESADOS) (<code>engine.py:245</code>).</td>
+</tr>
+<tr>
+<td><code>pote_terceiros_reserva</code></td>
+<td><code>arrecadado − custo</code> (<code>engine.py:258</code>).</td>
+</tr>
+<tr>
+<td><code>total_veiculos</code></td>
+<td>Contagem total de veículos.</td>
+</tr>
+<tr>
+<td><code>total_veiculos_elegiveis</code></td>
+<td>Ativos <strong>e</strong> adimplentes (<code>engine.py:85</code>).</td>
+</tr>
+<tr>
+<td><code>total_cotas_leves</code> / <code>_motos</code></td>
+<td>Σ cotas ativas por segmento.</td>
+</tr>
+<tr>
+<td><code>eventos_alocados</code></td>
+<td>Nº eventos com <code>status=ALOCADO</code> (<code>engine.py:316</code>).</td>
+</tr>
+<tr>
+<td><code>eventos_postergados</code></td>
+<td>Nº cortados pelo teto do pote caminhão (<code>engine.py:317</code>).</td>
+</tr>
+<tr>
+<td><code>eventos_reclassificados_75pct</code></td>
+<td>Nº PARCIAL→INTEGRAL pela regra dos 75%.</td>
+</tr>
+<tr>
+<td><code>diferenca_total</code></td>
+<td>Σ <code>diferenca_alvo_vs_alocado</code> dos variáveis (<code>engine.py:293</code>).</td>
+</tr>
+<tr>
+<td><code>invariante_ok</code></td>
+<td><code>|diferenca_total| &lt; 0,01</code> (<code>engine.py:320</code>).</td>
+</tr>
+<tr>
+<td><code>alerta_variacao_trimestral</code></td>
+<td><code>True</code> se algum segmento estourou ±5% vs média 3M.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Saídas agregadas na API</strong> (<code>ResultadoATOut</code>, <code>schemas:189</code>): <code>total_eventos</code>,
+<code>total_boletos</code>, <code>total_boletos_a_emitir</code> (só <code>gera_boleto</code>), <code>receita_total_esperada</code>
+(Σ <code>valor_total_boleto</code> dos boletos a emitir) (<code>api/autotruck.py:58-66</code>).</p>
+<hr />
+<h2 id="9-saida-assistente-de-ajuste">9. Saída — Assistente de Ajuste</h2>
+<p><code>SugestaoAjuste</code> (<code>domain.py:122</code>) / <code>SugestaoAjusteOut</code>. Calculado por <code>sugerir_ajuste</code> (<code>engine.py:337</code>). <strong>Alvo independente por segmento</strong> (<code>alvos_cota</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Cálculo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>segmento</code></td>
+<td>LEVES / MOTOS.</td>
+</tr>
+<tr>
+<td><code>cota_atual</code></td>
+<td><code>valor_cota</code> apurado do segmento.</td>
+</tr>
+<tr>
+<td><code>alvo_cota</code></td>
+<td><code>alvos_cota[seg]</code> → <code>alvo_cota</code> global → default (<code>media_3m·1,05</code> ou R$35) (<code>engine.py:359</code>, <code>_alvo_default</code> <code>engine.py:329</code>).</td>
+</tr>
+<tr>
+<td><code>precisa_ajuste</code></td>
+<td><code>True</code> se <code>cota_atual &gt; alvo</code>.</td>
+</tr>
+<tr>
+<td><code>reducao_necessaria</code></td>
+<td><code>(cota_atual − alvo) · cotas_ativas</code> (<code>engine.py:371</code>).</td>
+</tr>
+<tr>
+<td><code>eventos_sugeridos</code></td>
+<td>Conjunto <strong>mínimo</strong> a postergar: candidatos ASSOCIADO ALOCADO INTEGRAL (PARCIAL só se <code>incluir_parciais</code>), ordenados por valor DESC, desempate mais recente (<code>engine.py:372-394</code>).</td>
+</tr>
+<tr>
+<td><code>reducao_obtida</code></td>
+<td>Σ custo dos eventos escolhidos.</td>
+</tr>
+<tr>
+<td><code>cota_resultante</code></td>
+<td><code>(custo_a_ratear − reducao_obtida) / cotas_ativas</code> (<code>engine.py:396</code>).</td>
+</tr>
+<tr>
+<td><code>atingiu_alvo</code></td>
+<td><code>cota_resultante ≤ alvo</code> (<code>engine.py:397</code>).</td>
+</tr>
+<tr>
+<td><code>mensagem</code></td>
+<td>Texto-guia do resultado.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-auditoria-e-fechamento">10. Auditoria e Fechamento</h2>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Estrutura</th>
+<th>Origem / regra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuditLog.acao</code></td>
+<td><code>domain.py:104</code></td>
+<td><code>EXCLUSAO_MANUAL</code> / <code>INCLUSAO_MANUAL</code> / postergação no ajuste.</td>
+</tr>
+<tr>
+<td><code>AuditLog.justificativa</code></td>
+<td>—</td>
+<td><strong>Obrigatória</strong> e não-vazia; senão a exclusão é ignorada (<code>engine.py:67</code>).</td>
+</tr>
+<tr>
+<td><code>AuditLog.timestamp</code></td>
+<td>—</td>
+<td>ISO UTC do processamento.</td>
+</tr>
+<tr>
+<td><code>FotoFechamento.hash_insumos</code></td>
+<td><code>schemas:167</code></td>
+<td>Hash dos insumos da foto (integridade).</td>
+</tr>
+<tr>
+<td><code>IntegridadeOut.intacto</code></td>
+<td><code>schemas:183</code></td>
+<td><code>hash_foto == hash_atual</code> (detecta adulteração pós-homologação).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="invariante-central">Invariante central</h3>
+<p>Para cada segmento variável: <strong><code>custo_a_ratear − custo_dos_eventos_alocados = 0</code></strong>
+(análogo ao "alvo vs alocado = 0" do ELLO). Consolidado: <code>invariante_ok</code> exige
+<code>|diferenca_total| &lt; 0,01</code> (<code>engine.py:10-11</code>, <code>engine.py:320</code>).</p></div></body></html>
