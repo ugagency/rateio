@@ -109,7 +109,7 @@ export default function AutoTruck() {
         ) : !res ? (
           <div className="text-center py-20">
             <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio AutoTruck para {mes}</h2>
-            <p className="text-slate-300 mb-6">Bases separadas LEVES / MOTOS (variável) e PESADOS (pote fixo de casco caminhão).</p>
+            <p className="text-slate-300 mb-6">Bases separadas LEVES / MOTOS (variável) e PESADOS (valor fixo de casco caminhão).</p>
             <div className="flex gap-3 justify-center">
               <button onClick={calcular} disabled={carregando}
                 className="px-6 py-3 bg-cyan-500 text-slate-900 font-bold rounded-lg disabled:opacity-50">
@@ -179,13 +179,13 @@ function Visao({ res }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card label="Veículos elegíveis" value={`${c.total_veiculos_elegiveis} / ${c.total_veiculos}`} sub="modelo purista (ativo + adimplente)" />
         <Card label="Cotas LEVES / MOTOS" value={`${brl(c.total_cotas_leves)} / ${brl(c.total_cotas_motos)}`} />
-        <Card label="Custo a ratear LEVES" value={`R$ ${brl(c.custo_a_ratear_leves)}`} sub={`integral+parcial (terceiro não abate · pote ${brl(c.recuperacao_terceiros_leves)})`} />
-        <Card label="Custo a ratear MOTOS" value={`R$ ${brl(c.custo_a_ratear_motos)}`} sub={`integral+parcial (terceiro não abate · pote ${brl(c.recuperacao_terceiros_motos)})`} />
+        <Card label="Custo a ratear LEVES" value={`R$ ${brl(c.custo_a_ratear_leves)}`} sub={`integral+parcial (terceiro não abate · valor fixo ${brl(c.recuperacao_terceiros_leves)})`} />
+        <Card label="Custo a ratear MOTOS" value={`R$ ${brl(c.custo_a_ratear_motos)}`} sub={`integral+parcial (terceiro não abate · valor fixo ${brl(c.recuperacao_terceiros_motos)})`} />
         <Card label="Estabilização trimestral" value={c.alerta_variacao_trimestral ? "⚠ Variação > ±5%" : "OK · dentro de ±5%"} tone={c.alerta_variacao_trimestral ? "warn" : "ok"} sub="cota vs média dos últimos 3 meses" />
         <Card label="Eventos alocados" value={c.eventos_alocados} sub={`${c.eventos_postergados} postergados`} />
         <Card label="Reclassif. regra 75%" value={c.eventos_reclassificados_75pct} sub="parcial → integral (perda total)" />
-        <Card label="Pote Caminhão (reserva)" value={`R$ ${brl(c.pote_caminhao_reserva)}`} tone={c.pote_caminhao_reserva >= 0 ? "ok" : "bad"} sub={`arrec ${brl(c.pote_caminhao_arrecadado)} · custo ${brl(c.pote_caminhao_custo)}`} />
-        <Card label="Pote Terceiros (reserva)" value={`R$ ${brl(c.pote_terceiros_reserva)}`} tone={c.pote_terceiros_reserva >= 0 ? "ok" : "bad"} sub={`arrec ${brl(c.pote_terceiros_arrecadado)} · custo ${brl(c.pote_terceiros_custo)}`} />
+        <Card label="Valor Fixo Caminhão (reserva)" value={`R$ ${brl(c.pote_caminhao_reserva)}`} tone={c.pote_caminhao_reserva >= 0 ? "ok" : "bad"} sub={`arrec ${brl(c.pote_caminhao_arrecadado)} · custo ${brl(c.pote_caminhao_custo)}`} />
+        <Card label="Valor Fixo Terceiros (reserva)" value={`R$ ${brl(c.pote_terceiros_reserva)}`} tone={c.pote_terceiros_reserva >= 0 ? "ok" : "bad"} sub={`arrec ${brl(c.pote_terceiros_arrecadado)} · custo ${brl(c.pote_terceiros_custo)}`} />
       </div>
     </div>
   )
@@ -206,12 +206,12 @@ function Segmentos({ mes }) {
         <div key={s.segmento} className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex justify-between items-baseline">
             <div className="text-xl font-bold text-white">{s.segmento}</div>
-            <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-cyan-300">{s.modo}</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-cyan-300">{s.modo === "POTE_FIXO" ? "VALOR_FIXO" : s.modo}</span>
           </div>
           {s.modo === "RATEIO_VARIAVEL" ? (
             <div className="text-3xl font-black text-cyan-300 mt-2">R$ {brl(s.valor_cota)}<span className="text-sm text-slate-400"> /cota</span></div>
           ) : (
-            <div className="text-2xl font-black text-amber-300 mt-2">Pote fixo</div>
+            <div className="text-2xl font-black text-amber-300 mt-2">Valor fixo</div>
           )}
           <dl className="mt-4 text-sm space-y-1">
             <Row k="Integrais" v={s.custo_integrais} />
@@ -228,7 +228,7 @@ function Segmentos({ mes }) {
                 </dd>
               </div>
             )}
-            <Row k="Terceiros (pote, não abate)" v={s.recuperacao_terceiros} />
+            <Row k="Terceiros (valor fixo, não abate)" v={s.recuperacao_terceiros} />
             {s.modo === "POTE_FIXO" && <Row k="Arrecadado" v={s.arrecadado} />}
             {s.modo === "POTE_FIXO" && <Row k="Reserva/Déficit" v={s.reserva_ou_deficit} bold />}
           </dl>
@@ -342,7 +342,7 @@ function Potes({ mes }) {
   if (!potes) return <p className="text-slate-400">Sem dados.</p>
   return (
     <div>
-      <h2 className="text-xl font-bold text-white mb-4">Potes Fixos (não entram na divisão de cotas)</h2>
+      <h2 className="text-xl font-bold text-white mb-4">Valores Fixos (não entram na divisão de cotas)</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {potes.map(s => (
           <div key={s.segmento} className="bg-slate-800 rounded-xl p-6 border border-slate-700">
@@ -381,7 +381,7 @@ function Boletos({ mes }) {
             <tr>
               <th className="px-3 py-2">Veículo</th><th className="px-3 py-2">Placa</th><th className="px-3 py-2">Seg</th>
               <th className="px-3 py-2 text-right">FIPE</th><th className="px-3 py-2 text-right">Cotas</th>
-              <th className="px-3 py-2 text-right">Rateio</th><th className="px-3 py-2 text-right">Potes</th>
+              <th className="px-3 py-2 text-right">Rateio</th><th className="px-3 py-2 text-right">Valor Fixo</th>
               <th className="px-3 py-2 text-right">Total</th><th className="px-3 py-2">Emite</th>
             </tr>
           </thead>
@@ -633,7 +633,7 @@ function RodarMesResultado({ resp, onAbrir }) {
         <Card label="Invariante" value={c.invariante_ok ? "OK · Δ 0,00" : `Δ ${brl(c.diferenca_total)}`} tone={c.invariante_ok ? "ok" : "bad"} />
         <Card label="Eventos alocados" value={c.eventos_alocados} sub={`${c.eventos_postergados} postergados`} />
         <Card label="Reclassif. 75%" value={c.eventos_reclassificados_75pct} sub="parcial → integral" />
-        <Card label="Pote Terceiros" value={`R$ ${brl(c.pote_terceiros_reserva)}`} tone={c.pote_terceiros_reserva >= 0 ? "ok" : "bad"} sub={`arrec R$ ${brl(c.pote_terceiros_arrecadado)}`} />
+        <Card label="Valor Fixo Terceiros" value={`R$ ${brl(c.pote_terceiros_reserva)}`} tone={c.pote_terceiros_reserva >= 0 ? "ok" : "bad"} sub={`arrec R$ ${brl(c.pote_terceiros_arrecadado)}`} />
       </div>
       <details className="mt-4 text-xs text-slate-400">
         <summary className="cursor-pointer hover:text-slate-200">Detalhes da ingestão (seções, valores recebidos, catálogo)</summary>

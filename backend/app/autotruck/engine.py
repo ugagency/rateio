@@ -233,8 +233,8 @@ def calcular_rateio_at(
             arrecadado=pote_caminhao_arrec, reserva_ou_deficit=pote_caminhao_reserva,
             alerta_volatilidade=False,
             faixa_estabilizacao="OK" if pote_caminhao_reserva >= 0 else "ACIMA",
-            sugestao=("Pote caminhão com reserva (gordura)." if pote_caminhao_reserva >= 0
-                      else "Déficit no pote caminhão: postergar PTs ao próximo ciclo."),
+            sugestao=("Valor fixo caminhão com reserva (gordura)." if pote_caminhao_reserva >= 0
+                      else "Déficit no valor fixo caminhão: postergar PTs ao próximo ciclo."),
             diferenca_alvo_vs_alocado=0.0,
         )
     )
