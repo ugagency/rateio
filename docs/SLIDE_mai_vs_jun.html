@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoTruck — PoC · mai/26 × jun/26</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#121c2e; --line:#22304a; --txt:#e6edf6;
+    --mut:#94a3b8; --cyan:#22d3ee; --emer:#34d399; --amber:#fbbf24; --red:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .slide{min-height:100vh;display:flex;flex-direction:column;padding:5vh 7vw}
+  .kick{color:var(--cyan);font-weight:700;letter-spacing:.22em;
+    text-transform:uppercase;font-size:.8rem;margin-bottom:.9rem}
+  h2{font-size:2.3rem;line-height:1.15;font-weight:800;letter-spacing:-.02em}
+  h2 .cy{color:var(--cyan)}
+  .sub{color:var(--mut);font-size:1.05rem;margin-top:.5rem}
+  .row{display:grid;grid-template-columns:1.55fr 1fr;gap:1.8rem;margin-top:1.8rem;align-items:start}
+  table{width:100%;border-collapse:collapse;font-size:1.06rem}
+  th,td{text-align:left;padding:.62rem .8rem;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+  tr.hl td{background:#0e2436}
+  td b{color:#fff}
+  .d{color:var(--cyan);font-weight:800}
+  .eq{color:var(--mut)}
+  .zero{color:var(--emer);font-weight:700}
+  .pill{display:inline-block;padding:.18rem .6rem;border-radius:999px;font-size:.78rem;
+    font-weight:700;border:1px solid var(--line)}
+  .pill.ok{color:var(--emer);border-color:#16513b;background:#0e2a20}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.3rem 1.4rem}
+  .conta .l{color:var(--mut);font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
+  .conta .f{font-size:1.35rem;font-weight:700;color:#e6edf6;margin-top:.7rem;line-height:1.7}
+  .conta .f .cy{color:var(--cyan)} .conta .f .am{color:var(--amber)}
+  .conta .hero{font-size:3.6rem;font-weight:900;color:var(--emer);letter-spacing:-.03em;margin-top:.6rem}
+  .note{color:var(--mut);font-size:.9rem;margin-top:.9rem;line-height:1.55}
+  .road{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:auto;padding-top:2rem}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem}
+  .step .t{color:var(--cyan);font-weight:800;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+  .step .x{color:#cbd5e1;font-size:1rem;margin-top:.4rem;line-height:1.45}
+  .foot{display:flex;justify-content:space-between;color:#5b6b82;font-size:.78rem;
+    border-top:1px solid var(--line);padding-top:.8rem;margin-top:1.6rem}
+  @media print{ body,.slide{height:auto} @page{size:landscape} }
+</style>
+</head>
+<body>
+  <section class="slide">
+    <div class="kick">Motor de Rateio · PoC AutoTruck · LC 213/2024</div>
+    <h2>A prova nos centavos — <span class="cy">mai/26 × jun/26</span></h2>
+    <div class="sub">Dois meses, mesmos 92 eventos. Só mudam a escala dos sinistros e o nº de associados — e a cota acompanha, exata.</div>
+
+    <div class="row">
+      <table>
+        <thead>
+          <tr><th>Indicador (Visão Geral)</th><th class="r">mai/26</th><th class="r">jun/26</th><th class="r">Δ</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hl"><td><b>Cota LEVES</b></td><td class="r"><b>R$ 20,46</b></td><td class="r"><b>R$ 50,22</b></td><td class="r d">2,45×</td></tr>
+          <tr class="hl"><td><b>Cota MOTOS</b></td><td class="r"><b>R$ 76,55</b></td><td class="r"><b>R$ 187,92</b></td><td class="r d">2,45×</td></tr>
+          <tr><td>Custo a ratear · LEVES</td><td class="r">R$ 552.428</td><td class="r">R$ 1.657.284</td><td class="r d">3,00×</td></tr>
+          <tr><td>Custo a ratear · MOTOS</td><td class="r">R$ 172.764</td><td class="r">R$ 518.291</td><td class="r d">3,00×</td></tr>
+          <tr><td>Cotas (associados) · LEVES</td><td class="r">27.000</td><td class="r">33.000</td><td class="r d">1,22×</td></tr>
+          <tr><td>Cotas (associados) · MOTOS</td><td class="r">2.257</td><td class="r">2.758</td><td class="r d">1,22×</td></tr>
+          <tr><td>Eventos alocados · postergados</td><td class="r">92 · 0</td><td class="r">92 · 0</td><td class="r eq">=</td></tr>
+          <tr><td>Invariante de auditoria</td><td class="r"><span class="pill ok">OK · Δ 0,00</span></td><td class="r"><span class="pill ok">OK · Δ 0,00</span></td><td class="r eq">✓</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card conta">
+        <div class="l">Por que a cota muda</div>
+        <div class="f">cota = <span class="cy">custo</span> ÷ <span class="am">cotas</span></div>
+        <div class="f"><span class="cy">3,00×</span> ÷ <span class="am">1,22×</span> =</div>
+        <div class="hero">2,45×</div>
+        <div class="note">O custo dos sinistros subiu 3× e o nº de associados 1,22×.
+        A cota sobe exatamente 2,45× — <b>igual nos dois segmentos</b>. O motor
+        reage a numerador e denominador na hora, e o invariante fecha em zero.</div>
+      </div>
+    </div>
+
+    <div class="road">
+      <div class="step"><div class="t">Hoje · Provar</div><div class="x">PoC valida o motor calculando a cota dos 3 segmentos com os arquivos de vocês.</div></div>
+      <div class="step"><div class="t">Curto prazo · Paralelo</div><div class="x">Rodar meses reais e conferir os números contra a planilha manual atual.</div></div>
+      <div class="step"><div class="t">Médio prazo · Adotar</div><div class="x">Fechamento mensal oficial pela plataforma (D+0…D+5, lacre, emissão de boletos).</div></div>
+    </div>
+
+    <div class="foot"><span>Valores propositais — apenas para evidenciar a variação. Em produção: dados reais.</span><span>Confidencial</span></div>
+  </section>
+</body>
+</html>
