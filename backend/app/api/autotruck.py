@@ -151,7 +151,7 @@ async def rodar_mes(
     rateio: UploadFile = File(..., description="Planilha RATEIO (eventos sinistrados do mês)."),
     produtos: UploadFile | None = File(default=None, description="Catálogo de produtos (opcional)."),
     mes_ano_ref: str = Form(..., description="Mês de referência MM/AAAA (ex.: 04/2026)."),
-    cotas_leves: int | None = Form(default=None, description="Override de cotas LEVES adimplentes (a BASE do Rodrigo costuma não trazer)."),
+    cotas_leves: int | None = Form(default=None, description="Override de cotas LEVES adimplentes (usado se a BASE não trouxer o total de LEVES)."),
     cotas_motos: int | None = Form(default=None, description="Override de cotas MOTOS adimplentes."),
 ) -> RodarMesOut:
     """Recebe BASE+RATEIO (e opcionalmente PRODUTOS) como upload, compõe

@@ -468,7 +468,10 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
       if (slot === "BASE" && d.valido && d.extras?.cotas_baixadas) {
         const cm = d.extras.cotas_baixadas.MOTOS
         if (cm && !cotasMotosManual) setCotasMotos(String(cm))
-        // LEVES não vem da BASE do Rodrigo — deixa o usuário preencher
+        // LEVES normalmente não vem da BASE do Rodrigo; mas se vier (ex.: BASE
+        // de demo com bloco de cotas LEVES), auto-preenche também.
+        const cl = d.extras.cotas_baixadas.LEVES
+        if (cl && !cotasLevesManual) setCotasLeves(String(cl))
       }
     } catch (e) {
       setSlot({ file, status: "erro", tipo: null, erro: "Falha na inspeção." })
@@ -547,14 +550,14 @@ function RodarMes({ mes, setMes, onRodado, onCalculado }) {
             <span className="text-slate-400 block mb-1">Cotas LEVES (override — opc.)</span>
             <input value={cotasLeves}
               onChange={e => { setCotasLeves(e.target.value); setCotasLevesManual(true) }}
-              placeholder="quando a BASE não traz"
+              placeholder="auto-preenche se a BASE trouxer"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
           <label className="text-sm">
             <span className="text-slate-400 block mb-1">Cotas MOTOS (override — opc.)</span>
             <input value={cotasMotos}
               onChange={e => { setCotasMotos(e.target.value); setCotasMotosManual(true) }}
-              placeholder="auto-preenche pela BASE"
+              placeholder="auto-preenche se a BASE trouxer"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
           </label>
         </div>
