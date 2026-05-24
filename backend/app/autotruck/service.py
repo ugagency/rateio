@@ -81,6 +81,7 @@ class AutoTruckService:
         mes_ano_ref: str,
         *,
         alvo_cota: float | None = None,
+        alvos_cota: dict[str, float] | None = None,
         incluir_parciais: bool = False,
     ) -> list[SugestaoAjuste]:
         """Assistente de ajuste sobre o resultado persistido (ou replay)."""
@@ -89,6 +90,7 @@ class AutoTruckService:
             resultado,
             params=self.params,
             alvo_cota=alvo_cota,
+            alvos_cota=alvos_cota,
             incluir_parciais=incluir_parciais,
         )
 

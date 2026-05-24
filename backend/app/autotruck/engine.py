@@ -339,6 +339,7 @@ def sugerir_ajuste(
     *,
     params: ParametrosAT = PARAMS_DEFAULT,
     alvo_cota: float | None = None,
+    alvos_cota: dict[str, float] | None = None,
     incluir_parciais: bool = False,
     segmentos_alvo: tuple[str, ...] = VARIAVEIS,
 ) -> list[SugestaoAjuste]:
@@ -349,6 +350,11 @@ def sugerir_ajuste(
     ALOCADO; INTEGRAL primeiro (parcial é oficina/nota fechada, raramente
     se mexe — só entra se `incluir_parciais`); ordem por valor DESC (menos
     eventos para cobrir a redução), desempate pelo mais recente.
+
+    O alvo de cada segmento é **independente**: `alvos_cota` mapeia
+    segmento→alvo; na ausência de entrada para o segmento, cai no
+    `alvo_cota` global e, por fim, no default (topo da banda ±5% da
+    média 3M). LEVES e MOTOS podem, portanto, ter alvos distintos.
     """
     por_seg = {s.segmento: s for s in resultado.segmentos}
     sugestoes: list[SugestaoAjuste] = []
@@ -356,7 +362,10 @@ def sugerir_ajuste(
         s = por_seg.get(seg)
         if s is None or s.modo != "RATEIO_VARIAVEL" or s.cotas_ativas <= 0:
             continue
-        alvo = round(alvo_cota, 2) if alvo_cota is not None else _alvo_default(s, params)
+        alvo_seg = (alvos_cota or {}).get(seg)
+        if alvo_seg is None:
+            alvo_seg = alvo_cota
+        alvo = round(alvo_seg, 2) if alvo_seg is not None else _alvo_default(s, params)
         if s.valor_cota <= alvo + 0.005:
             sugestoes.append(
                 SugestaoAjuste(

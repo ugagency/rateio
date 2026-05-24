@@ -126,7 +126,7 @@ export default function AutoTruck() {
             {tab === "visao" && <Visao res={res} />}
             {tab === "segmentos" && <Segmentos mes={mes} />}
             {tab === "eventos" && <Eventos mes={mes} />}
-            {tab === "ajuste" && <Ajuste mes={mes} onAplicado={carregar} />}
+            {tab === "ajuste" && <Ajuste mes={mes} res={res} onAplicado={carregar} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
           </>
@@ -643,20 +643,30 @@ function RodarMesResultado({ resp, onAbrir }) {
   )
 }
 
-function Ajuste({ mes, onAplicado }) {
-  const [alvo, setAlvo] = useState("")
+function Ajuste({ mes, res, onAplicado }) {
+  // Segmentos variáveis (LEVES, MOTOS, …) — cada um com alvo independente.
+  const segsVar = (res?.segmentos || []).filter(s => s.modo === "RATEIO_VARIAVEL").map(s => s.segmento)
+  const [alvos, setAlvos] = useState({})
   const [incluirParciais, setIncluirParciais] = useState(false)
   const [sugs, setSugs] = useState(null)
   const [msg, setMsg] = useState("")
   const [busy, setBusy] = useState(false)
 
+  const setAlvo = (seg, v) => setAlvos(a => ({ ...a, [seg]: v }))
+
   const sugerir = () => {
     setBusy(true); setMsg("")
+    // alvos_cota: só os segmentos preenchidos; vazios caem no default por segmento.
+    const alvosCota = {}
+    for (const seg of segsVar) {
+      const v = alvos[seg]
+      if (v !== undefined && v !== "" && !Number.isNaN(Number(v))) alvosCota[seg] = Number(v)
+    }
     fetch(`${API}/autotruck/sugerir-ajuste`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mes_ano_ref: mes,
-        alvo_cota: alvo === "" ? null : Number(alvo),
+        alvos_cota: Object.keys(alvosCota).length ? alvosCota : null,
         incluir_parciais: incluirParciais,
       }),
     })
@@ -682,18 +692,21 @@ function Ajuste({ mes, onAplicado }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-white mb-1">Assistente de Ajuste</h2>
-      <p className="text-slate-400 text-sm mb-4">Conjunto mínimo de eventos a postergar para a cota atingir o alvo (estabilização &gt; FIFO; integral recente primeiro — oficina/nota fechada raramente se mexe).</p>
-      <div className="flex flex-wrap gap-3 items-center mb-4">
-        <label className="text-sm text-slate-400">Alvo da cota R$
-          <input value={alvo} onChange={e => setAlvo(e.target.value)} placeholder="auto (média 3M ±5%)"
-            className="ml-2 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm w-40" />
-        </label>
-        <label className="text-sm text-slate-300 flex items-center gap-2">
+      <p className="text-slate-400 text-sm mb-4">Conjunto mínimo de eventos a postergar para a cota atingir o alvo (estabilização &gt; FIFO; integral recente primeiro — oficina/nota fechada raramente se mexe). <b>Cada segmento tem alvo independente</b>; deixe em branco para usar o default (média 3M ±5%).</p>
+      <div className="flex flex-wrap gap-4 items-end mb-4">
+        {segsVar.map(seg => (
+          <label key={seg} className="text-sm text-slate-400">
+            Alvo da cota R$ — <b className="text-slate-200">{seg}</b>
+            <input value={alvos[seg] ?? ""} onChange={e => setAlvo(seg, e.target.value)} placeholder="auto (média 3M ±5%)"
+              className="block mt-1 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm w-44" />
+          </label>
+        ))}
+        <label className="text-sm text-slate-300 flex items-center gap-2 pb-2">
           <input type="checkbox" checked={incluirParciais} onChange={e => setIncluirParciais(e.target.checked)} />
           incluir parciais
         </label>
         <button onClick={sugerir} disabled={busy}
-          className="px-4 py-1.5 bg-cyan-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
+          className="px-4 py-1.5 bg-cyan-500 text-slate-900 font-bold rounded text-sm disabled:opacity-50 mb-0.5">
           {busy ? "…" : "Sugerir"}
         </button>
       </div>

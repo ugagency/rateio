@@ -17,7 +17,12 @@ class CalcularATRequest(BaseModel):
 class SugerirAjusteRequest(BaseModel):
     mes_ano_ref: str = Field(..., examples=["12/2025"])
     alvo_cota: float | None = Field(
-        default=None, description="Cota-alvo. Default: topo da banda ±5% da média 3M (ou R$35)."
+        default=None, description="Cota-alvo global (fallback). Default: topo da banda ±5% da média 3M (ou R$35)."
+    )
+    alvos_cota: dict[str, float] | None = Field(
+        default=None,
+        description="Cota-alvo por segmento (ex.: {'LEVES': 74, 'MOTOS': 70}). "
+        "Tem precedência sobre alvo_cota; segmentos ausentes caem no alvo_cota/default.",
     )
     incluir_parciais: bool = Field(
         default=False, description="Inclui parciais como candidatos (oficina/nota fechada — raro)."

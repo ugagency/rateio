@@ -269,7 +269,10 @@ def sugerir_ajuste(body: SugerirAjusteRequest) -> list[SugestaoAjusteOut]:
     """Assistente de ajuste: conjunto mínimo de eventos a postergar p/ a
     cota atingir o alvo (estabilização > FIFO; integral recente primeiro)."""
     sugs = _service().sugerir_ajuste(
-        body.mes_ano_ref, alvo_cota=body.alvo_cota, incluir_parciais=body.incluir_parciais
+        body.mes_ano_ref,
+        alvo_cota=body.alvo_cota,
+        alvos_cota=body.alvos_cota,
+        incluir_parciais=body.incluir_parciais,
     )
     return [SugestaoAjusteOut(**s.__dict__ | {
         "eventos_sugeridos": [e.__dict__ for e in s.eventos_sugeridos]
