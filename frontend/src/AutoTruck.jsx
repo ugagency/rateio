@@ -26,6 +26,19 @@ export default function AutoTruck() {
   const [res, setRes] = useState(null)
   const [erro, setErro] = useState("")
   const [carregando, setCarregando] = useState(false)
+  // Estado do Assistente de Ajuste vive no pai p/ sobreviver à troca de abas
+  // (o usuário sai p/ consultar a Visão Geral e volta sem perder a sugestão).
+  const [ajAlvos, setAjAlvos] = useState({})
+  const [ajIncluirParciais, setAjIncluirParciais] = useState(false)
+  const [ajSugs, setAjSugs] = useState(null)
+  const [ajMsg, setAjMsg] = useState("")
+  const ajuste = {
+    alvos: ajAlvos, setAlvos: setAjAlvos,
+    incluirParciais: ajIncluirParciais, setIncluirParciais: setAjIncluirParciais,
+    sugs: ajSugs, setSugs: setAjSugs, msg: ajMsg, setMsg: setAjMsg,
+  }
+  // Trocar de mês invalida a sugestão (é de outro fechamento) — limpa o card.
+  useEffect(() => { setAjSugs(null); setAjMsg("") }, [mes])
 
   const carregar = useCallback(() => {
     fetch(`${API}/autotruck/${enc(mes)}`)
@@ -126,7 +139,7 @@ export default function AutoTruck() {
             {tab === "visao" && <Visao res={res} />}
             {tab === "segmentos" && <Segmentos mes={mes} />}
             {tab === "eventos" && <Eventos mes={mes} />}
-            {tab === "ajuste" && <Ajuste mes={mes} res={res} onAplicado={carregar} />}
+            {tab === "ajuste" && <Ajuste mes={mes} res={res} onAplicado={carregar} estado={ajuste} />}
             {tab === "boletos" && <Boletos mes={mes} />}
             {tab === "auditoria" && <Auditoria mes={mes} />}
           </>
@@ -643,13 +656,11 @@ function RodarMesResultado({ resp, onAbrir }) {
   )
 }
 
-function Ajuste({ mes, res, onAplicado }) {
+function Ajuste({ mes, res, onAplicado, estado }) {
   // Segmentos variáveis (LEVES, MOTOS, …) — cada um com alvo independente.
   const segsVar = (res?.segmentos || []).filter(s => s.modo === "RATEIO_VARIAVEL").map(s => s.segmento)
-  const [alvos, setAlvos] = useState({})
-  const [incluirParciais, setIncluirParciais] = useState(false)
-  const [sugs, setSugs] = useState(null)
-  const [msg, setMsg] = useState("")
+  // alvos/incluirParciais/sugs/msg vêm do pai p/ persistir entre as abas.
+  const { alvos, setAlvos, incluirParciais, setIncluirParciais, sugs, setSugs, msg, setMsg } = estado
   const [busy, setBusy] = useState(false)
 
   const setAlvo = (seg, v) => setAlvos(a => ({ ...a, [seg]: v }))
