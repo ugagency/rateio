@@ -355,10 +355,17 @@ def sugerir_ajuste(
     segmento→alvo; na ausência de entrada para o segmento, cai no
     `alvo_cota` global e, por fim, no default (topo da banda ±5% da
     média 3M). LEVES e MOTOS podem, portanto, ter alvos distintos.
+
+    Quando `alvos_cota` traz alvos para um subconjunto de segmentos, o
+    ajuste recai **apenas** sobre esses segmentos — os demais ficam
+    intocados (campo em branco = "não mexer"). Se `alvos_cota` for vazio,
+    processa todos os segmentos variáveis com o default.
     """
     por_seg = {s.segmento: s for s in resultado.segmentos}
     sugestoes: list[SugestaoAjuste] = []
-    for seg in segmentos_alvo:
+    # alvos por segmento restringem o alvo do laço aos segmentos preenchidos
+    segs = tuple(s for s in segmentos_alvo if s in alvos_cota) if alvos_cota else segmentos_alvo
+    for seg in segs:
         s = por_seg.get(seg)
         if s is None or s.modo != "RATEIO_VARIAVEL" or s.cotas_ativas <= 0:
             continue
