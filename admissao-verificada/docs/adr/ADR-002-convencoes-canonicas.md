@@ -27,9 +27,20 @@ O enum único de `veiculos.status` é: `pendente_vistoria`, `ativo`, `inativo`.
 
 ### C2. Isolamento multi-tenant por RLS (resolve I-02)
 
-Forma única: claim customizado `associacao_id` no JWT. As policies usam
-`auth.jwt() ->> 'associacao_id'`. Proibido subquery em `operadores` dentro de
-policy (evita N+1). Vale para todas as tabelas.
+Forma única: a associação corrente vem do JWT, lida pela função
+`public.jwt_associacao_id()`. As policies usam
+`associacao_id = public.jwt_associacao_id()`. Proibido subquery em `operadores`
+dentro de policy (evita N+1). Vale para todas as tabelas.
+
+Fonte do valor no JWT (revisão, migration 0009): `associacao_id` é gravado no
+`app_metadata` do usuário, que o GoTrue embute nativamente no token. Uma trigger
+em `operadores` (`sync_operador_app_metadata`) mantém isso sincronizado no
+provisionamento, sem passo manual no painel. O helper `jwt_associacao_id()` faz
+`coalesce(app_metadata.associacao_id, claim_de_topo)`, então o hook
+`custom_access_token` continua compatível caso seja habilitado no futuro.
+Motivo da revisão: o claim de topo exigia habilitar o auth hook pelo dashboard
+(passo não reproduzível por migration); a derivação via app_metadata é 100%
+provisionável por SQL.
 
 ### C3. Formato de competência (resolve I-03)
 
