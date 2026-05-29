@@ -74,8 +74,18 @@ export async function GET(req: NextRequest) {
     bucket.qtd_veiculos += 1;
   }
 
+  // Denominador da BASE por segmento (ADR-003): inteiro arredondado da soma de
+  // cotas BAIXADAS. E o mesmo valor que o gerador da BASE escreve na coluna
+  // BAIXADO, para a tela e o arquivo exportado mostrarem o mesmo numero. O
+  // soma_cotas fracionario segue exposto acima como informacao de conferencia.
+  const denominador: Record<Segmento, number> = {} as Record<Segmento, number>;
+  for (const seg of SEGMENTOS) {
+    denominador[seg] = Math.round(segmentos[seg].baixado.soma_cotas);
+  }
+
   return NextResponse.json({
     competencia: competenciaParaExibicao(`${competenciaParam}-01`),
     segmentos,
+    denominador,
   });
 }
