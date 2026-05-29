@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+
+type CookieParaDefinir = { name: string; value: string; options: CookieOptions };
 
 // Cliente Supabase para uso server-side (route handlers, server components).
 // Usa a sessão do operador (cookies), então a RLS por claim associacao_id
@@ -14,7 +16,7 @@ export async function createSupabaseServerClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(toSet) {
+        setAll(toSet: CookieParaDefinir[]) {
           try {
             toSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),

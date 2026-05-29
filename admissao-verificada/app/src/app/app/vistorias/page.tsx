@@ -53,7 +53,9 @@ export default async function VistoriasPage() {
           </tr>
         </thead>
         <tbody>
-          {(data as VistoriaRow[] ?? []).map((v) => (
+          {/* relações embutidas: o cliente sem tipos gerados infere array;
+              em runtime são objetos (relação para-um). Cast via unknown. */}
+          {((data as unknown as VistoriaRow[]) ?? []).map((v) => (
             <tr key={v.id} style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: "8px 4px" }}>{v.veiculos?.placa ?? "-"}</td>
               <td style={{ padding: "8px 4px" }}>{v.veiculos?.segmento ?? "-"}</td>

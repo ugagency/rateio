@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+
+type CookieParaDefinir = { name: string; value: string; options: CookieOptions };
 
 // Protege as rotas autenticadas (/app/*) e mantém a sessão do Supabase
 // atualizada. Rotas públicas: /login e a raiz.
@@ -14,7 +16,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(toSet) {
+        setAll(toSet: CookieParaDefinir[]) {
           toSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
             response.cookies.set(name, value, options);
