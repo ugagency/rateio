@@ -82,7 +82,7 @@ export default function AutoTruck() {
       <header className="border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
           <div>
-            <div className="text-xs uppercase tracking-widest text-cyan-400">Motor de Rateio · Modelo Elo Ajustado</div>
+            <div className="text-xs uppercase tracking-widest text-cyan-400">Motor de Rateio · Modelo Ello retreinado</div>
             <h1 className="text-2xl font-bold text-white">AutoTruck — Rateio Segmentado</h1>
           </div>
           <div className="text-right text-xs text-slate-500">LC 213/2024 · D+5</div>
