@@ -13,6 +13,10 @@ const MES_PADRAO_ELLO = mesAnteriorPadrao()
 function App() {
   const [tab, setTab] = useState("overview")
   const [mes, setMes] = useState(MES_PADRAO_ELLO)
+  // Gate de sessão: o dashboard começa em branco a cada carregamento e só
+  // passa a exibir dados depois que o usuário roda o rateio nesta sessão.
+  const [rodou, setRodou] = useState(false)
+  const irParaRodarMes = () => setTab("rodarmes")
 
   useEffect(() => {
     fetch(`${API}/health`).then(r => r.json()).then(console.log).catch(console.error)
@@ -44,27 +48,44 @@ function App() {
         </nav>
       </header>
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === "overview" && <Overview mes={mes} />}
-        {tab === "potinhos" && <Potinhos mes={mes} />}
-        {tab === "eventos" && <Eventos mes={mes} />}
-        {tab === "boletos" && <Boletos mes={mes} />}
-        {tab === "auditoria" && <Auditoria mes={mes} />}
-        {tab === "rodarmes" && <RodarMesELLO mes={mes} setMes={setMes} onRodado={() => { setTab("overview") }} />}
+        {tab === "overview" && <Overview mes={mes} rodou={rodou} irParaRodarMes={irParaRodarMes} />}
+        {tab === "potinhos" && <Potinhos mes={mes} rodou={rodou} irParaRodarMes={irParaRodarMes} />}
+        {tab === "eventos" && <Eventos mes={mes} rodou={rodou} irParaRodarMes={irParaRodarMes} />}
+        {tab === "boletos" && <Boletos mes={mes} rodou={rodou} irParaRodarMes={irParaRodarMes} />}
+        {tab === "auditoria" && <Auditoria mes={mes} rodou={rodou} irParaRodarMes={irParaRodarMes} />}
+        {tab === "rodarmes" && <RodarMesELLO mes={mes} setMes={setMes} onRodado={() => { setRodou(true); setTab("overview") }} />}
       </main>
     </div>
   )
 }
 
-function Overview({ mes }) {
+// Estado inicial em branco do dashboard ELLO: enquanto o usuário não rodou o
+// rateio nesta sessão, as abas mostram este aviso em vez de buscar dados.
+function TelaVazia({ irParaRodarMes }) {
+  return (
+    <div className="text-center py-20">
+      <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio nesta sessão</h2>
+      <p className="text-slate-300 mb-6">Vá em "Rodar Mês", carregue as planilhas e calcule o rateio para preencher esta tela.</p>
+      <button onClick={irParaRodarMes}
+        className="px-5 py-2 bg-amber-500 text-slate-900 font-bold rounded">
+        Ir para Rodar Mês →
+      </button>
+    </div>
+  )
+}
+
+function Overview({ mes, rodou, irParaRodarMes }) {
   const [consol, setConsol] = useState(null)
   useEffect(() => {
     setConsol(null)
+    if (!rodou) return
     fetch(`${API}/rateio/${encodeURIComponent(mes)}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => setConsol(d && d.valor_alvo_total !== undefined ? d : null))
       .catch(() => setConsol(null))
-  }, [mes])
+  }, [mes, rodou])
 
+  if (!rodou) return <TelaVazia irParaRodarMes={irParaRodarMes} />
   if (!consol) return (
     <div className="text-center py-20">
       <h2 className="text-3xl font-bold text-white mb-4">Nenhum rateio para {mes}</h2>
@@ -95,15 +116,18 @@ function Overview({ mes }) {
   )
 }
 
-function Potinhos({ mes }) {
+function Potinhos({ mes, rodou, irParaRodarMes }) {
   const [consol, setConsol] = useState(null)
   useEffect(() => {
     setConsol(null)
+    if (!rodou) return
     fetch(`${API}/rateio/${encodeURIComponent(mes)}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => setConsol(d && d.valor_alvo_total !== undefined ? d : null))
       .catch(() => setConsol(null))
-  }, [mes])
+  }, [mes, rodou])
+
+  if (!rodou) return <TelaVazia irParaRodarMes={irParaRodarMes} />
 
   const pots = consol ? [
     { n: "P1 Roubo/Furto", v: consol.valor_p1_roubo_furto || 0, d: 14 },
@@ -138,17 +162,20 @@ function Potinhos({ mes }) {
   )
 }
 
-function Eventos({ mes }) {
+function Eventos({ mes, rodou, irParaRodarMes }) {
   const [data, setData] = useState({ items: [], total: 0 })
   const [erro, setErro] = useState("")
   useEffect(() => {
     setData({ items: [], total: 0 })
     setErro("")
+    if (!rodou) return
     fetch(`${API}/rateio/${encodeURIComponent(mes)}/eventos`)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(d => setData({ items: Array.isArray(d?.items) ? d.items : [], total: d?.total ?? 0 }))
       .catch(e => setErro(typeof e === "string" ? e : "Falha ao carregar eventos."))
-  }, [mes])
+  }, [mes, rodou])
+
+  if (!rodou) return <TelaVazia irParaRodarMes={irParaRodarMes} />
   const items = data.items
   return (
     <div>
@@ -195,16 +222,19 @@ function Eventos({ mes }) {
   )
 }
 
-function Boletos({ mes }) {
+function Boletos({ mes, rodou, irParaRodarMes }) {
   const [boletos, setBoletos] = useState([])
   const [filt, setFilt] = useState("")
   useEffect(() => {
     setBoletos([])
+    if (!rodou) return
     fetch(`${API}/boletos/${encodeURIComponent(mes)}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then(d => setBoletos(Array.isArray(d?.items) ? d.items : (Array.isArray(d) ? d : [])))
       .catch(() => setBoletos([]))
-  }, [mes])
+  }, [mes, rodou])
+
+  if (!rodou) return <TelaVazia irParaRodarMes={irParaRodarMes} />
   const filtered = boletos.filter(b => !filt || b.id_veiculo?.includes(filt))
   return (
     <div>
@@ -233,9 +263,10 @@ function Boletos({ mes }) {
   )
 }
 
-function Auditoria({ mes }) {
+function Auditoria({ mes, rodou, irParaRodarMes }) {
   const [vid, setVid] = useState("")
   const [extrato, setExtrato] = useState(null)
+  if (!rodou) return <TelaVazia irParaRodarMes={irParaRodarMes} />
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-4">Auditoria · mês {mes}</h2>
