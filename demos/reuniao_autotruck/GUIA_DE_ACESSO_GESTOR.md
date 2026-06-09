@@ -2,10 +2,8 @@
 
 Documento de apoio para a sessao de teste da administradora. Descreve, do
 endereco de acesso ate a leitura das telas, como usar o produto AutoTruck,
-o Modelo Elo Ajustado, e como validar que o resultado vem de fato dos arquivos
+o Modelo Ello retreinado, e como validar que o resultado vem de fato dos arquivos
 enviados.
-
-Tempo estimado de leitura e execucao: 15 minutos.
 
 ---
 
@@ -49,9 +47,9 @@ Observacoes importantes:
 No topo da tela existe uma faixa escura com o rotulo "Produto" e dois botoes:
 
 1. ELLO, Rateio e Faturamento
-2. AutoTruck, Modelo Elo Ajustado
+2. AutoTruck, Modelo Ello retreinado
 
-Para este teste, clique no botao AutoTruck, Modelo Elo Ajustado. Toda a sessao
+Para este teste, clique no botao AutoTruck, Modelo Ello retreinado. Toda a sessao
 acontece dentro desse produto.
 
 ---
@@ -60,12 +58,13 @@ acontece dentro desse produto.
 
 O AutoTruck calcula o rateio a partir de tres planilhas:
 
-1. BASE: a relacao de cotas por segmento, separadas entre adimplentes e
-   inadimplentes. E o denominador, ou seja, quem divide o custo do mes.
-2. RATEIO: os eventos sinistrados do mes. E o numerador, ou seja, o custo que
-   sera rateado.
-3. PRODUTOS: o catalogo de fornecedor. E opcional e apenas informativo, nao
-   entra no calculo da cota.
+1. `BASE_completa.xlsx`: a relacao de cotas por segmento, separadas entre
+   adimplentes e inadimplentes. E o denominador, ou seja, quem divide o custo
+   do mes.
+2. `RATEIO_completo.xlsx`: os eventos sinistrados do mes. E o numerador, ou
+   seja, o custo que sera rateado.
+3. `PRODUTOS.xlsx`: o catalogo de fornecedor. E opcional e apenas informativo,
+   nao entra no calculo da cota.
 
 Os tres segmentos sao LEVES (automoveis), MOTOS e PESADOS (caminhoes). A cota
 variavel se aplica a LEVES e MOTOS. Os eventos de terceiros sao rastreados em
@@ -190,3 +189,10 @@ planilhas enviadas.
 4. Enviar os 3 arquivos: BASE, RATEIO e PRODUTOS.
 5. Calcular e abrir na Visao Geral.
 6. Navegar pelas abas e conferir que o Invariante esta em R$ 0,00.
+
+---
+
+## Observacao
+
+Este ambiente de teste (MVP) ficara disponivel por 24 horas a partir da
+liberacao do acesso. Apos esse periodo, o endereco pode sair do ar.

@@ -1,4 +1,4 @@
-# Folha de apoio — Demonstracao AutoTruck (Modelo Elo Ajustado)
+# Folha de apoio — Demonstracao AutoTruck (Modelo Ello retreinado)
 
 Mes de referencia: use 05/2026 ou outro de sua preferencia. O carimbo de mes e
 cosmetico. Os valores vem dos arquivos. Numeros abaixo calculados pelo motor

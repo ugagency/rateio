@@ -1,4 +1,4 @@
-# Kit de demonstracao — AutoTruck (Modelo Elo Ajustado)
+# Kit de demonstracao — AutoTruck (Modelo Ello retreinado)
 
 Objetivo: provar ao vivo que o motor da AutoTruck le os arquivos de verdade e
 reage ao conteudo deles, sem nada combinado ou simulado. Este kit e isolado:

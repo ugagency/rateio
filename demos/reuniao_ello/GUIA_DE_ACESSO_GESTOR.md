@@ -4,8 +4,6 @@ Documento de apoio para a sessão de teste da administradora. Descreve, do
 endereço de acesso até a leitura das telas, como usar a plataforma e como
 validar que o resultado vem de fato dos arquivos enviados.
 
-Tempo estimado de leitura e execução: 15 minutos.
-
 ---
 
 ## 1. Antes de começar
@@ -46,7 +44,7 @@ Observações importantes:
 No topo da tela existe uma faixa escura com o rótulo "Produto" e dois botões:
 
 1. ELLO, Rateio e Faturamento
-2. AutoTruck, Modelo Elo Ajustado
+2. AutoTruck, Modelo Ello retreinado
 
 Para este teste, mantenha selecionado o botão ELLO, Rateio e Faturamento. Ele já
 vem marcado por padrão. O segundo produto pertence a outro contexto e não deve
@@ -213,3 +211,10 @@ planilhas enviadas.
 4. Enviar os 3 arquivos: veículos, eventos e serviços.
 5. Clicar em "Calcular Rateio" e abrir na Visão Geral.
 6. Navegar pelas abas e conferir que o Invariante está em R$ 0,00.
+
+---
+
+## Observacao
+
+Este ambiente de teste (MVP) ficara disponivel por 24 horas a partir da
+liberacao do acesso. Apos esse periodo, o endereco pode sair do ar.

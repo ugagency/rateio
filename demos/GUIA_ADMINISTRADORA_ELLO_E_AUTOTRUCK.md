@@ -5,14 +5,12 @@ associacao na mesma plataforma. Cada associacao roda em um motor de rateio
 proprio. Hoje a plataforma oferece dois produtos:
 
 1. ELLO, Rateio e Faturamento.
-2. AutoTruck, Modelo Elo Ajustado.
+2. AutoTruck, Modelo Ello retreinado.
 
 Este guia mostra como proceder em cada um e, ao final, resume as diferencas
 entre os dois rateios. Para o detalhamento completo de colunas de cada planilha,
 consulte os guias especificos de cada produto, que acompanham os respectivos
 kits de teste.
-
-Tempo estimado de leitura: 20 minutos.
 
 ---
 
@@ -43,9 +41,9 @@ R$ 0,00.
 
 ### 2.1. Arquivos de entrada (3 planilhas)
 
-1. Veiculos: cadastro de veiculos elegiveis.
-2. Eventos: sinistros pendentes do mes.
-3. Servicos: produtos fixos por veiculo.
+1. `veiculos_completo.xlsx`: cadastro de veiculos elegiveis.
+2. `eventos_cobre.xlsx`: sinistros pendentes do mes.
+3. `servicos.xlsx`: produtos fixos por veiculo.
 
 ### 2.2. Passo a passo
 
@@ -82,9 +80,9 @@ degrau daquela categoria.
 
 ### 3.1. Arquivos de entrada (3 planilhas)
 
-1. BASE: cotas adimplentes e inadimplentes por segmento. E o denominador.
-2. RATEIO: eventos sinistrados do mes. E o numerador.
-3. PRODUTOS: catalogo de fornecedor. Opcional e informativo.
+1. `BASE_completa.xlsx`: cotas adimplentes e inadimplentes por segmento. E o denominador.
+2. `RATEIO_completo.xlsx`: eventos sinistrados do mes. E o numerador.
+3. `PRODUTOS.xlsx`: catalogo de fornecedor. Opcional e informativo.
 
 Os segmentos sao LEVES (automoveis), MOTOS e PESADOS (caminhoes). A cota
 variavel se aplica a LEVES e MOTOS. Eventos de terceiros sao rastreados em
@@ -146,20 +144,7 @@ Leitura pratica da diferenca:
 
 ---
 
-## 5. Pontos de atencao comuns
-
-1. O campo de mes e um carimbo nos dois produtos. Os numeros vem sempre dos
-   arquivos enviados.
-2. Mantenha cada planilha no campo correto. Se o selo ficar vermelho, o arquivo
-   esta no campo errado e o calculo nao prossegue.
-3. Confira sempre que o Invariante fecha em R$ 0,00 antes de considerar o mes
-   conferido.
-4. Em caso de falha de acesso ou comportamento inesperado, registre o horario e
-   a tela e encaminhe a equipe tecnica.
-
----
-
-## 6. Resumo rapido
+## 5. Resumo rapido
 
 1. Acessar `http://72.61.59.127:5174`.
 2. Selecionar o produto da associacao (ELLO ou AutoTruck).
@@ -167,3 +152,10 @@ Leitura pratica da diferenca:
 4. Calcular e abrir a Visao Geral.
 5. Navegar pelas abas e conferir o Invariante em R$ 0,00.
 6. No ELLO, observar o Alvo do mes. No AutoTruck, observar a cota por segmento.
+
+---
+
+## Observacao
+
+Este ambiente de teste (MVP) ficara disponivel por 24 horas a partir da
+liberacao do acesso. Apos esse periodo, o endereco pode sair do ar.

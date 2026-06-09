@@ -1,4 +1,4 @@
-"""Gera o kit de demonstração da AutoTruck (Modelo Elo Ajustado).
+"""Gera o kit de demonstração da AutoTruck (Modelo Ello retreinado).
 
 Espelha o kit do ELLO: arquivos de entrada pequenos, com números redondos e
 verificáveis ao vivo, mais um par de cenários para provar que o motor lê os
