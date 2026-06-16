@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Muito além do rateio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --ink-2:#141921;
+    --paper:#ECE7DD;
+    --muted:#9AA2AD;
+    --faint:rgba(236,231,221,0.12);
+    --gold:#E0A75E;
+    --gold-deep:#B9823F;
+    --sage:#7FA99B;
+    --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--body);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 80% -10%, rgba(224,167,94,0.10), transparent 55%),
+      radial-gradient(90% 80% at -10% 110%, rgba(127,169,155,0.08), transparent 50%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .deck{position:relative;z-index:1;height:100vh;width:100vw;}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(40px,7vw,110px);
+    opacity:0;visibility:hidden;
+    transition:opacity .5s ease;
+  }
+  .slide.active{opacity:1;visibility:visible;}
+  .wrap{width:100%;max-width:1180px;margin:0 auto;position:relative;z-index:1;}
+
+  .eyebrow{
+    font-size:clamp(11px,0.95vw,13px);
+    letter-spacing:0.32em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin-bottom:1.6rem;
+  }
+  h1{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(44px,8.5vw,128px);line-height:0.95;
+    letter-spacing:-0.02em;
+  }
+  h1 em{font-style:italic;color:var(--gold);}
+  h2{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(34px,5.2vw,72px);line-height:1.02;
+    letter-spacing:-0.015em;margin-bottom:1.6rem;
+  }
+  h2 em{font-style:italic;color:var(--gold);}
+  .lead{
+    font-size:clamp(18px,1.8vw,27px);line-height:1.5;
+    color:var(--paper);max-width:46ch;font-weight:400;
+  }
+  .lead.muted{color:var(--muted);}
+  p.body{
+    font-size:clamp(16px,1.4vw,21px);line-height:1.6;
+    color:var(--muted);max-width:60ch;
+  }
+  p.body strong{color:var(--paper);font-weight:600;}
+
+  .cap-sub{
+    margin-top:2.2rem;font-size:clamp(18px,1.8vw,26px);
+    line-height:1.5;max-width:40ch;color:var(--muted);
+  }
+  .cap-sub b{color:var(--paper);font-weight:500;}
+
+  .meta-row{
+    position:absolute;left:clamp(40px,7vw,110px);right:clamp(40px,7vw,110px);
+    bottom:clamp(28px,3.5vh,48px);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;letter-spacing:0.06em;color:var(--muted);
+    text-transform:uppercase;z-index:1;
+  }
+
+  /* two-column layouts */
+  .cols{display:grid;grid-template-columns:1fr 0.9fr;gap:clamp(30px,5vw,80px);align-items:center;}
+  .cols.text-first{grid-template-columns:1fr 1fr;}
+  @media (max-width:880px){ .cols{grid-template-columns:1fr;} }
+
+  /* bullets */
+  ul.points{list-style:none;margin-top:1.4rem;}
+  ul.points li{
+    position:relative;padding-left:1.9rem;margin-bottom:1.15rem;
+    font-size:clamp(16px,1.45vw,22px);line-height:1.45;color:var(--paper);
+    max-width:42ch;
+  }
+  ul.points li::before{
+    content:"";position:absolute;left:0;top:0.55em;
+    width:11px;height:11px;border:2px solid var(--gold);
+    border-radius:2px;transform:rotate(45deg);
+  }
+  ul.points li span{display:block;color:var(--muted);font-size:0.82em;margin-top:0.25rem;}
+
+  /* module grid (missing pieces) */
+  .mods{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);margin-top:2rem;}
+  @media (max-width:880px){ .mods{grid-template-columns:repeat(2,1fr);} }
+  .mod{background:var(--ink);padding:clamp(18px,1.8vw,28px);position:relative;overflow:hidden;}
+  .mod h3{font-family:var(--display);font-weight:500;font-size:clamp(19px,1.8vw,26px);
+    margin-bottom:0.5rem;letter-spacing:-0.01em;}
+  .mod p{font-size:clamp(13px,1.05vw,15.5px);line-height:1.45;color:var(--muted);}
+  .mod.is-rateio{background:linear-gradient(160deg,rgba(224,167,94,0.16),rgba(224,167,94,0.04));}
+  .mod.is-rateio h3{color:var(--gold);}
+  .mod .tag{display:inline-block;font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;
+    color:var(--gold);border:1px solid var(--gold-deep);border-radius:999px;padding:2px 9px;margin-top:0.8rem;}
+  /* loop: a faint light sweeps across the modules, snapping them into place */
+  .mod::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(115deg,transparent 40%,rgba(224,167,94,0.10) 50%,transparent 60%);
+    transform:translateX(-120%);animation:modSweep 6.5s ease-in-out infinite;}
+  .mod:nth-child(1)::after{animation-delay:0s;}
+  .mod:nth-child(2)::after{animation-delay:.5s;}
+  .mod:nth-child(3)::after{animation-delay:1s;}
+  .mod:nth-child(4)::after{animation-delay:1.5s;}
+  .mod:nth-child(5)::after{animation-delay:2s;}
+  .mod:nth-child(6)::after{animation-delay:2.5s;}
+  @keyframes modSweep{0%{transform:translateX(-120%);}18%,100%{transform:translateX(120%);}}
+
+  /* layered roadmap */
+  .layers{display:flex;flex-direction:column-reverse;gap:10px;margin-top:1.5rem;}
+  .layer{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:clamp(14px,1.6vw,22px) clamp(20px,2.4vw,34px);
+    border:1px solid var(--line);border-radius:4px;
+    background:var(--ink-2);
+  }
+  .layer .name{font-family:var(--display);font-size:clamp(18px,1.8vw,26px);font-weight:500;}
+  .layer .st{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+  .layer.done{background:linear-gradient(120deg,rgba(224,167,94,0.18),rgba(224,167,94,0.05));
+    border-color:var(--gold-deep);}
+  .layer.done .name{color:var(--gold);}
+  .layer.done .st{color:var(--gold);}
+  .layer.next{border-color:rgba(127,169,155,0.4);}
+  .layer.next .st{color:var(--sage);}
+  /* indentation to suggest building upward */
+  .layer:nth-child(1){margin-left:0;}
+  .layer:nth-child(2){margin-left:3%;}
+  .layer:nth-child(3){margin-left:6%;}
+  .layer:nth-child(4){margin-left:9%;}
+  .layer:nth-child(5){margin-left:12%;}
+  @media (max-width:880px){ .layer{margin-left:0 !important;} }
+  /* loop: a build wave climbs the stack from the base upward */
+  .layer:not(.done){animation:layerPass 4.2s ease-in-out infinite;}
+  .layer:nth-child(2){animation-delay:.45s;}
+  .layer:nth-child(3){animation-delay:.95s;}
+  .layer:nth-child(4){animation-delay:1.45s;}
+  .layer:nth-child(5){animation-delay:1.95s;}
+  @keyframes layerPass{
+    0%,100%{box-shadow:none;border-color:var(--line);}
+    50%{box-shadow:0 0 24px rgba(127,169,155,0.22);border-color:rgba(127,169,155,0.55);}
+  }
+  .layer.done{animation:doneGlow 3.2s ease-in-out infinite;}
+  @keyframes doneGlow{0%,100%{box-shadow:0 0 0 rgba(224,167,94,0);}50%{box-shadow:0 0 26px rgba(224,167,94,0.22);}}
+
+  /* decision cards */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:clamp(18px,2.5vw,34px);margin-top:2rem;}
+  @media (max-width:880px){ .cards{grid-template-columns:1fr;} }
+  .card{border:1px solid var(--line);border-radius:6px;padding:clamp(24px,3vw,44px);
+    display:flex;flex-direction:column;gap:1rem;}
+  .card .kicker{font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:var(--muted);}
+  .card h3{font-family:var(--display);font-weight:500;font-size:clamp(26px,3vw,42px);
+    line-height:1.0;letter-spacing:-0.015em;}
+  .card p{font-size:clamp(14px,1.2vw,18px);line-height:1.5;color:var(--muted);}
+  .card.whole{background:linear-gradient(165deg,rgba(224,167,94,0.14),rgba(224,167,94,0.03));
+    border-color:var(--gold-deep);}
+  .card.whole h3{color:var(--gold);}
+  .card.whole p{color:var(--paper);opacity:0.85;}
+  .mini{width:100%;height:auto;max-height:130px;margin-top:0.4rem;overflow:visible;display:block;}
+
+  /* puzzle svg */
+  .puzzle{width:100%;height:auto;display:block;overflow:visible;}
+  .pz-piece-g{transform-box:fill-box;}
+  .pz-piece{stroke:var(--line);stroke-width:1.4;transition:fill .6s ease, stroke .6s ease;}
+  .pz-piece.dim{fill:rgba(236,231,221,0.03);stroke:rgba(236,231,221,0.12);}
+  .pz-piece.lit{stroke:rgba(14,17,22,0.6);stroke-width:1.4;}
+  .pz-label{font-family:var(--body);font-weight:600;text-anchor:middle;
+    dominant-baseline:middle;pointer-events:none;}
+  .pz-label.dim{fill:var(--muted);opacity:0.45;}
+  .pz-label.lit{fill:#10141a;}
+  .pz-label.rateio{fill:#1a130a;}
+
+  /* ---- animated metaphor layer ---- */
+  /* the rateio piece keeps breathing in gold */
+  .pz-piece.rateio{animation:pzBreathe 2.8s ease-in-out infinite;}
+  @keyframes pzBreathe{
+    0%,100%{filter:drop-shadow(0 0 5px rgba(224,167,94,0.40));}
+    50%{filter:drop-shadow(0 0 18px rgba(224,167,94,0.85));}
+  }
+  /* ghost board: a wave of light travels piece by piece, the whole image breathing */
+  .pz-ghost-on .pz-piece.dim{animation:pzGhostPulse 3.4s ease-in-out infinite;}
+  @keyframes pzGhostPulse{
+    0%,100%{stroke:rgba(236,231,221,0.12);fill:rgba(236,231,221,0.025);}
+    50%{stroke:rgba(224,167,94,0.55);fill:rgba(224,167,94,0.07);}
+  }
+  .pz-ghost-on .pz-label.dim{animation:pzGhostLabel 3.4s ease-in-out infinite;}
+  @keyframes pzGhostLabel{0%,100%{opacity:0.35;}50%{opacity:0.72;}}
+  /* single board: the dim pieces shimmer faintly around the one lit piece */
+  .pz-single-on .pz-piece.dim{animation:pzDimShimmer 4.2s ease-in-out infinite;}
+  @keyframes pzDimShimmer{0%,100%{fill:rgba(236,231,221,0.02);}50%{fill:rgba(236,231,221,0.06);}}
+  /* the data flowing along the seams between pieces (slide 6) */
+  .pz-link{stroke:rgba(224,167,94,0.45);stroke-width:1.6;stroke-dasharray:3 9;
+    fill:none;stroke-linecap:round;animation:pzFlow 1.05s linear infinite;}
+  @keyframes pzFlow{to{stroke-dashoffset:-24;}}
+
+  /* background ghost board (slides 1 and 10) */
+  .bg-ghost{position:absolute;inset:0;width:100%;height:100%;
+    z-index:0;opacity:0.13;pointer-events:none;}
+
+  /* anchor vs treasure (slide 8) */
+  .atv{position:relative;height:clamp(300px,46vh,460px);
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:center;}
+  .atv-stack{display:flex;flex-direction:column;gap:9px;width:min(340px,92%);position:relative;z-index:2;}
+  .atv-layer{border:1px solid var(--line);border-radius:6px;background:var(--ink-2);
+    padding:13px 18px;text-align:center;font-family:var(--display);font-weight:500;
+    font-size:clamp(14px,1.3vw,19px);color:var(--paper);}
+  .atv-layer small{display:block;font-family:var(--body);font-size:10.5px;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--muted);margin-top:3px;font-weight:600;}
+  .atv-layer.treasure{border-color:var(--gold-deep);
+    background:linear-gradient(120deg,rgba(224,167,94,0.18),rgba(224,167,94,0.04));
+    color:var(--gold);box-shadow:0 0 30px rgba(224,167,94,0.20);
+    animation:doneGlow 3s ease-in-out infinite;}
+  .atv-layer.treasure small{color:var(--gold);}
+  .atv-layer.anchor{border-color:rgba(127,169,155,0.45);}
+  .atv-layer.anchor small{color:var(--sage);}
+  .atv-spark{position:absolute;bottom:15%;width:7px;height:7px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 11px rgba(224,167,94,0.85);
+    opacity:0;z-index:1;animation:atvRise 3.6s ease-in infinite;}
+  @keyframes atvRise{
+    0%{transform:translateY(0) scale(.5);opacity:0;}
+    12%{opacity:1;}
+    85%{opacity:0.9;}
+    100%{transform:translateY(-270px) scale(1);opacity:0;}
+  }
+
+  /* reveal */
+  .r{opacity:0;transform:translateY(20px);
+    transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .slide.active .r{opacity:1;transform:none;}
+
+  /* progress + nav */
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--gold);
+    width:0;z-index:30;transition:width .4s ease;}
+  .nav{position:fixed;bottom:clamp(24px,3vh,40px);left:50%;transform:translateX(-50%);
+    z-index:30;display:flex;align-items:center;gap:14px;}
+  .nav button{background:none;border:1px solid var(--line);color:var(--paper);
+    width:40px;height:40px;border-radius:999px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;transition:.2s;}
+  .nav button:hover{border-color:var(--gold);color:var(--gold);}
+  .dots{display:flex;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--faint);cursor:pointer;transition:.3s;}
+  .dot.active{background:var(--gold);transform:scale(1.3);}
+  .counter{position:fixed;top:24px;right:30px;z-index:30;font-size:13px;letter-spacing:0.1em;color:var(--muted);}
+  .counter b{color:var(--paper);}
+  .hint{position:fixed;bottom:clamp(24px,3vh,40px);right:30px;z-index:30;font-size:11px;
+    letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);opacity:0.6;}
+
+  @media print{
+    body{overflow:visible;background:#fff;color:#111;}
+    .slide{position:relative;opacity:1;visibility:visible;height:100vh;page-break-after:always;}
+    .nav,.counter,.hint,.progress{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">10</span></div>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+    <feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#E0A75E" flood-opacity="0.55"/>
+  </filter>
+</defs></svg>
+
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <!-- @MIRA:SIZE 3/10 -->
+    <svg class="bg-ghost" id="pz-bg1" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    <div class="wrap">
+      <div class="eyebrow r">Plataforma da administradora mutualista &middot; LC 213/2025</div>
+      <h1 class="r">Muito além<br>do <em>rateio</em>.</h1>
+      <div class="cap-sub r">O rateio é uma peça do quebra-cabeça. Uma peça que já mostra uma parte bonita da imagem. Está <b>longe de mostrar a imagem inteira.</b></div>
+    </div>
+    <div class="meta-row">
+      <span>Documento de decisão</span>
+      <span>Confidencial &middot; Junho de 2026</span>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="wrap cols">
+      <div>
+        <div class="eyebrow r">A imagem inteira</div>
+        <h2 class="r">A operação que a regulação <em>exige</em>.</h2>
+        <p class="body r">Uma administradora mutualista não vive de uma função só. Ela precisa <strong>captar</strong> associados, <strong>admitir</strong> com verificação, <strong>ratear</strong> os custos, <strong>indenizar</strong>, controlar o <strong>financeiro segregado</strong> e <strong>prestar contas</strong>.</p>
+        <p class="body r" style="margin-top:1.2rem">Tudo isso é uma operação única. Hoje, quem entrega esse todo é o incumbente.</p>
+      </div>
+      <!-- @MIRA:SIZE 3/10 -->
+      <div class="r"><svg class="puzzle" id="pz-ghost" viewBox="0 0 800 400"></svg></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="wrap cols">
+      <div>
+        <div class="eyebrow r">A peça que vocês já conhecem</div>
+        <h2 class="r">A peça que vocês <em>já veem</em>: o rateio.</h2>
+        <ul class="points">
+          <li class="r">Está de pé e aprovado.<span>Os motores ELLO e AutoTruck rodando.</span></li>
+          <li class="r">Reproduz o fechamento com diferença zero.<span>O rigor de dados é o diferencial, não um detalhe.</span></li>
+          <li class="r">É a porta de entrada. Barata de propósito.<span>A âncora que abre a conversa.</span></li>
+        </ul>
+      </div>
+      <!-- @MIRA:SIZE 3/10 -->
+      <div class="r"><svg class="puzzle" id="pz-single" viewBox="0 0 800 400"></svg></div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">A proporção</div>
+      <h2 class="r" style="max-width:18ch">Uma parte bonita.<br>Não a imagem <em>toda</em>.</h2>
+      <p class="body r" style="font-size:clamp(18px,1.7vw,26px);max-width:52ch">O rateio prova o motor, a disciplina de dados e a postura de conformidade. Convence. Mas é a <strong>camada mais barata</strong> da operação, por desenho. A recorrência e a margem não moram aqui. Moram nas peças que vêm por cima.</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">As peças que faltam</div>
+      <h2 class="r">As peças que completam <em>o quadro</em>.</h2>
+      <div class="mods">
+        <div class="mod is-rateio r"><h3>Rateio</h3><p>O que vocês já veem. O motor de divisão dos custos.</p><span class="tag">de pé</span></div>
+        <div class="mod r"><h3>Admissão verificada</h3><p>Quem entra. Onboarding com vistoria e antifraude por baixo.</p></div>
+        <div class="mod r"><h3>Distribuição</h3><p>Como o associado é captado em escala, por uma rede de canais.</p></div>
+        <div class="mod r"><h3>Sinistro</h3><p>O evento que justifica a proteção. Da abertura à indenização.</p></div>
+        <div class="mod r"><h3>Financeiro</h3><p>O caixa segregado sob a regra da LC 213. A conta que tem que fechar.</p></div>
+        <div class="mod r"><h3>Relacionamento</h3><p>A base viva do associado. O CRM que sustenta a recorrência.</p></div>
+      </div>
+      <p class="body r" style="margin-top:1.6rem">E acima de tudo, a <strong>prestação de contas</strong> que a regulação e a SUSEP vão cobrar.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <div class="wrap cols">
+      <!-- @MIRA:SIZE 3/10 -->
+      <div class="r"><svg class="puzzle" id="pz-all" viewBox="0 0 800 400"></svg></div>
+      <div>
+        <div class="eyebrow r">O que liga as peças</div>
+        <h2 class="r">O que conecta tudo: o <em>dado</em> e a relação.</h2>
+        <p class="body r">Cada módulo se apoia na mesma base de associado verificado. Quem tem o dado e a relação destrava o módulo seguinte com custo marginal.</p>
+        <p class="body r" style="margin-top:1.1rem">É por isso que o <strong>todo vale mais que a soma das partes</strong>. O incumbente capta somando gente. A plataforma escala somando peças sobre a mesma base.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">O caminho</div>
+      <h2 class="r">O roadmap, <em>camada por camada</em>.</h2>
+      <!-- @MIRA:SIZE 3/10 -->
+      <div class="layers">
+        <div class="layer done r"><span class="name">Rateio</span><span class="st">De pé e aprovado</span></div>
+        <div class="layer next r"><span class="name">Admissão verificada</span><span class="st">Em construção</span></div>
+        <div class="layer r"><span class="name">Rede de distribuição</span><span class="st">Desenhada</span></div>
+        <div class="layer r"><span class="name">Financeiro e sinistro</span><span class="st">No horizonte</span></div>
+        <div class="layer r"><span class="name">Plataforma completa da administradora</span><span class="st">O destino</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="wrap cols">
+      <div>
+        <div class="eyebrow r">Onde mora o valor</div>
+        <h2 class="r" style="max-width:20ch">O rateio é a âncora.<br>Não o <em>tesouro</em>.</h2>
+        <p class="body r" style="font-size:clamp(17px,1.5vw,23px);max-width:44ch">A entrada é barata para abrir a porta. O valor recorrente vive acima: no <strong>onboarding verificado</strong>, na <strong>plataforma</strong> que a administradora precisa operar de qualquer forma, e nos <strong>módulos</strong> que se apoiam na mesma base.</p>
+        <p class="body r" style="margin-top:1.2rem;font-size:clamp(17px,1.5vw,23px);max-width:44ch;color:var(--paper)">Ser sócio só do rateio é ser sócio da parte mais barata. De propósito.</p>
+      </div>
+      <!-- @MIRA:SIZE 3/10 -->
+      <div class="r">
+        <div class="atv">
+          <div class="atv-stack">
+            <div class="atv-layer treasure">Recorrência e margem<small>o tesouro</small></div>
+            <div class="atv-layer">Plataforma da administradora</div>
+            <div class="atv-layer">Onboarding verificado</div>
+            <div class="atv-layer anchor">Rateio<small>a âncora, barata de propósito</small></div>
+          </div>
+          <span class="atv-spark" style="left:42%;animation-delay:0s"></span>
+          <span class="atv-spark" style="left:50%;animation-delay:.8s"></span>
+          <span class="atv-spark" style="left:58%;animation-delay:1.7s"></span>
+          <span class="atv-spark" style="left:46%;animation-delay:2.5s"></span>
+          <span class="atv-spark" style="left:54%;animation-delay:1.2s"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">A decisão</div>
+      <h2 class="r">Duas formas de entrar.</h2>
+      <div class="cards">
+        <div class="card r">
+          <div class="kicker">Opção A</div>
+          <h3>Sócio da peça</h3>
+          <p>Participação no rateio. Uma peça boa e real, com upside limitado ao que ela mostra. A parte mais barata da operação, por desenho.</p>
+          <!-- @MIRA:SIZE 3/10 -->
+          <svg class="mini" id="mini-piece" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="card whole r">
+          <div class="kicker">Opção B</div>
+          <h3>Sócio do quadro</h3>
+          <p>Participação na plataforma que a administradora precisa ter de qualquer forma sob a LC 213. É onde a recorrência e a margem vivem.</p>
+          <!-- @MIRA:SIZE 3/10 -->
+          <svg class="mini" id="mini-board" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <!-- @MIRA:SIZE 3/10 -->
+    <svg class="bg-ghost" id="pz-bg10" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    <div class="wrap">
+      <div class="eyebrow r">O ponto</div>
+      <h1 class="r" style="font-size:clamp(38px,6.5vw,96px)">A imagem está<br>longe de <em>completa</em>.</h1>
+      <div class="cap-sub r" style="max-width:44ch">A pergunta não é <b>se</b> o quadro será montado. É de <b>qual quadro</b> vocês querem ser sócios.</div>
+    </div>
+    <div class="meta-row">
+      <span>Plataforma da administradora mutualista</span>
+      <span>Confidencial &middot; Junho de 2026</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Anterior">&larr;</button>
+  <div class="dots" id="dots"></div>
+  <button id="next" aria-label="Próximo">&rarr;</button>
+</div>
+<div class="hint">Setas para navegar &middot; F tela cheia</div>
+
+<script>
+(function(){
+  var ns='http://www.w3.org/2000/svg';
+
+  /* ---------- jigsaw generator (pieces wrapped in <g> for choreography) ---------- */
+  function buildPuzzle(svg, opts){
+    var cols=opts.cols||4, rows=opts.rows||2, W=800, H=400, L=W/cols, R=H/rows;
+    var V=[],Hd=[];
+    for(var c=0;c<cols-1;c++){V[c]=[];for(var r=0;r<rows;r++)V[c][r]=Math.random()<0.5?1:-1;}
+    for(var c2=0;c2<cols;c2++){Hd[c2]=[];for(var r2=0;r2<rows-1;r2++)Hd[c2][r2]=Math.random()<0.5?1:-1;}
+
+    function edge(p,dir,nrm,len){
+      if(!nrm) return 'L '+(p[0]+dir[0]*len)+' '+(p[1]+dir[1]*len);
+      var t=0.18*Math.min(L,R), w=0.11*len, m=0.5*len;
+      function P(a,o){return (p[0]+dir[0]*a+nrm[0]*o)+' '+(p[1]+dir[1]*a+nrm[1]*o);}
+      return [
+        'L '+P(0.40*len,0),
+        'C '+P(0.33*len,0)+' '+P(0.31*len,t)+' '+P(m-w,t),
+        'C '+P(m-w*2.1,t*1.5)+' '+P(m+w*2.1,t*1.5)+' '+P(m+w,t),
+        'C '+P(0.69*len,t)+' '+P(0.67*len,0)+' '+P(0.60*len,0),
+        'L '+P(len,0)
+      ].join(' ');
+    }
+    function piecePath(c,r){
+      var x0=c*L, y0=r*R;
+      var top    = r>0      ? [0,Hd[c][r-1]] : null;
+      var right  = c<cols-1 ? [V[c][r],0]    : null;
+      var bottom = r<rows-1 ? [0,Hd[c][r]]   : null;
+      var left   = c>0      ? [V[c-1][r],0]  : null;
+      var d='M '+x0+' '+y0+' ';
+      d+=edge([x0,y0],      [1,0],  top,    L)+' ';
+      d+=edge([x0+L,y0],    [0,1],  right,  R)+' ';
+      d+=edge([x0+L,y0+R],  [-1,0], bottom, L)+' ';
+      d+=edge([x0,y0+R],    [0,-1], left,   R)+' Z';
+      return d;
+    }
+
+    var labels=opts.labels||[];
+    var palette=['#E0A75E','#7FA99B','#C98A6B','#8C9BB5','#D4B483','#9DA86F','#B5897F','#6FA0A8'];
+    var ratIdx=opts.rateioIndex;
+    var mode=opts.mode;
+    var pieces=[];
+    var i=0;
+    for(var r=0;r<rows;r++){
+      for(var c=0;c<cols;c++){
+        var g=document.createElementNS(ns,'g');
+        g.setAttribute('class','pz-piece-g');
+        var path=document.createElementNS(ns,'path');
+        path.setAttribute('d',piecePath(c,r));
+        var isRateio=(i===ratIdx);
+        var lit = mode==='all' || (mode==='single' && isRateio);
+        var cls='pz-piece ';
+        if(isRateio && (mode==='single'||mode==='all')){cls+='rateio lit';path.setAttribute('fill','#E0A75E');}
+        else if(lit){cls+='lit';path.setAttribute('fill',palette[i%palette.length]);path.setAttribute('fill-opacity','0.82');}
+        else {cls+='dim';path.setAttribute('fill','rgba(236,231,221,0.03)');}
+        path.setAttribute('class',cls);
+        g.appendChild(path);
+
+        var labelEl=null;
+        var label=labels[i]||'';
+        if(label && (lit || mode==='ghost')){
+          var t=document.createElementNS(ns,'text');
+          t.setAttribute('x',c*L+L/2);
+          t.setAttribute('y',r*R+R/2);
+          t.setAttribute('font-size',isRateio?'21':'15');
+          var lcls = isRateio?'pz-label rateio':(lit?'pz-label lit':'pz-label dim');
+          t.setAttribute('class',lcls);
+          t.textContent=label;
+          g.appendChild(t);
+          labelEl=t;
+        }
+        svg.appendChild(g);
+        pieces.push({g:g,path:path,label:labelEl,isRateio:isRateio,lit:lit,
+                     cx:c*L+L/2, cy:r*R+R/2, i:i});
+        i++;
+      }
+    }
+    svg.__pieces=pieces;
+    svg.__opts={cols:cols,rows:rows,mode:mode};
+
+    /* per-mode loop staggering */
+    if(mode==='ghost'){
+      svg.classList.add('pz-ghost-on');
+      pieces.forEach(function(p,k){
+        p.path.style.animationDelay=(k*0.22)+'s';
+        if(p.label) p.label.style.animationDelay=(k*0.22)+'s';
+      });
+    } else if(mode==='single'){
+      svg.classList.add('pz-single-on');
+      pieces.forEach(function(p,k){ if(!p.lit) p.path.style.animationDelay=(k*0.3)+'s'; });
+    }
+    return pieces;
+  }
+
+  /* the data flowing along the seams between adjacent pieces */
+  function buildLinks(svg){
+    var pieces=svg.__pieces, o=svg.__opts;
+    function at(c,r){return pieces[r*o.cols+c];}
+    var pairs=[];
+    for(var r=0;r<o.rows;r++){
+      for(var c=0;c<o.cols;c++){
+        if(c<o.cols-1) pairs.push([at(c,r),at(c+1,r)]);
+        if(r<o.rows-1) pairs.push([at(c,r),at(c,r+1)]);
+      }
+    }
+    pairs.forEach(function(pr,k){
+      var ln=document.createElementNS(ns,'line');
+      ln.setAttribute('x1',pr[0].cx);ln.setAttribute('y1',pr[0].cy);
+      ln.setAttribute('x2',pr[1].cx);ln.setAttribute('y2',pr[1].cy);
+      ln.setAttribute('class','pz-link');
+      ln.style.animationDelay=(k*0.09)+'s';
+      svg.appendChild(ln);
+    });
+  }
+
+  /* choreographed entrance: pieces fade in one by one (replays on each visit) */
+  function entrancePuzzle(svg){
+    if(!svg || !svg.__pieces) return;
+    var pieces=svg.__pieces;
+    pieces.forEach(function(p){ p.g.style.transition='none'; p.g.style.opacity='0'; });
+    void svg.getBoundingClientRect();
+    pieces.forEach(function(p,k){
+      p.g.style.transition='opacity .7s ease '+(k*0.07)+'s';
+      p.g.style.opacity='1';
+    });
+  }
+
+  var LAB=['Admissão','Rateio','Distribuição','Sinistro','Financeiro','CRM','Antifraude','Prestação'];
+  buildPuzzle(document.getElementById('pz-ghost'),{mode:'ghost',labels:LAB,rateioIndex:1});
+  buildPuzzle(document.getElementById('pz-single'),{mode:'single',labels:LAB,rateioIndex:1});
+  buildPuzzle(document.getElementById('pz-all'),{mode:'all',labels:LAB,rateioIndex:1});
+  buildLinks(document.getElementById('pz-all'));
+  buildPuzzle(document.getElementById('pz-bg1'),{mode:'ghost',labels:[],rateioIndex:1});
+  buildPuzzle(document.getElementById('pz-bg10'),{mode:'ghost',labels:[],rateioIndex:1});
+  buildPuzzle(document.getElementById('mini-piece'),{mode:'single',labels:[],rateioIndex:1});
+  buildPuzzle(document.getElementById('mini-board'),{mode:'all',labels:[],rateioIndex:1});
+  buildLinks(document.getElementById('mini-board'));
+
+  /* main puzzles that replay their entrance when their slide opens */
+  var puzzleByIdx={1:'pz-ghost',2:'pz-single',5:'pz-all'};
+  function activate(idx){
+    var id=puzzleByIdx[idx];
+    if(id) entrancePuzzle(document.getElementById(id));
+  }
+
+  /* ---------- deck navigation ---------- */
+  var slides=Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total=slides.length, idx=0;
+  document.getElementById('tot').textContent=String(total).padStart(2,'0');
+
+  var dotsEl=document.getElementById('dots');
+  slides.forEach(function(_,i){
+    var d=document.createElement('div');d.className='dot'+(i===0?' active':'');
+    d.addEventListener('click',function(){go(i);});
+    dotsEl.appendChild(d);
+  });
+  var dots=Array.prototype.slice.call(dotsEl.children);
+
+  function reveal(slide){
+    var rs=slide.querySelectorAll('.r');
+    rs.forEach(function(el,i){el.style.transitionDelay=(0.08*i+0.05)+'s';});
+  }
+  reveal(slides[0]);
+  activate(0);
+
+  function go(n){
+    n=Math.max(0,Math.min(total-1,n));
+    if(n===idx) return;
+    slides[idx].classList.remove('active');
+    idx=n;
+    slides[idx].classList.add('active');
+    reveal(slides[idx]);
+    activate(idx);
+    dots.forEach(function(d,i){d.classList.toggle('active',i===idx);});
+    document.getElementById('cur').textContent=String(idx+1).padStart(2,'0');
+    document.getElementById('progress').style.width=((idx)/(total-1)*100)+'%';
+  }
+  document.getElementById('progress').style.width='0%';
+
+  document.getElementById('next').addEventListener('click',function(){go(idx+1);});
+  document.getElementById('prev').addEventListener('click',function(){go(idx-1);});
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(idx+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(idx-1);}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(total-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen();}
+    }
+  });
+})();
+</script>
+</body>
+</html>
