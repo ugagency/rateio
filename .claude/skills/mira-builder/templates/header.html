@@ -1,0 +1,40 @@
+<header class="min-h-screen flex items-center justify-center relative overflow-hidden bg-black">
+    <!-- Video Background — OBRIGATÓRIO: copiar .mp4 para pasta de destino -->
+    <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-50">
+        <source src="header-bg.mp4" type="video/mp4">
+    </video>
+    <!-- Overlay gradient para legibilidade -->
+    <div class="absolute inset-0 pointer-events-none"
+        style="background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.7) 100%);">
+    </div>
+    <div class="absolute inset-0 pointer-events-none"
+        style="background-image: radial-gradient(circle at 20% 80%, rgba(255, 144, 77, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 144, 77, 0.15) 0%, transparent 50%);">
+    </div>
+    <div class="text-center relative z-10" data-aos="fade-down">
+        <span
+            class="inline-block bg-[#FF904D] text-white text-sm font-bold px-6 py-2 rounded-full mb-8 tracking-widest uppercase">[TIPO_CONTEUDO]</span>
+        <h1 class="text-5xl md:text-7xl font-bold mb-6 drop-shadow-lg">[TITULO_PRINCIPAL]</h1>
+        <p class="text-xl text-white/90 max-w-3xl mx-auto mb-10 drop-shadow-md">[SUBTITULO]</p>
+
+        <!-- Logo Canal Sandeco — OBRIGATÓRIO -->
+        <div data-aos="fade-up" data-aos-delay="400" class="mt-6">
+            <img src="canal_sandeco_logo.png" alt="Canal Sandeco"
+                class="h-8 mx-auto opacity-70 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] hover:opacity-100 transition-opacity">
+        </div>
+    </div>
+
+    <!-- Botão "Começar" -->
+    <button
+        class="absolute bottom-8 right-8 flex flex-col items-center gap-2 cursor-pointer bg-transparent border-none group"
+        id="header-next-btn" aria-label="Ir para o primeiro card"
+        style="animation: scroll-bounce 2s ease-in-out infinite;">
+        <span
+            class="text-[10px] uppercase tracking-[4px] text-white/30 font-medium group-hover:text-[#FF904D] transition-colors">Iniciar</span>
+        <div
+            class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#FF904D]/20 transition-all">
+            <i data-lucide="chevron-down"
+                class="w-5 h-5 text-white/40 group-hover:text-[#FF904D] transition-colors"></i>
+        </div>
+    </button>
+</header>
+<main class="container mx-auto px-4 py-20 flex flex-col items-center gap-[60vh]">

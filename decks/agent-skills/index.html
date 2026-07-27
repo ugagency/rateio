@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Skills — Mira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* @MIRA:THEME:START */
+:root {
+    --mira-primary: #FF904D;
+    --mira-bg: #000000;
+    --mira-text: #ffffff;
+    --mira-text-soft: rgba(255, 255, 255, 0.70);
+    --mira-text-softer: rgba(255, 255, 255, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.05);
+    --mira-card-border: rgba(255, 255, 255, 0.10);
+    --mira-glow-soft: rgba(255, 144, 77, 0.15);
+    --mira-glow-strong: rgba(255, 144, 77, 0.25);
+    --mira-icon-bg: rgba(255, 144, 77, 0.15);
+    --mira-icon-border: rgba(255, 144, 77, 0.30);
+    --mira-pill-bg: rgba(255, 255, 255, 0.04);
+    --mira-pill-border: rgba(255, 255, 255, 0.08);
+    --mira-stage-glow: rgba(255, 144, 77, 0.06);
+    --mira-accent-2: #FFC766;
+}
+
+body {
+    background: var(--mira-bg);
+    min-height: 100vh;
+    color: var(--mira-text);
+    font-family: 'Inter', sans-serif;
+}
+.primary-color { color: var(--mira-primary); }
+.primary-bg { background: var(--mira-primary); }
+.glass-card {
+    background: var(--mira-card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--mira-card-border);
+    box-shadow: 0 10px 30px var(--mira-glow-soft);
+    transition: all 0.3s ease;
+    border-radius: 0.75rem;
+}
+.icon-hero {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; flex: 0 0 auto; align-items: center; justify-content: center;
+    background: var(--mira-icon-bg); border: 1px solid var(--mira-icon-border);
+}
+.attribute-pill {
+    background: var(--mira-pill-bg); border: 1px solid var(--mira-pill-border);
+    transition: all 0.25s ease; border-radius: 9999px;
+}
+.attribute-pill:hover {
+    background: var(--mira-icon-bg); border-color: var(--mira-icon-border); transform: translateY(-3px);
+}
+.anim-stage {
+    width: 100%; aspect-ratio: 16 / 9;
+    background: radial-gradient(circle at 50% 50%, var(--mira-stage-glow), transparent 70%);
+    border-radius: 8px; overflow: hidden; position: relative;
+}
+.anim-stage svg { display: block; width: 100%; height: 100%; }
+.replay-btn {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    background: var(--mira-pill-bg); border: 1px solid var(--mira-pill-border);
+    color: var(--mira-text-soft); border-radius: 9999px; padding: 6px 14px;
+    font-size: 12px; cursor: pointer; transition: all 0.25s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.replay-btn:hover { background: var(--mira-icon-bg); color: var(--mira-primary); }
+.text-soft { color: var(--mira-text-soft); }
+.text-softer { color: var(--mira-text-softer); }
+@keyframes mira-pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.08);opacity:0.85;} }
+        /* @MIRA:THEME:END */
+
+        html { scroll-behavior: smooth; }
+        #mira-progress {
+            position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+            background: linear-gradient(90deg, var(--mira-primary), var(--mira-accent-2), var(--mira-primary));
+            background-size: 200% 100%; animation: mira-shimmer 2s linear infinite;
+            z-index: 9999; transition: width 0.1s linear; box-shadow: 0 0 10px var(--mira-glow-strong);
+        }
+        @keyframes mira-shimmer { 0%{background-position:-200% center;} 100%{background-position:200% center;} }
+        #mira-next {
+            position: fixed; bottom: 32px; right: 32px; width: 48px; height: 48px; border-radius: 50%;
+            background: var(--mira-primary); color: var(--mira-bg); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none; opacity: 0; transform: translateY(20px);
+            transition: all 0.3s ease; z-index: 9998; box-shadow: 0 4px 20px var(--mira-glow-strong);
+        }
+        #mira-next.visible { opacity: 1; transform: translateY(0); }
+        #mira-next:hover { transform: translateY(-3px) scale(1.1); }
+        .code-block {
+            font-family: 'JetBrains Mono', monospace; font-size: 16px; line-height: 1.7;
+            background: rgba(0,0,0,0.45); border: 1px solid var(--mira-card-border); border-radius: 12px;
+        }
+        .code-cursor { display: inline-block; width: 9px; height: 18px; background: var(--mira-primary); vertical-align: middle; animation: blink 1s steps(1) infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .cta-breathe { background: radial-gradient(ellipse at 50% 60%, var(--mira-glow-strong), transparent 65%); animation: mira-pulse 4s ease-in-out infinite; }
+        .metric-ring circle { transition: none; }
+    </style>
+</head>
+
+<body>
+    <div id="mira-progress"></div>
+    <button id="mira-next" aria-label="Próximo slide"><i data-lucide="chevron-down" class="w-6 h-6" id="mira-next-icon"></i></button>
+
+    <!-- ============ SLIDE 1: CAPA ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <div id="capa-stage" class="absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 text-center max-w-4xl" data-aos="fade-up">
+            <p class="attribute-pill inline-block px-5 py-2 text-sm tracking-widest uppercase text-soft mb-8">Formato aberto · agentskills.io</p>
+            <h1 class="text-6xl md:text-8xl font-black leading-none mb-6">Agent <span class="primary-color">Skills</span></h1>
+            <p class="text-xl md:text-2xl text-soft max-w-2xl mx-auto mb-10">Dê a qualquer agente de IA conhecimento especializado, empacotado numa pasta e carregado só quando a tarefa pede.</p>
+            <div class="flex items-center justify-center gap-3 text-softer text-sm">
+                <i data-lucide="folder-git-2" class="w-4 h-4 primary-color"></i> Padrão aberto
+                <span class="opacity-40">|</span>
+                <i data-lucide="users" class="w-4 h-4 primary-color"></i> Anthropic e comunidade
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 2: O PROBLEMA (CHEF) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-2" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">Capaz, sem o <span class="primary-color italic">manual</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">O modelo é forte, mas falta o procedimento e o contexto.</p>
+        </div>
+        <div class="glass-card w-full max-w-6xl rounded-2xl p-1 md:p-2" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-[#FF904D]/15 flex items-center justify-center"><i data-lucide="utensils" class="w-5 h-5 primary-color"></i></div>
+                    <div><p class="text-white font-bold text-sm">Faltando a receita</p><p class="text-white/50 text-xs italic">As facas afiam, o prato continua vazio.</p></div>
+                </div>
+                <button id="replay-chef" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+            </div>
+            <!-- @MIRA:SIZE 3/10 -->
+            <div class="anim-stage" id="chef-stage"><svg id="chef-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">O agente capaz, sem o playbook</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="cpu" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Modelo forte</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="help-circle" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Sem contexto</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="alert-triangle" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Resultado incerto</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 3: A SKILL É UMA PASTA (KIT) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-2" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">A skill é uma <span class="primary-color italic">pasta</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">No mínimo um SKILL.md, o resto é opcional.</p>
+        </div>
+        <div class="glass-card w-full max-w-6xl rounded-2xl p-1 md:p-2" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-[#FF904D]/15 flex items-center justify-center"><i data-lucide="folder" class="w-5 h-5 primary-color"></i></div>
+                    <div><p class="text-white font-bold text-sm">Anatomia da pasta</p><p class="text-white/50 text-xs italic">Metadados, instruções e recursos juntos.</p></div>
+                </div>
+                <button id="replay-kit" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+            </div>
+            <!-- @MIRA:SIZE 3/10 -->
+            <div class="anim-stage" id="kit-stage"><svg id="kit-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">Um arquivo obrigatório, três pastas opcionais</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="file-text" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">SKILL.md</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="terminal" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">scripts/</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="book-open" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">references/</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="image" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">assets/</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 4: DISCLOSURE PROGRESSIVO (ESTANTE) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-2" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">Carregada <span class="primary-color italic">sob demanda</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">Lê a lombada, tira o livro, abre o capítulo.</p>
+        </div>
+        <div class="glass-card w-full max-w-6xl rounded-2xl p-1 md:p-2" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-[#FF904D]/15 flex items-center justify-center"><i data-lucide="layers" class="w-5 h-5 primary-color"></i></div>
+                    <div><p class="text-white font-bold text-sm">Disclosure progressivo</p><p class="text-white/50 text-xs italic">Descoberta, ativação, execução.</p></div>
+                </div>
+                <button id="replay-disc" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+            </div>
+            <!-- @MIRA:SIZE 3/10 -->
+            <div class="anim-stage" id="disc-stage"><svg id="disc-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">Três estágios, contexto só quando preciso</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="search" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Descoberta</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="book-open-check" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Ativação</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="play" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Execução</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 5: PEGADA DE CONTEXTO (MÉTRICAS) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-10" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">Pegada de <span class="primary-color italic">contexto mínima</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">Muitas skills à mão custando quase nada.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+            <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in">
+                <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                <p class="metric-value text-6xl font-black primary-color" data-target="100" data-suffix="">0</p>
+                <p class="text-soft mt-3">tokens por skill no startup, só nome e descrição</p>
+            </div>
+            <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in" data-aos-delay="150">
+                <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                <p class="metric-value text-6xl font-black primary-color" data-target="5000" data-prefix="<" data-suffix="">0</p>
+                <p class="text-soft mt-3">tokens recomendados para o corpo do SKILL.md</p>
+            </div>
+            <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in" data-aos-delay="300">
+                <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                <p class="metric-value text-6xl font-black primary-color" data-target="500" data-prefix="<" data-suffix="">0</p>
+                <p class="text-soft mt-3">linhas como teto para o SKILL.md principal</p>
+            </div>
+        </div>
+        <p class="text-softer mt-10 text-center max-w-2xl" data-aos="fade-up">A instrução completa só entra no contexto quando a tarefa exige. Os recursos pesados ficam em arquivos, lidos sob demanda.</p>
+    </section>
+
+    <!-- ============ SLIDE 6: ANATOMIA DO SKILL.md (CÓDIGO) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-8" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">Anatomia do <span class="primary-color italic">SKILL.md</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">Frontmatter YAML e instruções, só isso.</p>
+        </div>
+        <div class="glass-card w-full max-w-4xl p-8" data-aos="fade-up">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-3 h-3 rounded-full bg-red-400/70"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-400/70"></span>
+                <span class="w-3 h-3 rounded-full bg-green-400/70"></span>
+                <span class="text-softer text-xs ml-3 font-mono">pdf-processing/SKILL.md</span>
+            </div>
+            <pre class="code-block p-6 overflow-x-auto"><code id="typed-code"></code><span class="code-cursor"></span></pre>
+        </div>
+        <p class="text-softer mt-8 text-center max-w-2xl" data-aos="fade-up">Obrigatórios: <span class="text-white">name</span> em kebab-case, igual ao nome da pasta, e <span class="text-white">description</span> dizendo o que faz e quando usar.</p>
+    </section>
+
+    <!-- ============ SLIDE 7: A DESCRIÇÃO É O GATILHO (RADAR) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-2" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">A descrição é o <span class="primary-color italic">gatilho</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">É por ela que o agente decide quando usar a skill.</p>
+        </div>
+        <div class="glass-card w-full max-w-6xl rounded-2xl p-1 md:p-2" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-[#FF904D]/15 flex items-center justify-center"><i data-lucide="radar" class="w-5 h-5 primary-color"></i></div>
+                    <div><p class="text-white font-bold text-sm">O radar do agente</p><p class="text-white/50 text-xs italic">Boa descrição acende, descrição fraca passa batido.</p></div>
+                </div>
+                <button id="replay-radar" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+            </div>
+            <!-- @MIRA:SIZE 3/10 -->
+            <div class="anim-stage" id="radar-stage"><svg id="radar-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">O que faz e quando usar, com palavras-chave</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="tag" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Diz o que faz</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="target" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Diz quando usar</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="key-round" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Palavras-chave</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 8: UM PADRÃO, MUITOS AGENTES (HUB) ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="text-center mb-2" data-aos="fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold mb-2">Um padrão, <span class="primary-color italic">muitos agentes</span></h2>
+            <p class="text-white/60 italic text-lg md:text-xl">Construa uma vez, use em qualquer cliente compatível.</p>
+        </div>
+        <div class="glass-card w-full max-w-6xl rounded-2xl p-1 md:p-2" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-[#FF904D]/15 flex items-center justify-center"><i data-lucide="share-2" class="w-5 h-5 primary-color"></i></div>
+                    <div><p class="text-white font-bold text-sm">Padrão aberto</p><p class="text-white/50 text-xs italic">Criado pela Anthropic, adotado pelo ecossistema.</p></div>
+                </div>
+                <button id="replay-hub" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+            </div>
+            <!-- @MIRA:SIZE 3/10 -->
+            <div class="anim-stage" id="hub-stage"><svg id="hub-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">A mesma skill em dezenas de clientes</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="recycle" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Reuso entre produtos</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="git-branch" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Versionável</p></div>
+                    <div class="attribute-pill text-center p-2 rounded-xl"><i data-lucide="unlock" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Aberto</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 9: ENCERRAMENTO / CTA ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <div class="cta-breathe absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 text-center max-w-3xl" data-aos="zoom-in">
+            <div class="icon-hero mx-auto mb-8" style="width:72px;height:72px;border-radius:20px;"><i data-lucide="rocket" class="primary-color w-9 h-9"></i></div>
+            <h2 class="text-5xl md:text-6xl font-black mb-6">Crie a <span class="primary-color">sua</span></h2>
+            <p class="text-xl text-soft mb-10">Uma pasta, um SKILL.md, e o agente ganha uma nova capacidade. Comece pelo quickstart ou vá direto à especificação.</p>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="rocket" class="inline w-4 h-4 mr-2 primary-color"></i>agentskills.io/quickstart</span>
+                <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="file-code" class="inline w-4 h-4 mr-2 primary-color"></i>agentskills.io/specification</span>
+            </div>
+            <p class="text-softer mt-12 text-sm tracking-widest uppercase">Feito com Mira</p>
+        </div>
+    </section>
+
+    <script>
+        AOS.init({ duration: 800, once: true });
+        lucide.createIcons();
+        const PRIMARY = getComputedStyle(document.documentElement).getPropertyValue('--mira-primary').trim() || '#FF904D';
+        const ACCENT = getComputedStyle(document.documentElement).getPropertyValue('--mira-accent-2').trim() || '#FFC766';
+
+        // ---- helpers anti-vazamento de loop ----
+        window.__G = window.__G || {}; window.__T = window.__T || {};
+        function bumpGen(k){ window.__G[k] = (window.__G[k] || 0) + 1; return window.__G[k]; }
+        function curGen(k){ return window.__G[k]; }
+        function regTimer(k, t){ (window.__T[k] = window.__T[k] || []).push(t); }
+        function stopTimers(k){ (window.__T[k] || []).forEach(t => { try { t.stop && t.stop(); } catch(e){} try { clearInterval(t); } catch(e){} }); window.__T[k] = []; }
+
+        // ===== SLIDE 2: chef sem receita =====
+        function animateChef(){
+            const svg = d3.select('#chef-svg'); svg.selectAll('*').remove(); stopTimers('chef');
+            const gen = bumpGen('chef');
+            const chefX = 380, chefY = 380;
+            const cg = svg.append('g');
+            cg.append('ellipse').attr('cx', chefX).attr('cy', chefY + 110).attr('rx', 78).attr('ry', 56).attr('fill', 'rgba(255,255,255,0.06)').attr('stroke', PRIMARY).attr('stroke-width', 2).attr('opacity', 0).transition().duration(600).attr('opacity', 1);
+            cg.append('circle').attr('cx', chefX).attr('cy', chefY).attr('r', 50).attr('fill', 'rgba(255,255,255,0.06)').attr('stroke', PRIMARY).attr('stroke-width', 2).attr('opacity', 0).transition().duration(600).attr('opacity', 1);
+            cg.append('rect').attr('x', chefX - 48).attr('y', chefY - 86).attr('width', 96).attr('height', 32).attr('rx', 12).attr('fill', PRIMARY).attr('opacity', 0).transition().duration(600).attr('opacity', 0.85);
+            cg.append('ellipse').attr('cx', chefX).attr('cy', chefY - 86).attr('rx', 50).attr('ry', 24).attr('fill', PRIMARY).attr('opacity', 0).transition().duration(600).attr('opacity', 0.85);
+            svg.append('text').attr('x', chefX).attr('y', chefY + 210).attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.7)').attr('font-size', 24).attr('font-weight', 700).text('agente capaz');
+            const plateX = 920, plateY = 540;
+            svg.append('ellipse').attr('cx', plateX).attr('cy', plateY).attr('rx', 165).attr('ry', 44).attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', 'rgba(255,255,255,0.28)').attr('stroke-width', 2);
+            svg.append('ellipse').attr('cx', plateX).attr('cy', plateY).attr('rx', 120).attr('ry', 28).attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.12)');
+            svg.append('text').attr('x', plateX).attr('y', plateY + 110).attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.7)').attr('font-size', 24).attr('font-weight', 700).text('a tarefa');
+            const q = svg.append('text').attr('x', plateX).attr('y', plateY - 120).attr('text-anchor', 'middle').attr('fill', PRIMARY).attr('font-size', 130).attr('font-weight', 900).attr('opacity', 0.95).text('?');
+            (function qpulse(){
+                if (gen !== curGen('chef')) return;
+                q.transition().duration(1000).ease(d3.easeSinInOut).attr('opacity', 0.4).attr('font-size', 165)
+                 .transition().duration(1000).ease(d3.easeSinInOut).attr('opacity', 0.95).attr('font-size', 130).on('end', qpulse);
+            })();
+            (function spawn(){
+                if (gen !== curGen('chef')) return;
+                const sy = 150 + Math.random() * 120;
+                const ing = svg.append('circle').attr('cx', 1200).attr('cy', sy).attr('r', 13).attr('fill', ACCENT).attr('opacity', 0.9);
+                ing.transition().duration(1300).ease(d3.easeQuadIn).attr('cx', plateX + (Math.random() * 70 - 35)).attr('cy', plateY - 12)
+                   .transition().duration(450).attr('opacity', 0).attr('r', 2).remove();
+                setTimeout(spawn, 850);
+            })();
+        }
+
+        // ===== SLIDE 3: a skill é uma pasta (árvore de arquivos) =====
+        function animateKit(){
+            const svg = d3.select('#kit-svg'); svg.selectAll('*').remove(); stopTimers('kit');
+            const gen = bumpGen('kit');
+            const cx = 640;
+            const rows = [
+                { n: 'SKILL.md', t: 'Obrigatório', core: true },
+                { n: 'scripts/', t: 'Opcional', core: false },
+                { n: 'references/', t: 'Opcional', core: false },
+                { n: 'assets/', t: 'Opcional', core: false }
+            ];
+            const x0 = 440, w = 400, y0 = 190, rh = 96, gap = 16;
+            svg.append('text').attr('x', cx).attr('y', 140).attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.85)').attr('font-size', 26).attr('font-weight', 700).attr('font-family', "'JetBrains Mono', monospace").text('minha-skill/');
+            const rowG = rows.map((r, i) => {
+                const y = y0 + i * (rh + gap);
+                const g = svg.append('g').attr('opacity', 0).attr('transform', `translate(${x0 - 50},${y})`);
+                g.append('rect').attr('width', w).attr('height', rh).attr('rx', 12)
+                    .attr('fill', r.core ? 'rgba(255,144,77,0.14)' : 'rgba(255,255,255,0.05)')
+                    .attr('stroke', r.core ? PRIMARY : 'rgba(255,255,255,0.14)').attr('stroke-width', r.core ? 2 : 1.2);
+                g.append('text').attr('x', 28).attr('y', rh / 2 + 2).attr('dominant-baseline', 'middle').attr('fill', r.core ? PRIMARY : 'rgba(255,255,255,0.88)').attr('font-size', 28).attr('font-weight', 700).attr('font-family', "'JetBrains Mono', monospace").text(r.n);
+                g.append('text').attr('x', w - 26).attr('y', rh / 2 + 2).attr('dominant-baseline', 'middle').attr('text-anchor', 'end').attr('fill', r.core ? PRIMARY : 'rgba(255,255,255,0.4)').attr('font-size', 15).attr('font-weight', 600).attr('letter-spacing', '2px').text(r.t.toUpperCase());
+                g.transition().delay(200 + i * 180).duration(520).ease(d3.easeBackOut.overshoot(1.1)).attr('opacity', 1).attr('transform', `translate(${x0},${y})`);
+                return { g, y };
+            });
+            const totalBot = y0 + rows.length * (rh + gap) - gap;
+            const hl = svg.append('rect').attr('x', x0).attr('width', w).attr('height', rh).attr('rx', 12).attr('fill', 'rgba(255,199,102,0.10)').attr('y', y0).attr('opacity', 0).attr('pointer-events', 'none');
+            (function sweep(){
+                if (gen !== curGen('kit')) return;
+                hl.attr('y', y0).attr('opacity', 0.9)
+                  .transition().duration(2600).ease(d3.easeSinInOut).attr('y', totalBot - rh)
+                  .transition().duration(2600).ease(d3.easeSinInOut).attr('y', y0).on('end', sweep);
+            })();
+            const coreRect = rowG[0].g.select('rect');
+            (function glow(){
+                if (gen !== curGen('kit')) return;
+                coreRect.transition().duration(1100).attr('stroke-width', 3.5)
+                        .transition().duration(1100).attr('stroke-width', 2).on('end', glow);
+            })();
+        }
+
+        // ===== SLIDE 4: disclosure progressivo (estante) =====
+        function animateDisc(){
+            const svg = d3.select('#disc-svg'); svg.selectAll('*').remove(); stopTimers('disc');
+            const gen = bumpGen('disc');
+            const labels = [['1. Descoberta', 'só nome e descrição'], ['2. Ativação', 'lê o SKILL.md inteiro'], ['3. Execução', 'roda scripts e referências']];
+            const lx = [300, 640, 980];
+            const labelG = labels.map((l, i) => {
+                const g = svg.append('g').attr('opacity', 0.28);
+                g.append('text').attr('x', lx[i]).attr('y', 80).attr('text-anchor', 'middle').attr('fill', PRIMARY).attr('font-size', 26).attr('font-weight', 900).text(l[0]);
+                g.append('text').attr('x', lx[i]).attr('y', 110).attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.55)').attr('font-size', 15).text(l[1]);
+                return g;
+            });
+            function lit(i){ labelG.forEach((g, k) => g.transition().duration(300).attr('opacity', k === i ? 1 : 0.28)); }
+            const shelfY = 500, bx0 = 250, bw = 50, gap = 16, n = 9, target = 4;
+            svg.append('line').attr('x1', bx0 - 24).attr('y1', shelfY + 8).attr('x2', bx0 + n * (bw + gap)).attr('y2', shelfY + 8).attr('stroke', 'rgba(255,255,255,0.25)').attr('stroke-width', 5);
+            const books = [];
+            for (let i = 0; i < n; i++){
+                const x = bx0 + i * (bw + gap);
+                const h = 130 + (i % 3) * 20;
+                const g = svg.append('g').attr('transform', `translate(${x},0)`);
+                g.append('rect').attr('x', 0).attr('y', shelfY - h).attr('width', bw).attr('height', h).attr('rx', 4)
+                    .attr('fill', i === target ? 'rgba(255,144,77,0.18)' : 'rgba(255,255,255,0.06)')
+                    .attr('stroke', i === target ? PRIMARY : 'rgba(255,255,255,0.18)').attr('stroke-width', i === target ? 2 : 1.2);
+                books.push({ g, x, h });
+            }
+            const spot = svg.append('ellipse').attr('cy', shelfY - 80).attr('rx', 44).attr('ry', 100).attr('fill', 'rgba(255,199,102,0.13)').attr('opacity', 0);
+            function phase1(){
+                if (gen !== curGen('disc')) return; lit(0);
+                spot.attr('opacity', 1).attr('cx', books[0].x + bw / 2)
+                    .transition().duration(1900).ease(d3.easeSinInOut).attr('cx', books[n - 1].x + bw / 2)
+                    .on('end', () => { spot.transition().duration(300).attr('opacity', 0).on('end', phase2); });
+            }
+            function phase2(){
+                if (gen !== curGen('disc')) return; lit(1);
+                const b = books[target];
+                b.g.transition().duration(700).ease(d3.easeBackOut.overshoot(1.2)).attr('transform', `translate(${b.x},-170)`);
+                setTimeout(phase3, 950);
+            }
+            function phase3(){
+                if (gen !== curGen('disc')) return; lit(2);
+                const og = svg.append('g').attr('opacity', 0).attr('transform', 'translate(640,230)');
+                og.append('path').attr('d', 'M0,0 L-160,18 L-160,180 L0,162 Z').attr('fill', 'rgba(255,255,255,0.08)').attr('stroke', PRIMARY).attr('stroke-width', 1.5);
+                og.append('path').attr('d', 'M0,0 L160,18 L160,180 L0,162 Z').attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', PRIMARY).attr('stroke-width', 1.5);
+                [42, 76, 110].forEach((yy, k) => {
+                    const left = k % 2 === 0;
+                    og.append('rect').attr('x', left ? -134 : 28).attr('y', yy).attr('width', left ? 104 : 100).attr('height', 7).attr('rx', 3).attr('fill', 'rgba(255,255,255,0.34)').attr('opacity', 0)
+                      .transition().delay(300 + k * 170).duration(260).attr('opacity', 0.85);
+                });
+                const ring = og.append('circle').attr('cx', 0).attr('cy', 150).attr('r', 16).attr('fill', 'none').attr('stroke', PRIMARY).attr('stroke-width', 3).attr('stroke-dasharray', '7 7');
+                og.transition().duration(400).attr('opacity', 1);
+                let a = 0;
+                const t = d3.timer(() => { if (gen !== curGen('disc')) { t.stop(); return; } a += 5; ring.attr('transform', `rotate(${a},0,150)`); });
+                regTimer('disc', t);
+                setTimeout(() => { if (gen !== curGen('disc')) return; try { t.stop(); } catch(e){} phaseEnd(og); }, 2300);
+            }
+            function phaseEnd(og){
+                if (gen !== curGen('disc')) return;
+                og.transition().duration(400).attr('opacity', 0).remove();
+                const b = books[target];
+                b.g.transition().duration(600).ease(d3.easeCubicInOut).attr('transform', `translate(${b.x},0)`)
+                   .on('end', () => setTimeout(phase1, 700));
+            }
+            phase1();
+        }
+
+        // ===== SLIDE 7: a descrição é o gatilho (radar) =====
+        function animateRadar(){
+            const svg = d3.select('#radar-svg'); svg.selectAll('*').remove(); stopTimers('radar');
+            const gen = bumpGen('radar');
+            const cx = 640, cy = 370;
+            [120, 210, 300].forEach(r => svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', r).attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.10)'));
+            svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 6).attr('fill', PRIMARY);
+            const sweep = svg.append('line').attr('x1', cx).attr('y1', cy).attr('x2', cx).attr('y2', cy - 300).attr('stroke', PRIMARY).attr('stroke-width', 3).attr('opacity', 0.85);
+            const chips = [
+                { label: 'pdf-processing', good: true },
+                { label: 'data-analysis', good: true },
+                { label: 'code-review', good: true },
+                { label: 'commit-helper', good: true },
+                { label: '"ajuda com PDFs"', good: false }
+            ];
+            const R = 300;
+            const cg = chips.map((c, i) => {
+                const ang = (i / chips.length) * Math.PI * 2 - Math.PI / 2;
+                const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R * 0.92;
+                const g = svg.append('g').attr('transform', `translate(${x},${y})`);
+                const w = c.label.length * 9.5 + 34;
+                g.append('rect').attr('x', -w / 2).attr('y', -20).attr('width', w).attr('height', 40).attr('rx', 20)
+                    .attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', c.good ? 'rgba(255,144,77,0.4)' : 'rgba(255,255,255,0.15)');
+                g.append('text').attr('text-anchor', 'middle').attr('dy', 6).attr('font-size', 16).attr('font-weight', 600).attr('font-family', "'JetBrains Mono', monospace").attr('fill', 'rgba(255,255,255,0.5)').text(c.label);
+                return { ang: (ang + Math.PI * 2) % (Math.PI * 2), good: c.good, g, t0: 0, pt: 0 };
+            });
+            let a = -Math.PI / 2;
+            const t = d3.timer((elapsed) => {
+                if (gen !== curGen('radar')) { t.stop(); return; }
+                a += 0.032;
+                sweep.attr('x2', cx + Math.cos(a) * 300).attr('y2', cy + Math.sin(a) * 300);
+                const na = (a + Math.PI * 2) % (Math.PI * 2);
+                cg.forEach(c => {
+                    let d = Math.abs(na - c.ang); d = Math.min(d, Math.PI * 2 - d);
+                    if (d < 0.13){
+                        if (c.good){ c.g.select('rect').attr('fill', 'rgba(255,144,77,0.20)').attr('stroke', PRIMARY); c.g.select('text').attr('fill', PRIMARY); c.t0 = elapsed; }
+                        else { c.g.select('text').attr('fill', 'rgba(255,255,255,0.6)'); c.pt = elapsed; }
+                    }
+                    if (c.t0 && elapsed - c.t0 > 650){ c.g.select('rect').attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', 'rgba(255,144,77,0.4)'); c.g.select('text').attr('fill', 'rgba(255,255,255,0.5)'); c.t0 = 0; }
+                    if (c.pt && elapsed - c.pt > 220){ c.g.select('text').attr('fill', 'rgba(255,255,255,0.5)'); c.pt = 0; }
+                });
+            });
+            regTimer('radar', t);
+        }
+
+        // ===== SLIDE 8: um padrão, muitos agentes (hub-spoke) =====
+        function animateHub(){
+            const svg = d3.select('#hub-svg'); svg.selectAll('*').remove(); stopTimers('hub');
+            const gen = bumpGen('hub');
+            const cx = 640, cy = 370;
+            const clients = ['Claude', 'Claude Code', 'Cursor', 'Copilot', 'VS Code', 'Gemini CLI', 'Codex', 'Goose', 'OpenHands', 'Roo Code'];
+            const R = 270;
+            const nodes = clients.map((c, i) => {
+                const ang = (i / clients.length) * Math.PI * 2 - Math.PI / 2;
+                const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R * 0.82;
+                svg.append('line').attr('x1', cx).attr('y1', cy).attr('x2', x).attr('y2', y).attr('stroke', 'rgba(255,255,255,0.10)').attr('stroke-dasharray', '3 6');
+                return { x, y, label: c };
+            });
+            const core = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+            core.append('circle').attr('r', 0).attr('fill', 'rgba(255,144,77,0.12)').attr('stroke', PRIMARY).attr('stroke-width', 2.5).transition().duration(700).ease(d3.easeBackOut).attr('r', 72);
+            core.append('text').attr('text-anchor', 'middle').attr('dy', -4).attr('fill', PRIMARY).attr('font-size', 18).attr('font-weight', 800).attr('opacity', 0).text('1 padrão').transition().delay(400).attr('opacity', 1);
+            core.append('text').attr('text-anchor', 'middle').attr('dy', 22).attr('fill', 'rgba(255,255,255,0.6)').attr('font-size', 13).attr('font-family', "'JetBrains Mono', monospace").attr('opacity', 0).text('SKILL.md').transition().delay(500).attr('opacity', 1);
+            const ng = nodes.map((nd, i) => {
+                const g = svg.append('g').attr('transform', `translate(${nd.x},${nd.y})`).attr('opacity', 0);
+                const w = nd.label.length * 9 + 28;
+                g.append('rect').attr('x', -w / 2).attr('y', -18).attr('width', w).attr('height', 36).attr('rx', 18).attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', 'rgba(255,255,255,0.18)');
+                g.append('text').attr('text-anchor', 'middle').attr('dy', 5).attr('fill', 'rgba(255,255,255,0.72)').attr('font-size', 15).attr('font-weight', 600).text(nd.label);
+                g.transition().delay(700 + i * 85).duration(400).attr('opacity', 1);
+                return Object.assign(nd, { g });
+            });
+            let i = 0;
+            (function pulse(){
+                if (gen !== curGen('hub')) return;
+                const nd = ng[i];
+                const dot = svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 7).attr('fill', ACCENT);
+                dot.transition().duration(550).ease(d3.easeQuadInOut).attr('cx', nd.x).attr('cy', nd.y).on('end', () => {
+                    dot.remove();
+                    nd.g.select('rect').attr('fill', 'rgba(255,144,77,0.20)').attr('stroke', PRIMARY);
+                    nd.g.select('text').attr('fill', PRIMARY);
+                    nd.g.transition().duration(750).on('end', () => {
+                        nd.g.select('rect').attr('fill', 'rgba(255,255,255,0.05)').attr('stroke', 'rgba(255,255,255,0.18)');
+                        nd.g.select('text').attr('fill', 'rgba(255,255,255,0.72)');
+                    });
+                });
+                i = (i + 1) % ng.length;
+                setTimeout(pulse, 760);
+            })();
+        }
+
+        // ---- registro dos triggers (IntersectionObserver + Replay) ----
+        (function setupAnimationTriggers(){
+            const stages = [
+                { id: 'chef-stage', fn: animateChef, replay: 'replay-chef' },
+                { id: 'kit-stage', fn: animateKit, replay: 'replay-kit' },
+                { id: 'disc-stage', fn: animateDisc, replay: 'replay-disc' },
+                { id: 'radar-stage', fn: animateRadar, replay: 'replay-radar' },
+                { id: 'hub-stage', fn: animateHub, replay: 'replay-hub' }
+            ].map(s => Object.assign(s, { el: document.getElementById(s.id) })).filter(s => s.el);
+            const io = new IntersectionObserver(es => {
+                es.forEach(e => { const s = stages.find(x => x.el === e.target); if (s && e.isIntersecting) s.fn(); });
+            }, { threshold: 0.35 });
+            stages.forEach(s => { io.observe(s.el); const b = document.getElementById(s.replay); if (b) b.addEventListener('click', s.fn); });
+        })();
+
+        // ===== SLIDE 1: capa (partículas em loop) =====
+        (function(){
+            const W = window.innerWidth, H = window.innerHeight;
+            const svg = d3.select('#capa-stage').append('svg').attr('viewBox', `0 0 ${W} ${H}`).style('width', '100%').style('height', '100%');
+            const cx = W / 2, cy = H / 2;
+            const particles = d3.range(28).map(() => ({ r: 160 + Math.random() * Math.min(W, H) * 0.38, angle: Math.random() * Math.PI * 2, speed: 0.002 + Math.random() * 0.004, size: 1.5 + Math.random() * 3 }));
+            const dots = svg.selectAll('circle').data(particles).join('circle').attr('r', d => d.size).attr('fill', PRIMARY).attr('opacity', 0.32);
+            d3.timer(() => { dots.attr('cx', d => { d.angle += d.speed; return cx + Math.cos(d.angle) * d.r; }).attr('cy', d => cy + Math.sin(d.angle) * d.r * 0.6); });
+        })();
+
+        // ===== SLIDE 6: digitação do SKILL.md em loop =====
+        (function(){
+            const CODE = `---\nname: pdf-processing\ndescription: Extrai texto e tabelas de PDFs,\n  preenche formulários e junta arquivos.\n  Use ao lidar com PDFs ou formulários.\nlicense: Apache-2.0\n---\n\n# Processamento de PDF\n\nPassos para extrair e preencher PDFs...`;
+            const el = document.getElementById('typed-code');
+            let i = 0, deleting = false;
+            function tick(){
+                if (!deleting){ el.textContent = CODE.slice(0, ++i); if (i >= CODE.length){ deleting = true; return setTimeout(tick, 3800); } return setTimeout(tick, 26); }
+                el.textContent = CODE.slice(0, --i); if (i <= 0){ deleting = false; return setTimeout(tick, 700); } setTimeout(tick, 7);
+            }
+            const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting){ tick(); io.unobserve(e.target); } }); }, { threshold: 0.4 });
+            io.observe(el);
+        })();
+
+        // ===== SLIDE 5: métricas (contadores + anéis girando) =====
+        (function(){
+            const counters = document.querySelectorAll('.metric-value');
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(e => {
+                    if (!e.isIntersecting) return;
+                    const el = e.target;
+                    const target = parseFloat(el.dataset.target) || 0;
+                    const prefix = el.dataset.prefix || '';
+                    const suffix = el.dataset.suffix || '';
+                    d3.select(el).transition().duration(1800).ease(d3.easeCubicOut).tween('count', () => {
+                        const it = d3.interpolateNumber(0, target);
+                        return t => el.textContent = prefix + Math.round(it(t)).toLocaleString('pt-BR') + suffix;
+                    });
+                    io.unobserve(el);
+                });
+            }, { threshold: 0.4 });
+            counters.forEach(c => io.observe(c));
+            document.querySelectorAll('.metric-ring circle').forEach((ring, i) => {
+                let offset = 0; setInterval(() => { offset = (offset + 1.2 + i * 0.3) % 260; ring.setAttribute('stroke-dashoffset', -offset); }, 30);
+            });
+        })();
+
+        // ===== navegação card-a-card (progresso + botão + teclado) =====
+        (function(){
+            const cardSections = Array.from(document.querySelectorAll('body > section'));
+            if (cardSections.length === 0) return;
+            const progress = document.getElementById('mira-progress');
+            const nextBtn = document.getElementById('mira-next');
+            const nextIcon = document.getElementById('mira-next-icon');
+            const atBottom = () => (window.scrollY + window.innerHeight) >= (document.documentElement.scrollHeight - 100);
+            function currentIndex(){ const y = window.scrollY + window.innerHeight * 0.3; let idx = -1; for (let i = 0; i < cardSections.length; i++){ if (cardSections[i].offsetTop <= y) idx = i; } return idx; }
+            function goTo(i){ const idx = Math.max(0, Math.min(cardSections.length - 1, i)); cardSections[idx].scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+            window.addEventListener('scroll', () => {
+                const docH = document.documentElement.scrollHeight - window.innerHeight;
+                progress.style.width = (docH > 0 ? (window.scrollY / docH) * 100 : 0) + '%';
+                nextBtn.classList.toggle('visible', window.scrollY > 300);
+                nextIcon.setAttribute('data-lucide', atBottom() ? 'chevron-up' : 'chevron-down');
+                lucide.createIcons();
+            });
+            nextBtn.addEventListener('click', () => { if (atBottom()){ window.scrollTo({ top: 0, behavior: 'smooth' }); return; } goTo(currentIndex() + 1); });
+            document.addEventListener('keydown', (e) => {
+                if (['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key)){ e.preventDefault(); goTo(currentIndex() + 1); }
+                else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)){ e.preventDefault(); const idx = currentIndex(); if (idx <= 0) window.scrollTo({ top: 0, behavior: 'smooth' }); else goTo(idx - 1); }
+                else if (e.key === 'Home'){ e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                else if (e.key === 'End'){ e.preventDefault(); goTo(cardSections.length - 1); }
+                else if (e.key.toLowerCase() === 'f'){ if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+            });
+        })();
+    </script>
+</body>
+
+</html>

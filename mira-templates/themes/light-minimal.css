@@ -1,0 +1,20 @@
+/* MIRA THEME: light-minimal
+   Fundo claro, tipografia escura, laranja como acento pontual.
+   Para ambientes corporativos com projetor fraco ou impressão. */
+:root {
+    --mira-primary: #E8722A;
+    --mira-bg: #FAFAF7;
+    --mira-text: #1A1A1A;
+    --mira-text-soft: rgba(26, 26, 26, 0.72);
+    --mira-text-softer: rgba(26, 26, 26, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.85);
+    --mira-card-border: rgba(0, 0, 0, 0.08);
+    --mira-glow-soft: rgba(232, 114, 42, 0.10);
+    --mira-glow-strong: rgba(232, 114, 42, 0.18);
+    --mira-icon-bg: rgba(232, 114, 42, 0.12);
+    --mira-icon-border: rgba(232, 114, 42, 0.30);
+    --mira-pill-bg: rgba(0, 0, 0, 0.03);
+    --mira-pill-border: rgba(0, 0, 0, 0.08);
+    --mira-stage-glow: rgba(232, 114, 42, 0.05);
+    --mira-accent-2: #2A6FE8;
+}

@@ -1,0 +1,31 @@
+<!-- CARD COM VIDEO DE FUNDO: [TITULO] -->
+<div class="w-full max-w-5xl" data-aos="fade-up" data-aos-delay="[DELAY]">
+    <div class="glass-card rounded-2xl p-10 md:p-14 relative overflow-hidden">
+        <!-- Video de Fundo -->
+        <video autoplay loop muted playsinline
+            class="absolute inset-0 w-full h-full object-cover z-0" style="opacity: 0.5;">
+            <source src="[VIDEO_SRC]" type="video/mp4">
+        </video>
+        <!-- Overlay para Contraste -->
+        <div class="absolute inset-0 z-[1]"
+            style="background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.4), rgba(0,0,0,0.7));">
+        </div>
+
+        <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="icon-container">
+                    <i data-lucide="[ICONE]" class="primary-color w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-3xl md:text-4xl font-bold text-white">[TITULO_CARD]</h3>
+                    <p class="text-white/60 text-sm italic">[SUBTITULO]</p>
+                </div>
+            </div>
+
+            <p class="text-white/80 mb-8 leading-relaxed max-w-3xl">[DESCRICAO]</p>
+
+            <!-- [CONTEUDO_INTERNO] -->
+            <!-- Aqui pode conter grids, listas, logos, imagens, etc. -->
+        </div>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+<!-- CARD ENCERRAMENTO: CTA final com gradiente respirando em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+    <div class="cta-breathe absolute inset-0 pointer-events-none"></div>
+
+    <div class="relative z-10 text-center max-w-3xl" data-aos="zoom-in">
+        <div class="icon-hero mx-auto mb-8" style="width:72px;height:72px;border-radius:20px;">
+            <i data-lucide="[ICONE_FINAL]" class="primary-color w-9 h-9"></i>
+        </div>
+        <h2 class="text-6xl font-black mb-6">[FRASE_FINAL]</h2>
+        <p class="text-xl text-soft mb-10">[RESUMO_EM_UMA_LINHA]</p>
+
+        <div class="flex flex-wrap items-center justify-center gap-4">
+            <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="github" class="inline w-4 h-4 mr-2 primary-color"></i>[LINK_REPO]</span>
+            <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="youtube" class="inline w-4 h-4 mr-2 primary-color"></i>[LINK_CANAL]</span>
+        </div>
+
+        <p class="text-softer mt-12 text-sm tracking-widest uppercase">[ASSINATURA]</p>
+    </div>
+
+    <style>
+        /* LOOP INTERNO: gradiente de fundo respirando perpetuamente */
+        .cta-breathe {
+            background: radial-gradient(ellipse at 50% 60%, var(--mira-glow-strong), transparent 65%);
+            animation: mira-pulse 4s ease-in-out infinite;
+        }
+    </style>
+</section>

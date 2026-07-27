@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custo de Implantação e Operação · Plataforma de Rateio · uso interno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --paper:#ECE7DD;
+    --muted:#9AA2AD;
+    --gold:#E0A75E;
+    --gold-deep:#B9823F;
+    --sage:#7FA99B;
+    --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--ink);color:var(--paper);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;position:relative;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 82% -12%, rgba(224,167,94,0.10), transparent 55%),
+      radial-gradient(90% 80% at -10% 112%, rgba(127,169,155,0.08), transparent 50%);
+  }
+  .page{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(30px,4.5vw,54px) clamp(26px,5vw,64px) 48px;}
+
+  .eyebrow{
+    font-size:11px;letter-spacing:0.32em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin-bottom:0.9rem;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .eyebrow .tag{color:var(--muted);letter-spacing:0.18em;}
+  h1{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(28px,4vw,46px);line-height:1.02;
+    letter-spacing:-0.02em;margin-bottom:0.7rem;
+  }
+  h1 em{font-style:italic;color:var(--gold);}
+  .sub{font-size:clamp(13px,1.15vw,16px);line-height:1.5;color:var(--muted);max-width:74ch;}
+  .sub b{color:var(--paper);font-weight:500;}
+
+  .grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:clamp(16px,2vw,26px);margin-top:clamp(22px,2.6vw,32px);}
+  @media (max-width:820px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg, rgba(236,231,221,0.045), rgba(236,231,221,0.015));
+    padding:clamp(18px,2vw,24px);
+  }
+  .card h3{
+    font-family:var(--display);font-weight:500;font-size:clamp(17px,1.7vw,22px);
+    letter-spacing:-0.01em;margin-bottom:0.9rem;color:var(--paper);
+  }
+  .card h3 span{font-size:0.62em;color:var(--muted);font-family:var(--body);letter-spacing:0.02em;}
+
+  ul.faltas{list-style:none;display:grid;gap:0.5rem;}
+  ul.faltas li{
+    font-size:13px;line-height:1.35;color:var(--paper);padding-left:1.1rem;position:relative;
+  }
+  ul.faltas li::before{content:"";position:absolute;left:0;top:0.5em;width:6px;height:6px;border-radius:50%;background:var(--gold-deep);}
+  ul.faltas li b{color:var(--paper);font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  table td{padding:0.42rem 0;border-bottom:1px solid rgba(236,231,221,0.08);vertical-align:top;}
+  table td.val{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--paper);font-weight:500;}
+  table td.lbl{color:var(--paper);}
+  table td.lbl small{display:block;color:var(--muted);font-size:11px;line-height:1.3;margin-top:1px;}
+  tr.total td{border-bottom:none;padding-top:0.65rem;font-weight:600;}
+  tr.total td.lbl{font-family:var(--display);}
+  tr.total td.val{color:var(--gold);font-size:15px;}
+  .tblnote{margin-top:0.7rem;font-size:11px;color:var(--muted);line-height:1.4;}
+
+  .totais{
+    grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,1.8vw,22px);
+    margin-top:clamp(4px,0.5vw,8px);
+  }
+  @media (max-width:820px){ .totais{grid-template-columns:1fr;} }
+  .kpi{
+    border:1px solid var(--line);border-radius:14px;padding:clamp(16px,1.8vw,22px);
+    background:linear-gradient(180deg, rgba(224,167,94,0.07), rgba(236,231,221,0.015));
+  }
+  .kpi .k-label{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+  .kpi .k-val{font-family:var(--display);font-weight:600;color:var(--gold);font-size:clamp(24px,3vw,34px);line-height:1;letter-spacing:-0.01em;}
+  .kpi .k-sub{font-size:12px;color:var(--paper);margin-top:0.4rem;}
+
+  .foot{margin-top:clamp(18px,2.2vw,28px);padding-top:1rem;border-top:1px solid var(--line);
+    font-size:11px;color:var(--muted);line-height:1.5;max-width:90ch;}
+  .foot b{color:var(--paper);font-weight:500;}
+
+  @page{ size:A4; margin:12mm; }
+  @media print{
+    body{background:#fff;color:#141921;}
+    body::before{display:none;}
+    .card,.kpi{background:#fff;border-color:#d9d2c4;}
+    h1 em,.kpi .k-val,tr.total td.val{color:var(--gold-deep);}
+    .sub,.muted,.tblnote,.foot,.kpi .k-label{color:#5c6470;}
+    ul.faltas li,.card h3,table td.lbl,table td.val,.kpi .k-sub{color:#141921;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">
+    <span>Plataforma de Rateio · Implantação e Operação</span>
+    <span class="tag">uso interno · 02/07/2026</span>
+  </div>
+
+  <h1>Do MVP ao produto <em>em produção</em></h1>
+  <p class="sub">O que foi apresentado é um <b>MVP</b>. Para colocar a plataforma atendendo <b>75.000 placas</b> em produção, com segurança, isolamento por associação e backup, é preciso implantar e depois sustentar a operação. Abaixo, o que ainda falta e a estimativa de gasto, com prazo de implantação de <b>2 meses</b>.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <h3>O que falta para virar produto</h3>
+      <ul class="faltas">
+        <li><b>Servidor de produção</b> (VPS ou dedicado) e assinatura do <b>Supabase</b> em plano de produção.</li>
+        <li><b>Backup automatizado</b> com rotina de restauração testada e plano de continuidade.</li>
+        <li><b>Isolamento multi-tenant</b> por associação e controle de acesso por perfil.</li>
+        <li><b>Segurança e LGPD</b>: proteção de dados sensíveis e trilha de auditoria.</li>
+        <li><b>Monitoramento</b>: logs, alertas e acompanhamento de disponibilidade.</li>
+        <li><b>Pipeline de publicação</b> (deploy) e ambiente de homologação separado.</li>
+        <li><b>Teste de carga</b> dimensionado para as 75.000 placas.</li>
+        <li><b>Importação e onboarding</b> das bases das associações.</li>
+        <li><b>Domínio, e-mail transacional e certificado</b> de segurança.</li>
+        <li><b>Documentação e treinamento</b> operacional da equipe.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Implantação <span>fase única · 2 meses</span></h3>
+      <table>
+        <tr><td class="lbl">Desenvolvedor pleno<small>dedicado, regime PJ</small></td><td class="val">R$ 22.000</td></tr>
+        <tr><td class="lbl">Arquiteto part-time<small>condução técnica do projeto</small></td><td class="val">R$ 6.600</td></tr>
+        <tr><td class="lbl">Infraestrutura no período<small>servidor, Supabase, notebook, backup</small></td><td class="val">R$ 2.100</td></tr>
+        <tr class="total"><td class="lbl">Total da implantação</td><td class="val">~R$ 31.000</td></tr>
+      </table>
+
+      <h3 style="margin-top:1.4rem;">Sustentação <span>recorrente · por mês</span></h3>
+      <table>
+        <tr><td class="lbl">Servidor de produção</td><td class="val">R$ 300 a 500</td></tr>
+        <tr><td class="lbl">Supabase (plano + uso)</td><td class="val">R$ 200 a 300</td></tr>
+        <tr><td class="lbl">Notebook</td><td class="val">R$ 400</td></tr>
+        <tr><td class="lbl">Domínio, backup, monitoramento, storage</td><td class="val">R$ 150</td></tr>
+        <tr><td class="lbl">Desenvolvedor em manutenção<small>meio período</small></td><td class="val">R$ 4.000 a 5.500</td></tr>
+        <tr><td class="lbl">Arquiteto part-time<small>manutenção e evolução</small></td><td class="val">R$ 1.650</td></tr>
+        <tr class="total"><td class="lbl">Total por mês</td><td class="val">~R$ 8.000</td></tr>
+      </table>
+      <p class="tblnote">Sustentação anual estimada em ~R$ 96.000.</p>
+    </div>
+
+    <div class="totais">
+      <div class="kpi">
+        <div class="k-label">Implantação</div>
+        <div class="k-val">R$ 31 mil</div>
+        <div class="k-sub">investimento único, 2 meses</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Sustentação</div>
+        <div class="k-val">R$ 8 mil<span style="font-size:0.42em;color:var(--muted);font-family:var(--body);"> /mês</span></div>
+        <div class="k-sub">~R$ 96 mil por ano</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Primeiro ano</div>
+        <div class="k-val">R$ 127 mil</div>
+        <div class="k-sub">implantação mais 12 meses de operação</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="foot">
+    <b>Premissas.</b> Valores estimados para atender 75.000 placas em produção. A implantação é investimento único de trabalho e infraestrutura, não custo operacional recorrente. A sustentação é o custo contínuo de manter a operação no ar. Referência de comparação: a meta de 75.000 placas a R$ 0,10 por placa gera ~R$ 90.000 por ano, valor próximo ao custo anual de sustentação, sem cobrir a implantação nem margem.
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!-- CARD MÉTRICAS (KPIs): contadores animados + anel orbital girando em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <div class="text-center mb-14" data-aos="fade-up">
+        <h2 class="text-5xl font-black">[TITULO_SLIDE]</h2>
+        <p class="text-soft text-lg mt-3">[SUBTITULO]</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+        <!-- Repita este bloco por métrica -->
+        <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in" data-aos-delay="0">
+            <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+                    stroke-dasharray="60 200" stroke-linecap="round"></circle>
+            </svg>
+            <p class="metric-value text-6xl font-black primary-color" data-target="[VALOR_1]" data-suffix="[SUFIXO_1]">0</p>
+            <p class="text-soft mt-3">[LEGENDA_1]</p>
+        </div>
+        <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in" data-aos-delay="150">
+            <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+                    stroke-dasharray="60 200" stroke-linecap="round"></circle>
+            </svg>
+            <p class="metric-value text-6xl font-black primary-color" data-target="[VALOR_2]" data-suffix="[SUFIXO_2]">0</p>
+            <p class="text-soft mt-3">[LEGENDA_2]</p>
+        </div>
+        <div class="glass-card p-8 text-center relative overflow-hidden" data-aos="zoom-in" data-aos-delay="300">
+            <svg class="metric-ring absolute -top-10 -right-10 w-32 h-32 opacity-30" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+                    stroke-dasharray="60 200" stroke-linecap="round"></circle>
+            </svg>
+            <p class="metric-value text-6xl font-black primary-color" data-target="[VALOR_3]" data-suffix="[SUFIXO_3]">0</p>
+            <p class="text-soft mt-3">[LEGENDA_3]</p>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ENTRADA: contadores sobem de 0 ao valor quando o slide entra na viewport
+            const counters = document.querySelectorAll('.metric-value');
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(e => {
+                    if (!e.isIntersecting) return;
+                    const el = e.target;
+                    const target = parseFloat(el.dataset.target) || 0;
+                    const suffix = el.dataset.suffix === '[SUFIXO_1]' ? '' : (el.dataset.suffix || '');
+                    d3.select(el).transition().duration(1800).ease(d3.easeCubicOut)
+                        .tween('count', () => {
+                            const i = d3.interpolateNumber(0, target);
+                            return t => el.textContent = Math.round(i(t)) + suffix;
+                        });
+                    io.unobserve(el);
+                });
+            }, { threshold: 0.4 });
+            counters.forEach(c => io.observe(c));
+
+            // LOOP INTERNO: anéis orbitais girando perpetuamente
+            document.querySelectorAll('.metric-ring circle').forEach((ring, i) => {
+                let offset = 0;
+                setInterval(() => {
+                    offset = (offset + 1.2 + i * 0.3) % 260;
+                    ring.setAttribute('stroke-dashoffset', -offset);
+                }, 30);
+            });
+        })();
+    </script>
+</section>

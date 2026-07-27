@@ -1,0 +1,19 @@
+/* MIRA THEME: neon-emerald
+   Verde neon sobre grafite — demos técnicas, terminal vibes, dev-first. */
+:root {
+    --mira-primary: #34E89E;
+    --mira-bg: #0B0F0D;
+    --mira-text: #F2FFF8;
+    --mira-text-soft: rgba(242, 255, 248, 0.72);
+    --mira-text-softer: rgba(242, 255, 248, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.04);
+    --mira-card-border: rgba(52, 232, 158, 0.12);
+    --mira-glow-soft: rgba(52, 232, 158, 0.12);
+    --mira-glow-strong: rgba(52, 232, 158, 0.22);
+    --mira-icon-bg: rgba(52, 232, 158, 0.14);
+    --mira-icon-border: rgba(52, 232, 158, 0.32);
+    --mira-pill-bg: rgba(255, 255, 255, 0.04);
+    --mira-pill-border: rgba(255, 255, 255, 0.08);
+    --mira-stage-glow: rgba(52, 232, 158, 0.06);
+    --mira-accent-2: #8AF0FF;
+}

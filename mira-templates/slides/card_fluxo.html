@@ -1,0 +1,80 @@
+<!-- CARD FLUXO (pipeline): etapas conectadas + partícula viajando pela linha em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <div class="text-center mb-10" data-aos="fade-up">
+        <div class="slide-title-row justify-center">
+            <div class="icon-hero"><i data-lucide="[ICONE]" class="primary-color w-6 h-6"></i></div>
+            <h2 class="text-5xl font-black">[TITULO_SLIDE]</h2>
+        </div>
+        <p class="text-soft text-lg mt-3">[SUBTITULO]</p>
+    </div>
+
+    <div class="glass-card w-full max-w-5xl p-8 relative" data-aos="fade-up">
+        <button class="replay-btn" onclick="window.__fluxoReplay && window.__fluxoReplay()">↻ replay</button>
+        <div id="fluxo-stage" class="anim-stage"></div>
+    </div>
+
+    <p class="text-softer mt-8 text-center max-w-2xl" data-aos="fade-up">[LEGENDA_DO_FLUXO]</p>
+
+    <script>
+        (function () {
+            const ETAPAS = ['[ETAPA_1]', '[ETAPA_2]', '[ETAPA_3]', '[ETAPA_4]'];
+            const stage = d3.select('#fluxo-stage');
+            const W = 960, H = 540;
+            const svg = stage.append('svg').attr('viewBox', `0 0 ${W} ${H}`);
+            const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+            const primary = css('--mira-primary');
+
+            const xs = d3.scalePoint().domain(d3.range(ETAPAS.length)).range([120, W - 120]);
+            const cy = H / 2;
+
+            // Linha base
+            svg.append('line').attr('x1', xs(0)).attr('x2', xs(ETAPAS.length - 1))
+                .attr('y1', cy).attr('y2', cy)
+                .attr('stroke', 'rgba(255,255,255,0.12)').attr('stroke-width', 2);
+
+            // Nós
+            const nodes = svg.selectAll('g.node').data(ETAPAS).join('g')
+                .attr('transform', (d, i) => `translate(${xs(i)},${cy})`);
+
+            nodes.append('circle').attr('r', 0).attr('fill', 'rgba(255,255,255,0.06)')
+                .attr('stroke', primary).attr('stroke-width', 2)
+                .transition().delay((d, i) => 300 + i * 250).duration(600)
+                .ease(d3.easeBackOut).attr('r', 34);
+
+            nodes.append('text').text((d, i) => i + 1)
+                .attr('text-anchor', 'middle').attr('dy', 6)
+                .attr('fill', primary).attr('font-size', 20).attr('font-weight', 800)
+                .attr('opacity', 0)
+                .transition().delay((d, i) => 600 + i * 250).attr('opacity', 1);
+
+            nodes.append('text').text(d => d)
+                .attr('text-anchor', 'middle').attr('dy', 70)
+                .attr('fill', 'rgba(255,255,255,0.7)').attr('font-size', 16)
+                .attr('opacity', 0)
+                .transition().delay((d, i) => 700 + i * 250).attr('opacity', 1);
+
+            // LOOP INTERNO: partícula viaja da etapa 1 à última e recomeça, para sempre
+            const particle = svg.append('circle').attr('r', 7).attr('fill', primary)
+                .attr('cy', cy).attr('cx', xs(0))
+                .style('filter', `drop-shadow(0 0 8px ${primary})`);
+
+            function travel() {
+                particle.attr('cx', xs(0)).attr('opacity', 1)
+                    .transition().duration(3200).ease(d3.easeCubicInOut)
+                    .attr('cx', xs(ETAPAS.length - 1))
+                    .transition().duration(300).attr('opacity', 0)
+                    .on('end', travel);
+            }
+            travel();
+
+            // Pulso nos nós em cascata, também em loop
+            d3.interval(() => {
+                nodes.selectAll('circle')
+                    .transition().delay((d, i) => i * 200).duration(350).attr('r', 39)
+                    .transition().duration(350).attr('r', 34);
+            }, 3500);
+
+            window.__fluxoReplay = travel;
+        })();
+    </script>
+</section>

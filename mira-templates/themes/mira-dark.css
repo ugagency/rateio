@@ -1,0 +1,20 @@
+/* MIRA THEME: mira-dark (padrão)
+   Identidade clássica do canal: fundo preto, laranja vibrante,
+   glassmorphism no estilo clássico do canal. */
+:root {
+    --mira-primary: #FF904D;
+    --mira-bg: #000000;
+    --mira-text: #ffffff;
+    --mira-text-soft: rgba(255, 255, 255, 0.70);
+    --mira-text-softer: rgba(255, 255, 255, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.05);
+    --mira-card-border: rgba(255, 255, 255, 0.10);
+    --mira-glow-soft: rgba(255, 144, 77, 0.15);
+    --mira-glow-strong: rgba(255, 144, 77, 0.25);
+    --mira-icon-bg: rgba(255, 144, 77, 0.15);
+    --mira-icon-border: rgba(255, 144, 77, 0.30);
+    --mira-pill-bg: rgba(255, 255, 255, 0.04);
+    --mira-pill-border: rgba(255, 255, 255, 0.08);
+    --mira-stage-glow: rgba(255, 144, 77, 0.06);
+    --mira-accent-2: #FFC766;
+}

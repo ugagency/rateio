@@ -1,0 +1,67 @@
+<!-- CARD ESCADA (staircase): degraus de evolução + orbe subindo em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <div class="text-center mb-10" data-aos="fade-up">
+        <h2 class="text-5xl font-black">[TITULO_SLIDE]</h2>
+        <p class="text-soft text-lg mt-3">[SUBTITULO]</p>
+    </div>
+
+    <div class="glass-card w-full max-w-5xl p-8 relative" data-aos="fade-up">
+        <button class="replay-btn" onclick="window.__escadaReplay && window.__escadaReplay()">↻ replay</button>
+        <div id="escada-stage" class="anim-stage"></div>
+    </div>
+
+    <script>
+        (function () {
+            const DEGRAUS = ['[NIVEL_1]', '[NIVEL_2]', '[NIVEL_3]', '[NIVEL_4]'];
+            const stage = d3.select('#escada-stage');
+            const W = 960, H = 540;
+            const svg = stage.append('svg').attr('viewBox', `0 0 ${W} ${H}`);
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--mira-primary').trim();
+
+            const stepW = 170, stepH = 80;
+            const baseX = 90, baseY = H - 90;
+
+            const steps = DEGRAUS.map((d, i) => ({
+                label: d,
+                x: baseX + i * stepW,
+                y: baseY - (i + 1) * stepH
+            }));
+
+            // Degraus entram em cascata
+            svg.selectAll('rect.step').data(steps).join('rect')
+                .attr('class', 'step')
+                .attr('x', d => d.x).attr('y', baseY)
+                .attr('width', stepW - 14).attr('height', 0)
+                .attr('rx', 8)
+                .attr('fill', 'rgba(255,255,255,0.06)')
+                .attr('stroke', primary).attr('stroke-opacity', 0.4)
+                .transition().delay((d, i) => 300 + i * 220).duration(600).ease(d3.easeCubicOut)
+                .attr('y', d => d.y).attr('height', d => baseY - d.y);
+
+            svg.selectAll('text.label').data(steps).join('text')
+                .attr('class', 'label')
+                .attr('x', d => d.x + (stepW - 14) / 2).attr('y', d => d.y + 30)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'rgba(255,255,255,0.85)').attr('font-size', 16).attr('font-weight', 700)
+                .text(d => d.label)
+                .attr('opacity', 0)
+                .transition().delay((d, i) => 700 + i * 220).attr('opacity', 1);
+
+            // LOOP INTERNO: orbe sobe degrau por degrau e volta ao início, para sempre
+            const orb = svg.append('circle').attr('r', 12).attr('fill', primary)
+                .style('filter', `drop-shadow(0 0 10px ${primary})`);
+
+            function climb() {
+                orb.attr('cx', steps[0].x + (stepW - 14) / 2).attr('cy', baseY - 14).attr('opacity', 1);
+                let t = orb.transition().duration(400);
+                steps.forEach(s => {
+                    t = t.transition().duration(700).ease(d3.easeBounceOut)
+                        .attr('cx', s.x + (stepW - 14) / 2).attr('cy', s.y - 16);
+                });
+                t.transition().delay(500).duration(400).attr('opacity', 0).on('end', climb);
+            }
+            setTimeout(climb, 1400);
+            window.__escadaReplay = climb;
+        })();
+    </script>
+</section>

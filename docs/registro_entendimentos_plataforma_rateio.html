@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Entendimentos · Plataforma de Rateio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --paper:#ECE7DD;
+    --muted:#9AA2AD;
+    --gold:#E0A75E;
+    --gold-deep:#B9823F;
+    --sage:#7FA99B;
+    --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--ink);color:var(--paper);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;position:relative;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 82% -12%, rgba(224,167,94,0.10), transparent 55%),
+      radial-gradient(90% 80% at -10% 112%, rgba(127,169,155,0.08), transparent 50%);
+  }
+  .page{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(30px,4.5vw,54px) clamp(26px,5vw,64px) 48px;}
+
+  .eyebrow{
+    font-size:11px;letter-spacing:0.32em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin-bottom:0.9rem;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .eyebrow .tag{color:var(--muted);letter-spacing:0.18em;}
+  h1{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(28px,4vw,46px);line-height:1.02;
+    letter-spacing:-0.02em;margin-bottom:0.7rem;
+  }
+  h1 em{font-style:italic;color:var(--gold);}
+  .sub{font-size:clamp(13px,1.15vw,16px);line-height:1.5;color:var(--muted);max-width:74ch;}
+  .sub b{color:var(--paper);font-weight:500;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2vw,26px);margin-top:clamp(22px,2.6vw,32px);}
+  @media (max-width:820px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg, rgba(236,231,221,0.045), rgba(236,231,221,0.015));
+    padding:clamp(18px,2vw,24px);
+  }
+  .card h3{
+    font-family:var(--display);font-weight:500;font-size:clamp(17px,1.7vw,22px);
+    letter-spacing:-0.01em;margin-bottom:0.9rem;color:var(--paper);
+  }
+  .card h3 span{font-size:0.62em;color:var(--muted);font-family:var(--body);letter-spacing:0.02em;}
+
+  ul.itens{list-style:none;display:grid;gap:0.65rem;}
+  ul.itens li{
+    font-size:13px;line-height:1.45;color:var(--paper);padding-left:1.1rem;position:relative;
+  }
+  ul.itens li::before{content:"";position:absolute;left:0;top:0.5em;width:6px;height:6px;border-radius:50%;background:var(--gold-deep);}
+  ul.itens li b{color:var(--paper);font-weight:600;}
+  ul.itens li small{color:var(--muted);}
+  .card.aberto ul.itens li::before{background:var(--sage);}
+
+  .totais{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,1.8vw,22px);
+    margin-top:clamp(16px,2vw,26px);
+  }
+  @media (max-width:820px){ .totais{grid-template-columns:1fr;} }
+  .kpi{
+    border:1px solid var(--line);border-radius:14px;padding:clamp(16px,1.8vw,22px);
+    background:linear-gradient(180deg, rgba(224,167,94,0.07), rgba(236,231,221,0.015));
+  }
+  .kpi .k-label{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+  .kpi .k-val{font-family:var(--display);font-weight:600;color:var(--gold);font-size:clamp(24px,3vw,34px);line-height:1;letter-spacing:-0.01em;}
+  .kpi .k-sub{font-size:12px;color:var(--paper);margin-top:0.4rem;line-height:1.4;}
+
+  .acordo{
+    margin-top:clamp(18px,2.2vw,28px);
+    border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg, rgba(127,169,155,0.07), rgba(236,231,221,0.015));
+    padding:clamp(16px,1.8vw,22px);
+    font-size:13px;line-height:1.55;color:var(--paper);
+  }
+  .acordo b{font-weight:600;}
+
+  .foot{margin-top:clamp(18px,2.2vw,28px);padding-top:1rem;border-top:1px solid var(--line);
+    font-size:11px;color:var(--muted);line-height:1.5;max-width:90ch;}
+  .foot b{color:var(--paper);font-weight:500;}
+
+  .assinaturas{
+    margin-top:clamp(26px,3vw,38px);display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px);
+  }
+  @media (max-width:820px){ .assinaturas{grid-template-columns:1fr;} }
+  .assinatura{padding-top:0.6rem;border-top:1px solid rgba(236,231,221,0.35);font-size:12px;color:var(--muted);}
+
+  @page{ size:A4; margin:12mm; }
+  @media print{
+    body{background:#fff;color:#141921;}
+    body::before{display:none;}
+    .page{padding:4px 6px 10px;}
+    h1{font-size:26px;margin-bottom:0.45rem;}
+    .sub{font-size:12px;}
+    .eyebrow{margin-bottom:0.55rem;}
+    .grid{margin-top:14px;gap:12px;}
+    .card{padding:13px 15px;}
+    .card h3{margin-bottom:0.55rem;font-size:16px;}
+    ul.itens{gap:0.42rem;}
+    ul.itens li{font-size:11.5px;line-height:1.38;}
+    .totais{margin-top:12px;gap:12px;}
+    .kpi{padding:11px 14px;}
+    .kpi .k-val{font-size:21px;}
+    .kpi .k-label{margin-bottom:0.3rem;}
+    .kpi .k-sub{font-size:10.5px;margin-top:0.28rem;}
+    .acordo{margin-top:12px;padding:11px 14px;font-size:11.5px;}
+    .foot{margin-top:12px;padding-top:0.6rem;font-size:9.5px;}
+    .assinaturas{margin-top:26px;}
+    .card,.kpi,.acordo{background:#fff;border-color:#d9d2c4;}
+    h1 em,.kpi .k-val{color:var(--gold-deep);}
+    .eyebrow{color:var(--gold-deep);}
+    .eyebrow .tag,.sub,.tblnote,.foot,.kpi .k-label,ul.itens li small,.assinatura{color:#5c6470;}
+    ul.itens li,.card h3,.kpi .k-sub,.acordo{color:#141921;}
+    ul.itens li b,.sub b,.foot b,.acordo b{color:#141921;}
+    .grid{grid-template-columns:1fr 1fr;}
+    .totais{grid-template-columns:repeat(3,1fr);}
+    .assinatura{border-top-color:#8a8478;}
+    .grid,.card,.kpi,.acordo,.assinaturas{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">
+    <span>Plataforma de Rateio · Registro de Entendimentos</span>
+    <span class="tag">07/07/2026</span>
+  </div>
+
+  <h1>O que combinamos <em>e o que falta fechar</em></h1>
+  <p class="sub">Depois da conversa de <b>06/07/2026</b>, este documento coloca no papel, de forma simples, o que já está alinhado sobre a implantação e a operação da plataforma de rateio, e o que ainda vamos fechar juntos. <b>Não é um contrato</b>: é um registro para as duas partes seguirem com a mesma referência até a formalização.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <h3>O que já está alinhado</h3>
+      <ul class="itens">
+        <li><b>O MVP está aprovado.</b> O próximo passo é levar a plataforma a produção para atender <b>75.000 placas</b>, com segurança, isolamento por associação e backup.</li>
+        <li><b>Implantação:</b> fase única de <b>2 meses</b>, investimento de <b>~R$ 31 mil</b>, cobrindo a equipe técnica dedicada e a infraestrutura do período.</li>
+        <li><b>Sustentação:</b> <b>~R$ 8 mil por mês</b> (~R$ 96 mil por ano) para manter a operação no ar: servidor, backup, monitoramento e time de manutenção.</li>
+        <li><b>Escopo da implantação:</b> servidor de produção, backup com restauração testada, isolamento multi-tenant, LGPD e trilha de auditoria, monitoramento, ambiente de homologação, teste de carga, importação das bases e treinamento da equipe.</li>
+        <li><b>Remuneração por placa:</b> a operação será remunerada por um valor mensal por placa ativa, com o número final definido nos pontos abaixo.</li>
+      </ul>
+    </div>
+
+    <div class="card aberto">
+      <h3>O que ainda vamos fechar</h3>
+      <ul class="itens">
+        <li><b>Valor por placa.</b> A referência inicial de R$ 0,10 gera ~R$ 90 mil por ano com 75.000 placas, o que apenas empata com o custo de sustentação. Para a operação andar com as próprias pernas, cobrindo a sustentação, recuperando a implantação e mantendo a evolução do produto, esse valor precisa ser recalibrado para cima. <small>Fechamos o número na próxima conversa.</small></li>
+        <li><b>Mínimo mensal.</b> Um piso de faturamento por mês, para a operação não ficar descoberta nos meses em que o volume de placas oscilar.</li>
+        <li><b>Forma de pagamento da implantação.</b> À vista no início ou em marcos de entrega ao longo dos 2 meses.</li>
+        <li><b>Data de início.</b> A implantação começa assim que os pontos acima estiverem fechados.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="totais">
+    <div class="kpi">
+      <div class="k-label">Implantação</div>
+      <div class="k-val">R$ 31 mil</div>
+      <div class="k-sub">investimento único, 2 meses</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">Sustentação</div>
+      <div class="k-val">R$ 8 mil<span style="font-size:0.42em;color:var(--muted);font-family:var(--body);"> /mês</span></div>
+      <div class="k-sub">~R$ 96 mil por ano</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">Valor por placa</div>
+      <div class="k-val">a fechar</div>
+      <div class="k-sub">acima da referência de R$ 0,10, para a operação se sustentar</div>
+    </div>
+  </div>
+
+  <div class="acordo">
+    <b>Como seguimos.</b> Com este registro validado pelas duas partes, marcamos a conversa para fechar o valor por placa, o mínimo mensal e a forma de pagamento. Fechados esses pontos, os termos seguem para o contrato e a implantação começa a contar.
+  </div>
+
+  <p class="foot">
+    <b>Sobre este documento.</b> Registro simples de entendimentos entre as partes, sem valor de contrato. Os valores de implantação e sustentação são estimativas de 02/07/2026, dimensionadas para 75.000 placas em produção, e serão confirmados na formalização.
+  </p>
+
+  <div class="assinaturas">
+    <div class="assinatura">De acordo · pela plataforma</div>
+    <div class="assinatura">De acordo · pela administradora</div>
+  </div>
+
+</div>
+</body>
+</html>

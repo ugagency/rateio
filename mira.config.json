@@ -1,0 +1,19 @@
+{
+  "sources": [],
+  "decks": [
+    {
+      "name": "agent-skills",
+      "title": "Agent Skills",
+      "theme": "mira-dark",
+      "path": "decks/agent-skills/index.html",
+      "slides": 9
+    }
+  ],
+  "version": "0.1.19",
+  "projectName": "Mut",
+  "userName": "Dudu",
+  "chatLanguage": "pt-br",
+  "defaultTheme": "mira-dark",
+  "installedAt": "2026-06-16T13:44:02.973Z",
+  "updatedAt": "2026-06-16T13:44:02.973Z"
+}

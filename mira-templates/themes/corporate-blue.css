@@ -1,0 +1,19 @@
+/* MIRA THEME: corporate-blue
+   Azul profundo e ciano — pitch para empresas, bancos, governo. */
+:root {
+    --mira-primary: #4DA3FF;
+    --mira-bg: #0A1220;
+    --mira-text: #ffffff;
+    --mira-text-soft: rgba(255, 255, 255, 0.72);
+    --mira-text-softer: rgba(255, 255, 255, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.05);
+    --mira-card-border: rgba(255, 255, 255, 0.10);
+    --mira-glow-soft: rgba(77, 163, 255, 0.15);
+    --mira-glow-strong: rgba(77, 163, 255, 0.25);
+    --mira-icon-bg: rgba(77, 163, 255, 0.15);
+    --mira-icon-border: rgba(77, 163, 255, 0.30);
+    --mira-pill-bg: rgba(255, 255, 255, 0.04);
+    --mira-pill-border: rgba(255, 255, 255, 0.08);
+    --mira-stage-glow: rgba(77, 163, 255, 0.06);
+    --mira-accent-2: #6EE7F0;
+}

@@ -1,0 +1,48 @@
+<!-- CARD COMPARAÇÃO (versus): [CONCEITO_A] vs [CONCEITO_B] — spotlight alternando em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <div class="text-center mb-12" data-aos="fade-up">
+        <h2 class="text-5xl font-black">[TITULO_SLIDE]</h2>
+        <p class="text-soft text-lg mt-3">[SUBTITULO]</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 w-full max-w-5xl items-stretch">
+        <div id="versus-a" class="glass-card p-10 transition-all duration-700" data-aos="fade-right">
+            <div class="icon-hero mb-6"><i data-lucide="[ICONE_A]" class="primary-color w-6 h-6"></i></div>
+            <h3 class="text-3xl font-bold mb-4">[CONCEITO_A]</h3>
+            <ul class="space-y-3 text-soft">
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_A1]</li>
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_A2]</li>
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_A3]</li>
+            </ul>
+        </div>
+
+        <div id="versus-b" class="glass-card p-10 transition-all duration-700" data-aos="fade-left">
+            <div class="icon-hero mb-6"><i data-lucide="[ICONE_B]" class="primary-color w-6 h-6"></i></div>
+            <h3 class="text-3xl font-bold mb-4">[CONCEITO_B]</h3>
+            <ul class="space-y-3 text-soft">
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_B1]</li>
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_B2]</li>
+                <li class="flex gap-3"><i data-lucide="check" class="primary-color w-5 h-5 shrink-0"></i> [PONTO_B3]</li>
+            </ul>
+        </div>
+    </div>
+
+    <p class="text-softer mt-10 text-center max-w-2xl" data-aos="fade-up">[SINTESE_DA_COMPARACAO]</p>
+
+    <script>
+        // LOOP INTERNO: spotlight alterna entre os dois lados a cada 2.5s, perpétuo
+        (function () {
+            const a = document.getElementById('versus-a');
+            const b = document.getElementById('versus-b');
+            let turn = true;
+            setInterval(() => {
+                const on = turn ? a : b, off = turn ? b : a;
+                on.style.transform = 'translateY(-8px) scale(1.02)';
+                on.style.boxShadow = '0 20px 50px var(--mira-glow-strong)';
+                off.style.transform = 'none';
+                off.style.boxShadow = '0 10px 30px var(--mira-glow-soft)';
+                turn = !turn;
+            }, 2500);
+        })();
+    </script>
+</section>

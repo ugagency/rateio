@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia da mesa de sociedade · PARTICULAR · não apresentar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --ink-2:#141921; --paper:#ECE7DD; --muted:#9AA2AD;
+    --faint:rgba(236,231,221,0.12); --gold:#E0A75E; --gold-deep:#B9823F;
+    --sage:#7FA99B; --rose:#C97A6D; --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--ink);color:var(--paper);font-family:var(--body);-webkit-font-smoothing:antialiased;min-height:100vh;position:relative;}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 80% -10%, rgba(224,167,94,0.10), transparent 55%),radial-gradient(90% 80% at -10% 110%, rgba(127,169,155,0.08), transparent 50%);}
+  .page{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(30px,5vw,60px) clamp(26px,5vw,68px) 72px;}
+
+  .stamp-top{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--rose);border-radius:8px;
+    padding:0.55rem 1rem;margin-bottom:1.8rem;background:rgba(201,122,109,0.08);}
+  .stamp-top b{color:var(--rose);letter-spacing:0.2em;text-transform:uppercase;font-size:0.78rem;}
+  .stamp-top span{color:var(--muted);font-size:0.78rem;letter-spacing:0.08em;}
+
+  .eyebrow{font-size:clamp(10px,0.9vw,12px);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:0.8rem;}
+  h1{font-family:var(--display);font-weight:500;font-size:clamp(28px,4vw,50px);line-height:1.02;letter-spacing:-0.02em;margin-bottom:0.7rem;}
+  h1 em{font-style:italic;color:var(--gold);}
+  .lead{font-size:clamp(14px,1.3vw,18px);line-height:1.55;color:var(--muted);max-width:74ch;}
+  .lead b{color:var(--paper);font-weight:500;}
+
+  section.blk{margin-top:clamp(28px,3.4vw,46px);}
+  h2{font-family:var(--display);font-weight:500;font-size:clamp(21px,2.3vw,30px);letter-spacing:-0.01em;margin-bottom:0.3rem;
+    display:flex;align-items:baseline;gap:0.7rem;}
+  h2 .n{font-size:0.62em;color:var(--gold-deep);font-weight:600;font-family:var(--body);letter-spacing:0.1em;}
+  h2 em{font-style:italic;color:var(--gold);}
+  .sec-sub{color:var(--muted);font-size:clamp(13px,1.1vw,15.5px);line-height:1.5;max-width:78ch;margin-bottom:1rem;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2vw,26px);}
+  @media (max-width:860px){ .grid2{grid-template-columns:1fr;} }
+
+  .card{border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,rgba(236,231,221,0.045),rgba(236,231,221,0.015));padding:clamp(16px,1.9vw,24px);}
+  .card.gold{border-color:rgba(224,167,94,0.34);}
+  .card.rose{border-color:rgba(201,122,109,0.34);background:linear-gradient(180deg,rgba(201,122,109,0.08),rgba(201,122,109,0.02));}
+  .kick{font-size:0.74em;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-deep);font-weight:600;margin-bottom:0.5rem;}
+  .card.rose .kick{color:var(--rose);}
+  .card h3{font-family:var(--display);font-weight:500;font-size:clamp(17px,1.7vw,22px);margin-bottom:0.5rem;}
+
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:0.6rem;}
+  ul.clean li{font-size:clamp(13px,1.08vw,15.5px);line-height:1.45;color:var(--paper);padding-left:1.15rem;position:relative;}
+  ul.clean li::before{content:"";position:absolute;left:0;top:0.52em;width:7px;height:7px;border-radius:2px;transform:rotate(45deg);border:1.5px solid var(--gold);}
+  ul.clean.rose li::before{border-color:var(--rose);}
+  ul.clean li b{color:var(--gold);font-weight:600;}
+  ul.clean li span{display:block;color:var(--muted);font-size:0.92em;margin-top:0.15rem;}
+
+  .formula{margin:0.4rem 0;padding:0.7rem 1rem;border-left:3px solid var(--gold);background:rgba(224,167,94,0.06);
+    font-family:var(--display);font-style:italic;font-size:clamp(15px,1.4vw,20px);color:var(--paper);}
+
+  table{width:100%;border-collapse:collapse;margin-top:0.5rem;font-size:clamp(13px,1.05vw,15px);}
+  th,td{text-align:left;padding:0.5rem 0.3rem;border-bottom:1px solid var(--line);}
+  th{font-size:0.72em;letter-spacing:0.13em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--gold);font-family:var(--display);}
+
+  .qa{display:flex;flex-direction:column;gap:0.9rem;}
+  .qa .item{border:1px solid var(--line);border-radius:11px;padding:clamp(13px,1.5vw,18px);}
+  .qa .q{font-family:var(--display);font-size:clamp(15px,1.4vw,19px);color:var(--paper);margin-bottom:0.35rem;}
+  .qa .q::before{content:"“";color:var(--rose);font-size:1.2em;}
+  .qa .q::after{content:"”";color:var(--rose);font-size:1.2em;}
+  .qa .a{font-size:clamp(13px,1.08vw,15.5px);line-height:1.5;color:var(--muted);}
+  .qa .a b{color:var(--paper);font-weight:500;}
+
+  ol.flow{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:0.7rem;}
+  ol.flow li{counter-increment:s;position:relative;padding-left:2.4rem;font-size:clamp(13px,1.1vw,15.5px);line-height:1.5;color:var(--paper);}
+  ol.flow li::before{content:counter(s);position:absolute;left:0;top:-0.1em;width:1.7rem;height:1.7rem;border-radius:50%;
+    border:1.5px solid var(--gold-deep);color:var(--gold);font-family:var(--display);display:flex;align-items:center;justify-content:center;font-size:0.92rem;}
+  ol.flow li b{color:var(--paper);font-weight:600;}
+  ol.flow li span{color:var(--muted);}
+
+  .foot{margin-top:clamp(26px,3vw,40px);padding-top:1rem;border-top:1px solid var(--line);
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;}
+
+  @media print{
+    @page{size:A4;margin:12mm;}
+    body{background:#0E1116;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .page{padding:0;}
+    section.blk,.card,.qa .item{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="stamp-top">
+    <b>Particular · não apresentar</b>
+    <span>Folha de estudo e alinhamento de argumentos · mesa de sociedade Mutualiza</span>
+  </div>
+
+  <div class="eyebrow">Guia de bastidor · 19 de junho de 2026 · 10h</div>
+  <h1>Como conduzir a mesa, e <em>onde a conta acontece</em></h1>
+  <p class="lead">Esta folha é só sua. O deck é o pano de fundo; aqui ficam os números reais, a lógica da negociação e as respostas para o que eles vão tentar. <b>Regra única: o valor do ativo (A) é onde a briga acontece. Sustentar A alto, com fatos, encolhe a fatia que o aporte deles compra.</b></p>
+
+  <!-- 0 -->
+  <section class="blk">
+    <h2><span class="n">00</span> O enquadramento</h2>
+    <p class="sec-sub">Antes de qualquer número, lembre o que esta mesa é, e o que ela não é.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="kick">O que esta mesa é</div>
+        <ul class="clean">
+          <li>Mesa de <b>sociedade</b>: aporte, percentual e data.<span>O produto já está fisgado. Não é pitch, não é mesa de produto.</span></li>
+          <li>O deck é <b>pano de fundo</b>.<span>Conduza pelos slides 4 a 7 e, no fim, ouça a proposta deles.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kick">A cronologia a seu favor</div>
+        <ul class="clean">
+          <li>Primeira reunião em <b>11/03</b>. Hoje, <b>~100 dias</b> depois.<span>Não é projeto de 15 dias: é uma relação que amadureceu três meses.</span></li>
+          <li>Os 15 dias de trabalho direto são <b>velocidade de execução</b>.<span>Vantagem sua, nunca desconto no valor do ativo.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 -->
+  <section class="blk">
+    <h2><span class="n">01</span> Os três pinos <em>e seus números</em></h2>
+    <p class="sec-sub">O que está em jogo na mesa. Você leva os números prontos; eles ficam no seu bolso até a hora.</p>
+    <div class="grid2">
+      <div class="card gold">
+        <div class="kick">1 · O aporte</div>
+        <h3>R$ 60 a 70 mil</h3>
+        <p class="a" style="color:var(--muted);font-size:0.95em;line-height:1.5">É o bloco B: ~520 h a R$ 110 (R$ 57 mil) mais infra. Financia só o que falta para a produção.</p>
+      </div>
+      <div class="card gold">
+        <div class="kick">2 · O percentual</div>
+        <h3>A conta, não o chute</h3>
+        <p class="a" style="color:var(--muted);font-size:0.95em;line-height:1.5">Sai da relação B ÷ (A + B). Quanto mais alto você sustenta A, menor a fatia. Veja o bloco 02.</p>
+      </div>
+      <div class="card gold">
+        <div class="kick">3 · A data</div>
+        <h3>8 a 10 semanas</h3>
+        <p class="a" style="color:var(--muted);font-size:0.95em;line-height:1.5">Com dois técnicos, do aceite até produção, validado em dev, homologação e produção.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="blk">
+    <h2><span class="n">02</span> A conta que você defende <em>(o pulo do gato)</em></h2>
+    <p class="sec-sub">O percentual deles é uma divisão. O numerador (aporte) é quase objetivo. O denominador é A, e A é onde você ganha ou perde a mesa.</p>
+    <div class="formula">fatia deles = Aporte B &divide; (Valor do ativo A + Aporte B)</div>
+    <div class="grid2" style="margin-top:0.8rem">
+      <div class="card">
+        <div class="kick">A · valor do ativo já construído</div>
+        <ul class="clean">
+          <li>É <b>custo estimado de reconstrução por um time contratado</b>, do zero.<span>Nunca "horas que gastei". 800 h a R$ 110.</span></li>
+          <li>Piso <b>R$ 88 mil</b>. Defensável <b>R$ 150 a 200 mil</b>.<span>O prêmio vem da prova anti-mock (validado, 80% pronto) e da janela LC 213.</span></li>
+          <li><b>Comece a defesa em R$ 150 mil pra cima.</b><span>Nunca abra no piso de R$ 88 mil: sozinho ele já entrega 40%+ pra eles.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kick">Cenários · com aporte B ≈ R$ 65 mil</div>
+        <table>
+          <tr><th>Valor do ativo A</th><th style="text-align:right">Fatia que o aporte compra</th></tr>
+          <tr><td>R$ 88 mil (só reprodução)</td><td class="num">~42%</td></tr>
+          <tr><td>R$ 150 mil (com prêmio de prova)</td><td class="num">~30%</td></tr>
+          <tr><td>R$ 200 mil (prova + janela)</td><td class="num">~25%</td></tr>
+        </table>
+        <p class="a" style="color:var(--muted);font-size:0.92em;line-height:1.5;margin-top:0.7rem">Se eles quiserem fatia maior, há só dois caminhos honestos: aportam mais (B sobe) ou aceitam um A menor. E A você sustenta com fatos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="blk">
+    <h2><span class="n">03</span> O que <em>nunca</em> vai para a mesa</h2>
+    <div class="card rose">
+      <div class="kick">Bastidor · só seu</div>
+      <ul class="clean rose">
+        <li>O custo de <b>R$ 64/h</b>.<span>É seu piso de conforto e walk-away. Mostrar rebaixa você de sócio a fornecedor e dá munição pro Carlos puxar A pra baixo.</span></li>
+        <li>As horas como <b>"horas que eu trabalhei"</b>.<span>Na mesa, sempre "custo de reconstruir por um time contratado". A sua velocidade não barateia o ativo.</span></li>
+        <li>A planilha da conta do <b>percentual</b>.<span>Você a usa para calibrar o que aceitar; não a projeta na parede.</span></li>
+        <li>O <b>R$ 0,10/placa</b> dentro da conta da fatia.<span>É receita recorrente futura (bloco 04), não compõe a participação inicial.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="blk">
+    <h2><span class="n">04</span> A operação recorrente <em>(o segundo acordo)</em></h2>
+    <p class="sec-sub">A casa precisa de quem a mantenha. Esse é o acordo que paga o dev part-time e te deixa indispensável. A pergunta da estimativa de placas é sua aliada: puxe você mesmo.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="kick">O custo mensal (opex) a cobrir</div>
+        <ul class="clean">
+          <li>Dev part-time: BKP, deploy, ajustes, dúvidas de regra, pré-venda.<span>~R$ 3 a 5 mil/mês a custo interno.</span></li>
+          <li>Infra: servidor, backup, monitoramento, domínios.<span>~R$ 1,5 mil/mês.</span></li>
+          <li><b>Opex total: R$ 5 a 8 mil/mês.</b><span>É o piso que a taxa recorrente precisa cobrir.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kick">Break-even e proteção</div>
+        <ul class="clean">
+          <li>A R$ 0,10/placa, o break-even é <b>50 a 80 mil placas</b>/mês.<span>AutoTruck sozinha ~80 mil cotas; com ELLO e AVAP, acima disso.</span></li>
+          <li><b>Mínimo mensal no contrato.</b><span>Garante a operação se o volume cair. É a blindagem contra aporte mês a mês.</span></li>
+          <li>A operação <b>devolve o aporte em ~1 ano</b>.<span>120 mil placas → R$ 12 mil/mês, ~R$ 6 mil de margem, ~R$ 72 mil/ano.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="blk">
+    <h2><span class="n">05</span> O que ouvir, o que <em>responder</em></h2>
+    <p class="sec-sub">As objeções prováveis e a resposta de uma linha para cada. Treine para que saiam naturais.</p>
+    <div class="qa">
+      <div class="item"><div class="q">Isso vale uns R$ 40 mil.</div><div class="a">Esse número precifica um CRUD de rateio genérico. <b>Aqui é engenharia de domínio mutualista com prova anti-mock.</b> Se vocês fossem reconstruir, pagariam hora de mercado, não o meu custo.</div></div>
+      <div class="item"><div class="q">Quanto tempo vocês levaram?</div><div class="a">Com orgulho, nunca como desconto: <b>entregamos em duas semanas o que um time levaria meses.</b> Velocidade é o que vocês ganham, não o que vale menos.</div></div>
+      <div class="item"><div class="q">Se já está 80% pronto, por que vale tanto?</div><div class="a">Justamente porque está pronto e validado. <b>Vocês não pagam o esforço, pagam a certeza:</b> diferença zero, três vias, lacre SHA-256. Risco eliminado tem preço.</div></div>
+      <div class="item"><div class="q">Só a Hinova homologa na SUSEP.</div><div class="a">Concedido, e de propósito. <b>O trilho da Hinova transmite; o lacre sustenta.</b> Não competimos com ela, completamos o que falta para a casa ficar em ordem.</div></div>
+      <div class="item"><div class="q">Queremos ser sócios, mas com fatia maior.</div><div class="a">A fatia sai da conta. <b>Ou o aporte sobe, ou o valor do ativo desce</b>, e o valor do ativo eu sustento com o custo de reconstrução e a prova. Vamos pela conta, não pelo chute.</div></div>
+      <div class="item"><div class="q">E os R$ 200 mil por 20%?</div><div class="a">Aquela proposta saiu de cena. <b>Hoje a lógica é a conta aporte sobre aporte mais ativo</b>, que é mais justa para os dois lados.</div></div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="blk">
+    <h2><span class="n">06</span> Escopo <em>dentro e fora</em> (slide 4)</h2>
+    <div class="grid2">
+      <div class="card gold">
+        <div class="kick">Dentro · nesta mesa</div>
+        <ul class="clean">
+          <li>Motor de rateio <b>ELLO e AutoTruck</b></li>
+          <li>Lacre SHA-256 de cada mês</li>
+          <li>Fechamento reconstruível a qualquer hora</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kick">Fora · em evolução, fora do acordo</div>
+        <ul class="clean">
+          <li>Captação e vistoria do associado</li>
+          <li>Antifraude na admissão</li>
+          <li>Gestão da relação com o associado</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="blk">
+    <h2><span class="n">07</span> A sequência da mesa</h2>
+    <ol class="flow">
+      <li><b>Reabrir a relação.</b> <span>100 dias juntos, produto já fisgado; hoje a conversa é sociedade.</span></li>
+      <li><b>Slide 4 — travar o escopo.</b> <span>A sociedade é só o rateio; a operação completa fica fora.</span></li>
+      <li><b>Slide 5 — a casa precisa de manutenção.</b> <span>Plantar que o sistema vivo tem custo mensal.</span></li>
+      <li><b>Slide 6 — dois acordos.</b> <span>Sociedade que constrói + operação recorrente que mantém.</span></li>
+      <li><b>Slide 7 — os três pinos.</b> <span>Abrir aporte, percentual e data, e então ouvir a proposta deles.</span></li>
+      <li><b>Não cravar número na hora se a proposta vier baixa.</b> <span>"Acordado o caminho, formalizamos na sequência." Você calibra depois, com a conta na mão.</span></li>
+    </ol>
+  </section>
+
+  <!-- 8 -->
+  <section class="blk">
+    <h2><span class="n">08</span> A linha de fundo</h2>
+    <div class="card rose">
+      <ul class="clean rose">
+        <li>Seu <b>walk-away</b> mora no custo R$ 64: você sabe até onde pode ceder sem operar no vermelho.<span>Mas isso fica em silêncio. Na mesa, só venda.</span></li>
+        <li>A <b>operação recorrente</b> é o que torna o negócio bom mesmo com fatia menor.<span>Receita todo mês mais indispensabilidade: quem mantém a casa não é trocado fácil.</span></li>
+        <li>Se a conta sozinha já entrega 40%+ a eles, <b>suba o valor do ativo antes de subir o aporte.</b><span>A é argumento; B é dinheiro do bolso deles.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Particular · não apresentar</span>
+    <span>Mesa de sociedade Mutualiza · 19/06/2026</span>
+  </div>
+
+</div>
+</body>
+</html>

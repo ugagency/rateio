@@ -1,0 +1,49 @@
+<!-- CARD D3.js: [TITULO] -->
+<div class="glass-card rounded-xl p-8 w-full max-w-5xl relative" data-aos="fade-up" data-aos-delay="[DELAY]">
+    <div class="flex items-center gap-4 mb-4">
+        <div class="icon-container">
+            <i data-lucide="[ICONE]" class="primary-color w-6 h-6"></i>
+        </div>
+        <div>
+            <h3 class="text-3xl font-bold text-white">[TITULO_GRAFICO]</h3>
+            <p class="text-white/50 text-sm italic">[SUBTITULO]</p>
+        </div>
+    </div>
+
+    <p class="text-white/70 mb-6 leading-relaxed max-w-3xl">[DESCRICAO]</p>
+
+    <div id="[CONTAINER_ID]"
+        class="w-full relative overflow-hidden rounded-xl bg-black/20 border border-white/5 backdrop-blur-sm"
+        style="height: [ALTURA]px;">
+    </div>
+
+    <script>
+        (function () {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        renderChart();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.3 });
+
+            observer.observe(document.getElementById('[CONTAINER_ID]'));
+
+            function renderChart() {
+                if (typeof d3 === 'undefined') return;
+                const container = d3.select('#[CONTAINER_ID]');
+                const width = [LARGURA];
+                const height = [ALTURA];
+
+                const svg = container.append('svg')
+                    .attr('viewBox', `0 0 ${width} ${height}`)
+                    .attr('width', '100%')
+                    .attr('height', '100%');
+
+                // [INSERIR_LOGICA_D3_AQUI]
+                // Use as cores: #FF904D (primaria), #ffffff (texto), rgba(255,144,77,0.X) (variantes)
+            }
+        })();
+    </script>
+</div>

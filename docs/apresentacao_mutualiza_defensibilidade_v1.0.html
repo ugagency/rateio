@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A casa em ordem · Mutualiza · v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --ink-2:#141921;
+    --paper:#ECE7DD;
+    --muted:#9AA2AD;
+    --faint:rgba(236,231,221,0.12);
+    --gold:#E0A75E;
+    --gold-deep:#B9823F;
+    --sage:#7FA99B;
+    --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--body);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 80% -10%, rgba(224,167,94,0.10), transparent 55%),
+      radial-gradient(90% 80% at -10% 110%, rgba(127,169,155,0.08), transparent 50%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .deck{position:relative;z-index:1;height:100vh;width:100vw;}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(40px,7vw,110px);
+    opacity:0;visibility:hidden;
+    transition:opacity .5s ease;
+  }
+  .slide.active{opacity:1;visibility:visible;}
+  .wrap{width:100%;max-width:1180px;margin:0 auto;position:relative;z-index:1;}
+
+  .eyebrow{
+    font-size:clamp(11px,0.95vw,13px);
+    letter-spacing:0.32em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin-bottom:1.6rem;
+  }
+  h1{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(40px,7.6vw,118px);line-height:0.96;
+    letter-spacing:-0.02em;
+  }
+  h1 em{font-style:italic;color:var(--gold);}
+  h2{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(32px,4.8vw,66px);line-height:1.03;
+    letter-spacing:-0.015em;margin-bottom:1.5rem;
+  }
+  h2 em{font-style:italic;color:var(--gold);}
+  .lead{
+    font-size:clamp(18px,1.8vw,27px);line-height:1.5;
+    color:var(--paper);max-width:46ch;font-weight:400;
+  }
+  p.body{
+    font-size:clamp(16px,1.4vw,21px);line-height:1.6;
+    color:var(--muted);max-width:58ch;
+  }
+  p.body strong{color:var(--paper);font-weight:600;}
+
+  .cap-sub{
+    margin-top:2.2rem;font-size:clamp(18px,1.8vw,26px);
+    line-height:1.5;max-width:42ch;color:var(--muted);
+  }
+  .cap-sub b{color:var(--paper);font-weight:500;}
+
+  .meta-row{
+    position:absolute;left:clamp(40px,7vw,110px);right:clamp(40px,7vw,110px);
+    bottom:clamp(28px,3.5vh,48px);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;letter-spacing:0.06em;color:var(--muted);
+    text-transform:uppercase;z-index:1;
+  }
+
+  .cols{display:grid;grid-template-columns:1fr 0.92fr;gap:clamp(30px,5vw,76px);align-items:center;}
+  @media (max-width:880px){ .cols{grid-template-columns:1fr;} }
+
+  ul.points{list-style:none;margin-top:1.4rem;}
+  ul.points li{
+    position:relative;padding-left:1.9rem;margin-bottom:1.05rem;
+    font-size:clamp(16px,1.4vw,21px);line-height:1.4;color:var(--paper);
+    max-width:44ch;
+  }
+  ul.points li::before{
+    content:"";position:absolute;left:0;top:0.5em;
+    width:11px;height:11px;border:2px solid var(--gold);
+    border-radius:2px;transform:rotate(45deg);
+  }
+  ul.points li span{display:block;color:var(--muted);font-size:0.78em;margin-top:0.28rem;font-weight:400;}
+
+  /* ---------------- the seal (lacre) ---------------- */
+  .seal-svg{width:100%;height:auto;display:block;overflow:visible;}
+  .seal{animation:sealGlow 3.6s ease-in-out infinite;}
+  @keyframes sealGlow{
+    0%,100%{filter:drop-shadow(0 0 6px rgba(224,167,94,0.22));}
+    50%{filter:drop-shadow(0 0 22px rgba(224,167,94,0.58));}
+  }
+  .seal-bg{animation:sealGlowSoft 5.5s ease-in-out infinite;}
+  @keyframes sealGlowSoft{
+    0%,100%{filter:drop-shadow(0 0 4px rgba(224,167,94,0.10));}
+    50%{filter:drop-shadow(0 0 14px rgba(224,167,94,0.26));}
+  }
+  .seal-ring{stroke:var(--gold-deep);}
+  .seal-ticks{stroke:var(--gold);transform-box:fill-box;transform-origin:center;
+    animation:sealSpin 26s linear infinite;}
+  @keyframes sealSpin{to{transform:rotate(360deg);}}
+  .seal-sha{fill:var(--gold);font-family:var(--body);font-size:12.5px;letter-spacing:0.26em;opacity:0.55;}
+  .seal-inner{stroke:var(--line);}
+  .seal-core{fill:var(--ink-2);stroke:var(--gold-deep);}
+  .seal-check{stroke:var(--gold);fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .seal-delta{fill:var(--gold);font-family:var(--display);font-weight:500;text-anchor:middle;dominant-baseline:middle;}
+  .seal-cap{fill:var(--muted);font-family:var(--body);text-anchor:middle;dominant-baseline:middle;}
+
+  .bg-seal-wrap{position:absolute;inset:0;z-index:0;display:flex;align-items:center;justify-content:flex-end;
+    padding-right:clamp(10px,4vw,80px);opacity:0.13;pointer-events:none;}
+  .bg-seal-wrap svg{width:clamp(320px,40vw,540px);height:auto;}
+
+  /* ---------------- cover ambient ---------------- */
+  .cover-ambient{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .cover-ambient .ripple{
+    position:absolute;top:50%;left:76%;width:46px;height:46px;
+    border:1px solid var(--gold);border-radius:50%;
+    transform:translate(-50%,-50%) scale(0.2);opacity:0;
+    animation:coverRipple 9s ease-out infinite;
+  }
+  @keyframes coverRipple{
+    0%{transform:translate(-50%,-50%) scale(0.2);opacity:0;}
+    12%{opacity:0.20;}
+    100%{transform:translate(-50%,-50%) scale(13);opacity:0;}
+  }
+  .cover-ambient .mote{
+    position:absolute;width:3px;height:3px;border-radius:50%;background:var(--gold);
+    opacity:0;animation:coverMote 11s ease-in-out infinite;
+  }
+  @keyframes coverMote{
+    0%,100%{opacity:0;transform:translateY(10px);}
+    50%{opacity:0.4;transform:translateY(-10px);}
+  }
+
+  /* ---------------- slide 2: ledger ---------------- */
+  .ledger{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--ink-2);
+    padding:clamp(20px,2.4vw,34px);overflow:hidden;}
+  .ledger-title{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .ledger-row{display:flex;justify-content:space-between;align-items:center;gap:18px;
+    padding:11px 0;border-bottom:1px solid var(--line);}
+  .ledger-row .lbl{height:9px;border-radius:3px;background:rgba(236,231,221,0.16);}
+  .ledger-row .val{height:9px;width:62px;border-radius:3px;background:rgba(236,231,221,0.09);flex:none;}
+  .ledger::after{content:"";position:absolute;top:0;left:0;width:36%;height:100%;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(224,167,94,0.13),transparent);
+    transform:translateX(-130%);animation:scanSweep 4.6s ease-in-out infinite;}
+  @keyframes scanSweep{0%{transform:translateX(-130%);}55%,100%{transform:translateX(330%);}}
+  .cpf-chip{margin-top:20px;display:inline-flex;align-items:center;gap:10px;
+    border:1px solid var(--line);border-radius:999px;padding:9px 18px;
+    font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);
+    animation:cpfBlink 2.4s ease-in-out infinite;}
+  @keyframes cpfBlink{
+    0%,100%{box-shadow:0 0 0 rgba(224,167,94,0);border-color:var(--line);color:var(--muted);}
+    50%{box-shadow:0 0 22px rgba(224,167,94,0.32);border-color:var(--gold);color:var(--gold);}
+  }
+
+  /* ---------------- slide 3: lanes ---------------- */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2.2vw,30px);margin-top:1.9rem;}
+  @media (max-width:880px){ .lanes{grid-template-columns:1fr;} }
+  .lane{border:1px solid var(--line);border-radius:10px;padding:clamp(22px,2.6vw,36px);
+    display:flex;flex-direction:column;gap:0.9rem;min-height:clamp(220px,28vh,280px);}
+  .lane .lane-k{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);}
+  .lane h3{font-family:var(--display);font-weight:500;font-size:clamp(24px,2.6vw,36px);line-height:1.0;}
+  .lane p{font-size:clamp(13px,1.15vw,16.5px);line-height:1.5;color:var(--muted);}
+  .lane.defense{background:linear-gradient(165deg,rgba(224,167,94,0.13),rgba(224,167,94,0.02));border-color:var(--gold-deep);}
+  .lane.defense h3{color:var(--gold);}
+  .lane svg{width:clamp(96px,12vw,148px);height:auto;margin-top:auto;align-self:flex-start;}
+  .placa-strip{display:flex;gap:6px;width:100%;margin-top:auto;}
+  .placa-strip i{flex:1;height:22px;border:1px solid var(--line);border-radius:3px;background:rgba(236,231,221,0.04);
+    animation:placaTick 2.6s ease-in-out infinite;}
+  @keyframes placaTick{0%,100%{background:rgba(236,231,221,0.04);}50%{background:rgba(236,231,221,0.12);}}
+
+  /* ---------------- slide 4: hero seal layout ---------------- */
+  .hero-seal-wrap{display:flex;align-items:center;justify-content:center;}
+  .hero-seal-wrap svg{width:clamp(280px,32vw,420px);height:auto;}
+
+  /* ---------------- slide 5: rails ---------------- */
+  .rail-wrap{margin-top:1.9rem;display:flex;flex-direction:column;gap:clamp(14px,2vw,24px);}
+  .rail-row{display:flex;align-items:center;gap:clamp(16px,2.5vw,40px);
+    border:1px solid var(--line);border-radius:12px;padding:clamp(16px,2vw,28px) clamp(20px,2.6vw,36px);
+    background:var(--ink-2);}
+  .rail-row.defense{border-color:var(--gold-deep);background:linear-gradient(120deg,rgba(224,167,94,0.10),rgba(224,167,94,0.02));}
+  .rail-label{font-family:var(--display);font-size:clamp(18px,1.9vw,26px);color:var(--paper);
+    display:flex;flex-direction:column;gap:5px;min-width:clamp(170px,22vw,280px);}
+  .rail-label small{font-family:var(--body);font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+  .rail-label.gold{color:var(--gold);}
+  .rail-label.gold small{color:var(--gold);}
+  .rail-track{position:relative;flex:1;height:3px;background:var(--line);border-radius:3px;}
+  .rail-dot{position:absolute;top:50%;left:0;width:9px;height:9px;border-radius:50%;background:var(--sage);
+    transform:translate(-50%,-50%);animation:railFlow 3.4s linear infinite;}
+  @keyframes railFlow{0%{left:-1%;opacity:0;}8%{opacity:1;}92%{opacity:1;}100%{left:101%;opacity:0;}}
+  .rail-seal{flex:1;display:flex;justify-content:flex-start;}
+  .rail-seal svg{width:clamp(72px,8vw,104px);height:auto;}
+
+  /* ---------------- slide 6: months ---------------- */
+  .months{display:flex;gap:clamp(6px,0.9vw,14px);margin-top:2.3rem;align-items:flex-start;}
+  .month{flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .month .mlbl{font-size:clamp(10px,1vw,13px);letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+  .month .stamp{position:relative;width:clamp(30px,3.6vw,50px);height:clamp(30px,3.6vw,50px);border-radius:50%;
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
+    animation:stampLite 7s ease-in-out infinite;}
+  .month .stamp::before{content:"";position:absolute;inset:5px;border-radius:50%;border:1.5px solid var(--line);
+    animation:stampLiteB 7s ease-in-out infinite;}
+  .month .stamp::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--line);
+    animation:stampLiteC 7s ease-in-out infinite;}
+  @keyframes stampLite{0%,11%{border-color:var(--gold);box-shadow:0 0 16px rgba(224,167,94,0.4);}24%,100%{border-color:var(--line);box-shadow:none;}}
+  @keyframes stampLiteB{0%,11%{border-color:var(--gold);}24%,100%{border-color:var(--line);}}
+  @keyframes stampLiteC{0%,11%{background:var(--gold);}24%,100%{background:var(--line);}}
+  .month.ghost{opacity:0.4;}
+  .month.ghost .stamp{border-style:dashed;animation:none;}
+  .month.ghost .stamp::before,.month.ghost .stamp::after{animation:none;}
+
+  /* ---------------- slide 7: balance ---------------- */
+  .balance-wrap{display:flex;justify-content:center;margin-top:0.6rem;}
+  .balance-wrap svg{width:clamp(360px,52vw,640px);height:auto;overflow:visible;}
+  .bal-post{stroke:var(--line);stroke-width:3;}
+  .bal-tri{fill:var(--ink-2);stroke:var(--gold-deep);stroke-width:1.5;}
+  .bal-beam{stroke:var(--gold-deep);stroke-width:6;stroke-linecap:round;}
+  .bal-string{stroke:var(--line);stroke-width:1.5;}
+  .bal-pan{fill:none;stroke:var(--muted);stroke-width:2;}
+  .bal-coin{fill:rgba(236,231,221,0.45);}
+  .bal-beam-grp{transform-box:view-box;transform-origin:400px 150px;animation:balBob 5.5s ease-in-out infinite;}
+  @keyframes balBob{0%,100%{transform:rotate(-1.6deg);}50%{transform:rotate(1.6deg);}}
+  .bal-side-label{fill:var(--muted);font-family:var(--body);font-size:16px;text-anchor:middle;letter-spacing:0.03em;}
+  .bal-side-label.gold{fill:var(--gold);}
+  .balance-note{margin-top:1.2rem;text-align:center;font-size:clamp(15px,1.3vw,19px);color:var(--muted);max-width:54ch;margin-left:auto;margin-right:auto;}
+  .balance-note b{color:var(--paper);font-weight:500;}
+
+  /* ---------------- slide 8: split in/out ---------------- */
+  .split{display:grid;grid-template-columns:1fr 64px 1fr;margin-top:1.8rem;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:clamp(240px,34vh,330px);}
+  @media (max-width:880px){ .split{grid-template-columns:1fr;} .divider{display:none;} }
+  .zone{padding:clamp(22px,2.8vw,40px);display:flex;flex-direction:column;gap:0.9rem;}
+  .zone .z-k{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;}
+  .zone h3{font-family:var(--display);font-weight:500;font-size:clamp(22px,2.4vw,32px);line-height:1.05;}
+  .zone ul{list-style:none;display:flex;flex-direction:column;gap:0.55rem;}
+  .zone li{font-size:clamp(13px,1.15vw,16.5px);color:var(--muted);padding-left:1.1rem;position:relative;}
+  .zone li::before{content:"";position:absolute;left:0;top:0.5em;width:8px;height:8px;border-radius:2px;transform:rotate(45deg);}
+  .zone.in{background:linear-gradient(160deg,rgba(224,167,94,0.12),rgba(224,167,94,0.02));}
+  .zone.in .z-k,.zone.in h3{color:var(--gold);}
+  .zone.in li::before{border:1.5px solid var(--gold);}
+  .zone.out .z-k{color:var(--sage);}
+  .zone.out li::before{border:1.5px solid var(--muted);}
+  .zone-seal{margin-top:auto;}
+  .zone-seal svg{width:clamp(82px,9vw,118px);height:auto;}
+  .divider{position:relative;justify-self:center;width:2px;
+    background:linear-gradient(180deg,transparent,var(--gold-deep),transparent);}
+  .divider .dlabel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);
+    white-space:nowrap;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);
+    background:var(--ink);padding:0 12px;}
+  .divider::after{content:"";position:absolute;left:50%;top:0;width:6px;height:6px;border-radius:50%;
+    background:var(--gold);transform:translateX(-50%);box-shadow:0 0 8px rgba(224,167,94,0.6);
+    animation:divFlow 2.6s linear infinite;}
+  @keyframes divFlow{0%{top:100%;opacity:0;}12%{opacity:1;}88%{opacity:1;}100%{top:0;opacity:0;}}
+
+  /* ---------------- slide 9: steps ---------------- */
+  .steps{display:flex;align-items:flex-start;justify-content:center;gap:0;margin-top:2.3rem;}
+  .step{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;width:clamp(140px,18vw,220px);}
+  .step .node{width:clamp(64px,7vw,92px);height:clamp(64px,7vw,92px);border-radius:50%;
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-weight:500;font-size:clamp(26px,3vw,40px);color:var(--gold);
+    animation:nodeLite 4.5s ease-in-out infinite;}
+  .step .node svg{width:90%;height:90%;}
+  .step .stitle{font-family:var(--display);font-size:clamp(17px,1.6vw,23px);color:var(--paper);}
+  .step .sdesc{font-size:clamp(12px,1.05vw,15px);color:var(--muted);max-width:22ch;line-height:1.4;}
+  .conn{flex:1;min-width:30px;height:2px;margin-top:clamp(32px,3.5vw,46px);background:var(--line);position:relative;overflow:hidden;}
+  .conn::after{content:"";position:absolute;top:0;left:0;height:100%;width:200%;
+    background:repeating-linear-gradient(90deg,var(--gold) 0 7px,transparent 7px 18px);
+    opacity:0.7;animation:connFlow 0.9s linear infinite;}
+  @keyframes connFlow{to{transform:translateX(18px);}}
+  @keyframes nodeLite{0%,100%{border-color:var(--line);box-shadow:none;}50%{border-color:var(--gold-deep);box-shadow:0 0 16px rgba(224,167,94,0.25);}}
+  .steps-foot{margin-top:2.2rem;}
+
+  /* reveal */
+  .r{opacity:0;transform:translateY(20px);
+    transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .slide.active .r{opacity:1;transform:none;}
+
+  /* progress + nav */
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--gold);width:0;z-index:30;transition:width .4s ease;}
+  .nav{position:fixed;bottom:clamp(24px,3vh,40px);left:50%;transform:translateX(-50%);
+    z-index:30;display:flex;align-items:center;gap:14px;}
+  .nav button{background:none;border:1px solid var(--line);color:var(--paper);
+    width:40px;height:40px;border-radius:999px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;transition:.2s;}
+  .nav button:hover{border-color:var(--gold);color:var(--gold);}
+  .dots{display:flex;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--faint);cursor:pointer;transition:.3s;}
+  .dot.active{background:var(--gold);transform:scale(1.3);}
+  .counter{position:fixed;top:24px;right:30px;z-index:30;font-size:13px;letter-spacing:0.1em;color:var(--muted);}
+  .counter b{color:var(--paper);}
+  .hint{position:fixed;bottom:clamp(24px,3vh,40px);right:30px;z-index:30;font-size:11px;
+    letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);opacity:0.6;}
+
+  @media print{
+    body{overflow:visible;}
+    body::before,body::after{display:none !important;}
+    .bg-seal-wrap{opacity:0.10 !important;}
+    .slide{position:relative;opacity:1;visibility:visible;height:100vh;page-break-after:always;}
+    .nav,.counter,.hint,.progress{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">08</span></div>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <radialGradient id="sealHalo" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#E0A75E" stop-opacity="0.14"/>
+    <stop offset="60%" stop-color="#E0A75E" stop-opacity="0.06"/>
+    <stop offset="100%" stop-color="#E0A75E" stop-opacity="0"/>
+  </radialGradient>
+</defs></svg>
+
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <div class="cover-ambient" aria-hidden="true">
+      <i class="ripple" style="animation-delay:0s"></i>
+      <i class="ripple" style="animation-delay:2.25s"></i>
+      <i class="ripple" style="animation-delay:4.5s"></i>
+      <i class="ripple" style="animation-delay:6.75s"></i>
+      <i class="mote" style="top:22%;left:18%;animation-delay:0s"></i>
+      <i class="mote" style="top:68%;left:30%;animation-delay:1.5s"></i>
+      <i class="mote" style="top:40%;left:62%;animation-delay:3s"></i>
+      <i class="mote" style="top:78%;left:72%;animation-delay:4.5s"></i>
+      <i class="mote" style="top:30%;left:84%;animation-delay:2.2s"></i>
+      <i class="mote" style="top:58%;left:50%;animation-delay:5.2s"></i>
+    </div>
+    <div class="bg-seal-wrap"><svg id="bg-seal-1" class="seal-svg" viewBox="0 0 500 500" aria-hidden="true"></svg></div>
+    <div class="wrap">
+      <div class="eyebrow r">O novo papel da administradora &middot; LC 213/2025</div>
+      <h1 class="r">Só o rateio<br>já é um <em>sistema</em>.</h1>
+      <div class="cap-sub r">A LC 213/2025 abriu um mercado novo. A primeira peça que toda administradora precisa é o rateio que fecha e se prova sozinho. <b>Não a parte barata, o sistema inteiro.</b></div>
+    </div>
+    <div class="meta-row">
+      <span>Documento de decisão</span>
+      <span>Confidencial &middot; Junho de 2026</span>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="wrap cols">
+      <div>
+        <div class="eyebrow r">Hoje</div>
+        <h2 class="r">No papel, a conta não <em>se explica</em> sozinha.</h2>
+        <p class="body r">A operação fecha numa planilha. Os números existem, mas dependem da palavra de quem assina. No dia em que alguém pedir para entender como cada conta foi dividida, e por quê, a resposta é uma pessoa explicando de memória. <strong>Não um documento que se sustenta sozinho.</strong></p>
+        <p class="body r" style="margin-top:1.1rem">Não é um problema de cálculo. É um problema de prova.</p>
+      </div>
+      <div class="r">
+        <div class="ledger">
+          <div class="ledger-title">Fechamento do mês</div>
+          <div class="ledger-row"><span class="lbl" style="width:42%"></span><span class="val"></span></div>
+          <div class="ledger-row"><span class="lbl" style="width:31%"></span><span class="val"></span></div>
+          <div class="ledger-row"><span class="lbl" style="width:48%"></span><span class="val"></span></div>
+          <div class="ledger-row"><span class="lbl" style="width:36%"></span><span class="val"></span></div>
+          <div class="ledger-row"><span class="lbl" style="width:44%"></span><span class="val"></span></div>
+          <div class="cpf-chip">Apoiado só na palavra de quem assina</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · entrega -->
+  <section class="slide">
+    <div class="wrap cols">
+      <div>
+        <div class="eyebrow r">O que o motor entrega</div>
+        <h2 class="r">Não é dividir custo. É a <em>casa em ordem</em>.</h2>
+        <p class="body r">A divisão entre as cotas qualquer planilha faz, e some na comparação. O que não tem preço de prateleira é o fechamento que se sustenta sozinho, com a prova pronta a cada mês.</p>
+        <ul class="points">
+          <li class="r">Fecha ao centavo.<span>Diferença zero entre o previsto e o distribuído.</span></li>
+          <li class="r">Três vias independentes que batem.<span>A mesma conta, por três caminhos separados, sem divergência.</span></li>
+          <li class="r">Lacre criptográfico SHA-256.<span>O fechamento do mês fica selado e impossível de alterar sem deixar rastro.</span></li>
+          <li class="r">Invariante verificável.<span>Qualquer um reconstrói o resultado e chega no mesmo número.</span></li>
+          <li class="r">Rateio e taxa de administração, separados.<span>A discriminação que blinda o rateio de virar receita tributada.</span></li>
+        </ul>
+      </div>
+      <div class="hero-seal-wrap r"><svg id="hero-seal" class="seal-svg" viewBox="0 0 400 400"></svg></div>
+    </div>
+  </section>
+
+  <!-- 4 · recorrência -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">Por natureza, recorrente</div>
+      <h2 class="r">Um lacre por mês. Para <em>sempre</em>.</h2>
+      <p class="body r" style="max-width:64ch">Confiança não se conquista uma vez só. É a cada fechamento, todo mês, enquanto a administradora existir. Cada mês fecha, lacra e entra no acervo. <strong>Não é um projeto que termina. É a casa que se mantém em ordem.</strong></p>
+      <div class="months">
+        <div class="month r"><span class="mlbl">Jan</span><div class="stamp" style="animation-delay:0s"></div></div>
+        <div class="month r"><span class="mlbl">Fev</span><div class="stamp" style="animation-delay:.5s"></div></div>
+        <div class="month r"><span class="mlbl">Mar</span><div class="stamp" style="animation-delay:1s"></div></div>
+        <div class="month r"><span class="mlbl">Abr</span><div class="stamp" style="animation-delay:1.5s"></div></div>
+        <div class="month r"><span class="mlbl">Mai</span><div class="stamp" style="animation-delay:2s"></div></div>
+        <div class="month r"><span class="mlbl">Jun</span><div class="stamp" style="animation-delay:2.5s"></div></div>
+        <div class="month r"><span class="mlbl">Jul</span><div class="stamp" style="animation-delay:3s"></div></div>
+        <div class="month r"><span class="mlbl">Ago</span><div class="stamp" style="animation-delay:3.5s"></div></div>
+        <div class="month ghost r"><span class="mlbl">&middot;&middot;&middot;</span><div class="stamp"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">A régua</div>
+      <h2 class="r" style="text-align:center">O que pesa de verdade não é a <em>placa</em>.</h2>
+      <div class="balance-wrap r">
+        <svg id="balance" viewBox="0 0 800 360"></svg>
+      </div>
+      <p class="balance-note r">A pergunta deixa de ser quanto custa processar uma placa. Passa a ser <b>quanto vale um fechamento em que se pode confiar de olhos fechados.</b> Cobrar por placa vende o cálculo. O valor está na confiança.</p>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">O quadro maior</div>
+      <h2 class="r">O rateio é uma <em>peça</em>. A solução completa não é deste negócio.</h2>
+      <p class="body r" style="max-width:66ch">O motor de rateio nasce dentro de uma plataforma que segue em evolução para cobrir a operação inteira da administradora. Não é o objeto desta conversa. Fica só registrado, para deixar claro que a casa não termina no cômodo do rateio.</p>
+      <div class="split r">
+        <div class="zone in">
+          <span class="z-k">Hoje, nesta mesa</span>
+          <h3>Módulo Rateio</h3>
+          <ul>
+            <li>Motor de rateio ELLO e AutoTruck</li>
+            <li>Lacre SHA-256 de cada mês</li>
+            <li>Fechamento reconstruível a qualquer hora</li>
+          </ul>
+          <div class="zone-seal"><svg id="seal-split" class="seal-svg" viewBox="0 0 160 160"></svg></div>
+        </div>
+        <div class="divider"><span class="dlabel">A mesma plataforma</span></div>
+        <div class="zone out">
+          <span class="z-k">Em evolução &middot; fora deste acordo</span>
+          <h3>A operação completa</h3>
+          <ul>
+            <li>Captação e vistoria do associado</li>
+            <li>Antifraude na admissão</li>
+            <li>Gestão da relação com o associado</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow r">A conversa de hoje</div>
+      <h2 class="r">Hoje a gente conversa. O papel vem <em>depois</em>.</h2>
+      <p class="body r" style="max-width:66ch">Uma conversa para alinhar três pontos e apertar a mão. A formalização segue na sequência, com calma.</p>
+      <div class="steps">
+        <div class="step r">
+          <div class="node" style="animation-delay:0s">1</div>
+          <div class="stitle">O aporte</div>
+          <div class="sdesc">Quanto entra para estruturar a plataforma.</div>
+        </div>
+        <div class="conn r"></div>
+        <div class="step r">
+          <div class="node" style="animation-delay:1.5s">2</div>
+          <div class="stitle">O percentual</div>
+          <div class="sdesc">A participação que esse aporte representa.</div>
+        </div>
+        <div class="conn r"></div>
+        <div class="step r">
+          <div class="node" style="animation-delay:3s">3</div>
+          <div class="stitle">A data</div>
+          <div class="sdesc">Quando a gente começa a mobilizar.</div>
+        </div>
+      </div>
+      <p class="body r steps-foot" style="max-width:74ch">Com isso a gente mobiliza o time e leva o motor à produção: a V0 testada com números reais, em ambientes de <strong>desenvolvimento, homologação e produção</strong>.</p>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <div class="bg-seal-wrap"><svg id="bg-seal-10" class="seal-svg" viewBox="0 0 500 500" aria-hidden="true"></svg></div>
+    <div class="wrap">
+      <div class="eyebrow r">O ponto</div>
+      <h1 class="r" style="font-size:clamp(34px,5.8vw,88px)">Num mercado que está <em>nascendo</em>,<br>ganha quem tem a casa em ordem.</h1>
+      <div class="cap-sub r" style="max-width:46ch">A pergunta não é quanto custa o rateio. É <b>quem chega primeiro com a operação que se prova sozinha</b>, na confiança das associações e da SUSEP.</div>
+    </div>
+    <div class="meta-row">
+      <span>O novo mercado das administradoras</span>
+      <span>Confidencial &middot; Junho de 2026</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Anterior">&larr;</button>
+  <div class="dots" id="dots"></div>
+  <button id="next" aria-label="Próximo">&rarr;</button>
+</div>
+<div class="hint">Setas para navegar &middot; F tela cheia</div>
+
+<script>
+(function(){
+  var ns='http://www.w3.org/2000/svg';
+  var XL='http://www.w3.org/1999/xlink';
+  function el(tag,attrs){
+    var e=document.createElementNS(ns,tag);
+    if(attrs) for(var k in attrs) e.setAttribute(k,attrs[k]);
+    return e;
+  }
+
+  /* ---------------- the seal builder ---------------- */
+  var sealUID=0;
+  function buildSeal(svg,o){
+    o=o||{};
+    var cx=o.cx!=null?o.cx:400, cy=o.cy!=null?o.cy:200, R=o.R||130, simple=!!o.simple;
+    var root=el('g',{'class':'seal'+(o.bg?' seal-bg':'')});
+    root.setAttribute('data-cx',cx); root.setAttribute('data-cy',cy);
+
+    root.appendChild(el('circle',{'class':'seal-halo',cx:cx,cy:cy,r:R+12,fill:'url(#sealHalo)'}));
+    root.appendChild(el('circle',{'class':'seal-ring',cx:cx,cy:cy,r:R,fill:'none','stroke-width':2}));
+    root.appendChild(el('circle',{'class':'seal-ticks',cx:cx,cy:cy,r:R-9,fill:'none','stroke-width':3,'stroke-dasharray':'1.5 12','stroke-linecap':'round'}));
+
+    if(!simple){
+      var pr=R-27, pid='shap'+(sealUID++);
+      var defs=el('defs',{});
+      var d='M '+cx+' '+(cy-pr)+' A '+pr+' '+pr+' 0 1 1 '+(cx-0.01)+' '+(cy-pr);
+      var pp=el('path',{id:pid,d:d,fill:'none'});
+      defs.appendChild(pp); root.appendChild(defs);
+      var txt=el('text',{'class':'seal-sha'});
+      var tp=el('textPath',{startOffset:'2%'});
+      tp.setAttribute('href','#'+pid);
+      tp.setAttributeNS(XL,'href','#'+pid);
+      tp.textContent='FECHAMENTO LACRADO  ·  SHA-256  ·  TRES VIAS INDEPENDENTES  ·  ';
+      txt.appendChild(tp); root.appendChild(txt);
+      root.appendChild(el('circle',{'class':'seal-inner',cx:cx,cy:cy,r:R-58,fill:'none','stroke-width':1.4}));
+    }
+
+    var vr=simple?(R-15):(R-72);
+    var cols=['#E0A75E','#7FA99B','rgba(236,231,221,0.6)'];
+    for(var k=0;k<3;k++){
+      var a0=(-90+k*120+11)*Math.PI/180, a1=(-90+(k+1)*120-11)*Math.PI/180;
+      var x0=cx+vr*Math.cos(a0), y0=cy+vr*Math.sin(a0);
+      var x1=cx+vr*Math.cos(a1), y1=cy+vr*Math.sin(a1);
+      var arc=el('path',{'class':'seal-via',d:'M '+x0+' '+y0+' A '+vr+' '+vr+' 0 0 1 '+x1+' '+y1,
+        fill:'none','stroke-width':simple?3:5,'stroke-linecap':'round'});
+      arc.style.stroke=cols[k];
+      root.appendChild(arc);
+    }
+
+    var coreR=simple?Math.max(20,R*0.42):54;
+    root.appendChild(el('circle',{'class':'seal-core',cx:cx,cy:cy,r:coreR,'stroke-width':2}));
+
+    if(simple){
+      var ck=coreR*0.55;
+      root.appendChild(el('path',{'class':'seal-check','stroke-width':Math.max(3,coreR*0.12),
+        d:'M '+(cx-ck*0.62)+' '+cy+' L '+(cx-ck*0.1)+' '+(cy+ck*0.5)+' L '+(cx+ck*0.74)+' '+(cy-ck*0.52)}));
+    } else {
+      var dt=el('text',{'class':'seal-delta',x:cx,y:cy-coreR*0.05});
+      dt.setAttribute('font-size',coreR*0.6); dt.textContent='Δ = 0';
+      root.appendChild(dt);
+      var cp=el('text',{'class':'seal-cap',x:cx,y:cy+coreR*0.52,'letter-spacing':'0.18em'});
+      cp.setAttribute('font-size',coreR*0.2); cp.textContent='LACRADO';
+      root.appendChild(cp);
+    }
+
+    svg.appendChild(root);
+    return root;
+  }
+
+  /* choreographed entrance for the hero seal (replays on each visit) */
+  function entranceSeal(s){
+    if(!s) return;
+    var cx=+s.getAttribute('data-cx')||200, cy=+s.getAttribute('data-cy')||200;
+    s.style.transition='none'; s.style.transformBox='view-box';
+    s.style.transformOrigin=cx+'px '+cy+'px';
+    s.style.opacity='0'; s.style.transform='scale(.9)';
+
+    var ring=s.querySelector('.seal-ring');
+    if(ring){ var r=+ring.getAttribute('r'), len=2*Math.PI*r;
+      ring.style.transition='none'; ring.style.strokeDasharray=len+' '+len; ring.style.strokeDashoffset=len; }
+
+    var vias=s.querySelectorAll('.seal-via');
+    vias.forEach(function(v,k){
+      v.style.transition='none'; v.style.transformBox='view-box'; v.style.transformOrigin=cx+'px '+cy+'px';
+      v.style.opacity='0'; v.style.transform='rotate('+((k-1)*40)+'deg) scale(.62)';
+    });
+    var core=s.querySelector('.seal-core');
+    if(core){ core.style.transition='none'; core.style.transformBox='fill-box'; core.style.transformOrigin='center';
+      core.style.opacity='0'; core.style.transform='scale(.4)'; }
+    var dl=s.querySelector('.seal-delta'), cp=s.querySelector('.seal-cap');
+    if(dl){ dl.style.transition='none'; dl.style.opacity='0'; }
+    if(cp){ cp.style.transition='none'; cp.style.opacity='0'; }
+
+    void s.getBoundingClientRect();
+
+    s.style.transition='opacity .7s ease, transform .8s cubic-bezier(.2,.7,.2,1)';
+    s.style.opacity='1'; s.style.transform='scale(1)';
+    if(ring){ ring.style.transition='stroke-dashoffset 1.1s cubic-bezier(.3,.7,.2,1) .15s'; ring.style.strokeDashoffset='0'; }
+    vias.forEach(function(v,k){
+      var d=(0.35+k*0.13);
+      v.style.transition='opacity .55s ease '+d+'s, transform .85s cubic-bezier(.2,.7,.2,1) '+d+'s';
+      v.style.opacity='1'; v.style.transform='rotate(0deg) scale(1)';
+    });
+    if(core){ core.style.transition='opacity .5s ease .6s, transform .7s cubic-bezier(.2,.9,.3,1.2) .6s';
+      core.style.opacity='1'; core.style.transform='scale(1)'; }
+    if(dl){ dl.style.transition='opacity .5s ease 1s'; dl.style.opacity='1'; }
+    if(cp){ cp.style.transition='opacity .5s ease 1.15s'; cp.style.opacity='1'; }
+  }
+
+  /* ---------------- the balance (slide 7) ---------------- */
+  function buildBalance(svg){
+    svg.appendChild(el('line',{'class':'bal-post',x1:400,y1:150,x2:400,y2:300}));
+    svg.appendChild(el('path',{'class':'bal-tri',d:'M400 150 L376 300 L424 300 Z'}));
+    svg.appendChild(el('line',{'class':'bal-post',x1:332,y1:300,x2:468,y2:300}));
+
+    var gb=el('g',{'class':'bal-beam-grp'});
+    gb.appendChild(el('line',{'class':'bal-beam',x1:215,y1:128,x2:585,y2:172}));
+    gb.appendChild(el('line',{'class':'bal-string',x1:215,y1:128,x2:215,y2:205}));
+    gb.appendChild(el('path',{'class':'bal-pan',d:'M178 205 A37 22 0 0 0 252 205'}));
+    var coins=[[200,212],[216,210],[231,213],[208,222],[224,221],[216,231]];
+    coins.forEach(function(p){ gb.appendChild(el('circle',{'class':'bal-coin',cx:p[0],cy:p[1],r:6})); });
+    gb.appendChild(el('line',{'class':'bal-string',x1:585,y1:172,x2:585,y2:225}));
+    gb.appendChild(el('path',{'class':'bal-pan',d:'M540 250 A45 26 0 0 0 630 250'}));
+    buildSeal(gb,{cx:585,cy:242,R:40,simple:true});
+    svg.appendChild(gb);
+
+    var l1=el('text',{'class':'bal-side-label',x:215,y:340}); l1.textContent='Por placa'; svg.appendChild(l1);
+    var l2=el('text',{'class':'bal-side-label gold',x:585,y:340}); l2.textContent='Confiança'; svg.appendChild(l2);
+  }
+
+  /* ---------------- build all seals ---------------- */
+  buildSeal(document.getElementById('hero-seal'),{cx:200,cy:200,R:150});
+  buildSeal(document.getElementById('seal-split'),{cx:80,cy:80,R:64,simple:true});
+  buildSeal(document.getElementById('bg-seal-1'),{cx:250,cy:250,R:205,bg:true});
+  buildSeal(document.getElementById('bg-seal-10'),{cx:250,cy:250,R:205,bg:true});
+  buildBalance(document.getElementById('balance'));
+
+  /* ---------------- deck navigation ---------------- */
+  var slides=Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total=slides.length, idx=0;
+  document.getElementById('tot').textContent=String(total).padStart(2,'0');
+
+  var dotsEl=document.getElementById('dots');
+  slides.forEach(function(_,i){
+    var d=document.createElement('div'); d.className='dot'+(i===0?' active':'');
+    d.addEventListener('click',function(){go(i);});
+    dotsEl.appendChild(d);
+  });
+  var dots=Array.prototype.slice.call(dotsEl.children);
+
+  function reveal(slide){
+    var rs=slide.querySelectorAll('.r');
+    rs.forEach(function(elm,i){ elm.style.transitionDelay=(0.08*i+0.05)+'s'; });
+  }
+  function activate(i){
+    if(i===2){ var hero=document.getElementById('hero-seal'); if(hero) entranceSeal(hero.querySelector('.seal')); }
+  }
+  reveal(slides[0]);
+  activate(0);
+
+  function go(n){
+    n=Math.max(0,Math.min(total-1,n));
+    if(n===idx) return;
+    slides[idx].classList.remove('active');
+    idx=n;
+    slides[idx].classList.add('active');
+    reveal(slides[idx]);
+    activate(idx);
+    dots.forEach(function(d,i){ d.classList.toggle('active',i===idx); });
+    document.getElementById('cur').textContent=String(idx+1).padStart(2,'0');
+    document.getElementById('progress').style.width=((idx)/(total-1)*100)+'%';
+  }
+  document.getElementById('progress').style.width='0%';
+
+  document.getElementById('next').addEventListener('click',function(){go(idx+1);});
+  document.getElementById('prev').addEventListener('click',function(){go(idx-1);});
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(idx+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(idx-1);}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(total-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen();}
+    }
+  });
+})();
+</script>
+</body>
+</html>

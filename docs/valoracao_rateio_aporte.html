@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valoração do Rateio · Aporte e Percentual · uso interno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --ink-2:#141921;
+    --paper:#ECE7DD;
+    --muted:#9AA2AD;
+    --faint:rgba(236,231,221,0.12);
+    --gold:#E0A75E;
+    --gold-deep:#B9823F;
+    --sage:#7FA99B;
+    --line:rgba(236,231,221,0.14);
+    --display:'Fraunces',Georgia,'Times New Roman',serif;
+    --body:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    position:relative;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 80% -10%, rgba(224,167,94,0.10), transparent 55%),
+      radial-gradient(90% 80% at -10% 110%, rgba(127,169,155,0.08), transparent 50%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .page{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:clamp(34px,5vw,64px) clamp(28px,5vw,72px) 64px;}
+
+  .eyebrow{
+    font-size:clamp(10px,0.9vw,12px);
+    letter-spacing:0.32em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin-bottom:0.9rem;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .eyebrow .tag{color:var(--muted);letter-spacing:0.18em;}
+  h1{
+    font-family:var(--display);font-weight:500;
+    font-size:clamp(30px,4.4vw,56px);line-height:1.0;
+    letter-spacing:-0.02em;margin-bottom:0.8rem;
+  }
+  h1 em{font-style:italic;color:var(--gold);}
+  .sub{font-size:clamp(14px,1.3vw,18px);line-height:1.5;color:var(--muted);max-width:70ch;}
+  .sub b{color:var(--paper);font-weight:500;}
+
+  .rate{
+    display:inline-flex;gap:0.6rem;align-items:baseline;margin-top:1.1rem;
+    padding:0.5rem 1rem;border:1px solid var(--line);border-radius:8px;
+    background:rgba(236,231,221,0.03);
+  }
+  .rate b{font-family:var(--display);color:var(--gold);font-size:1.25em;font-weight:600;}
+  .rate span{font-size:0.82em;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,2.6vw,34px);margin-top:clamp(26px,3vw,40px);}
+  @media (max-width:900px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg, rgba(236,231,221,0.045), rgba(236,231,221,0.015));
+    padding:clamp(20px,2.2vw,28px);
+  }
+  .card.span2{grid-column:1 / -1;}
+  .card h3{
+    font-family:var(--display);font-weight:500;font-size:clamp(19px,1.9vw,25px);
+    letter-spacing:-0.01em;margin-bottom:0.25rem;
+  }
+  .card h3 em{font-style:italic;color:var(--gold);}
+  .card .kick{font-size:0.78em;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-deep);font-weight:600;margin-bottom:0.55rem;}
+  .card .note{font-size:clamp(13px,1.05vw,15px);line-height:1.5;color:var(--muted);margin-top:0.9rem;}
+  .card .note b{color:var(--paper);font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;margin-top:0.4rem;font-size:clamp(13px,1.05vw,15px);}
+  th,td{text-align:left;padding:0.5rem 0.2rem;border-bottom:1px solid var(--line);}
+  th{font-size:0.72em;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--paper);}
+  tr.total td{border-bottom:none;border-top:1.5px solid var(--gold-deep);padding-top:0.7rem;font-weight:600;}
+  tr.total td:first-child{font-family:var(--display);}
+  tr.total td.num{color:var(--gold);font-size:1.12em;}
+
+  .headline{
+    margin:0.4rem 0 0.2rem;font-family:var(--display);font-size:clamp(17px,1.6vw,22px);
+    line-height:1.25;font-weight:500;
+  }
+  .headline b{color:var(--gold);font-weight:600;}
+
+  .pct-table td.num{color:var(--gold);font-family:var(--display);font-size:1.08em;}
+  .pct-table tr:last-child td{border-bottom:none;}
+
+  .formula{
+    margin:0.2rem 0 0.6rem;padding:0.7rem 1rem;border-left:3px solid var(--gold);
+    background:rgba(224,167,94,0.06);font-family:var(--display);font-style:italic;
+    font-size:clamp(15px,1.4vw,19px);color:var(--paper);
+  }
+
+  .pulo{border-color:rgba(224,167,94,0.35);}
+  .pulo .kick{color:var(--gold);}
+
+  .foot{
+    margin-top:clamp(24px,3vw,38px);padding-top:1rem;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);
+  }
+
+  @media print{
+    @page{size:A4 landscape;margin:10mm;}
+    body{background:#0E1116;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .page{padding:0;}
+    .card{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="eyebrow">
+      <span>Valoração do Rateio</span>
+      <span class="tag">Uso interno · bastidor da mesa</span>
+    </div>
+    <h1>O que já foi feito, <em>o que falta</em>, e o percentual</h1>
+    <p class="sub">A mesa de hoje tem três pontos: <b>o aporte</b>, <b>o percentual</b> e <b>a data</b>. O aporte financia o que falta para produção. O percentual sai da relação entre esse aporte e o valor do que já está construído. Quanto mais alto se sustenta o valor do ativo, menor a fatia que o mesmo aporte compra.</p>
+    <div class="rate"><b>R$ 110</b><span>hora técnica de mercado · base de toda a conta</span></div>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="kick">Bloco A · custo estimado de reconstrução</div>
+        <h3>Valor do que <em>já está construído</em></h3>
+        <table>
+          <tr><th>Frente a reconstruir do zero</th><th style="text-align:right">Horas estimadas</th></tr>
+          <tr><td>Descoberta de domínio + motor ELLO v0</td><td class="num">160</td></tr>
+          <tr><td>Backend v1 (FastAPI, inspeção e validação)</td><td class="num">200</td></tr>
+          <tr><td>Frontend v1 (React, upload, badges)</td><td class="num">160</td></tr>
+          <tr><td>Motor AutoTruck, dois leitores, reconciliação</td><td class="num">120</td></tr>
+          <tr><td>Camada anti-mock (três vias, &Delta;=0, SHA-256)</td><td class="num">80</td></tr>
+          <tr><td>Demos, documentação, refinamentos</td><td class="num">80</td></tr>
+          <tr class="total"><td>Custo estimado de reconstrução (piso)</td><td class="num">R$ 88 mil</td></tr>
+        </table>
+        <p class="note">Não é registro de horas trabalhadas: é o que custaria a um <b>time contratado reconstruir este motor do zero</b>, a R$ 110 a hora. Esse é o piso. Sobre ele entram dois prêmios que se defendem de boca: <b>prova anti-mock</b> (validado, 80% pronto, risco eliminado) e <b>janela LC 213</b> (casa em ordem antes de 03/08/2026). Valor defensável do ativo: <b>R$ 150 a 200 mil</b>.</p>
+      </div>
+
+      <div class="card">
+        <div class="kick">Bloco B</div>
+        <h3>O que <em>falta</em> para produção</h3>
+        <table>
+          <tr><th>Item</th><th style="text-align:right">Horas</th></tr>
+          <tr><td>Base real + homologação (NDA, ANALITICO real)</td><td class="num">80</td></tr>
+          <tr><td>Multi-tenant das três associações</td><td class="num">160</td></tr>
+          <tr><td>Hardening (dev / homolog / produção)</td><td class="num">160</td></tr>
+          <tr><td>Blindagem fiscal (rateio x taxa de adm.)</td><td class="num">40</td></tr>
+          <tr><td>Versionamento e auditoria do xlsx</td><td class="num">40</td></tr>
+          <tr><td>Suporte e SLA inicial</td><td class="num">40</td></tr>
+          <tr class="total"><td>Esforço a R$ 110 + infra</td><td class="num">~R$ 65 mil</td></tr>
+        </table>
+        <p class="note">520 horas dão R$ 57 mil; com infra de produção, o <b>aporte alvo fica em R$ 60 a 70 mil</b>. Prazo de produção da ordem de <b>8 a 10 semanas</b> com dois técnicos. Este é o número do ponto "o aporte" e do ponto "a data".</p>
+      </div>
+
+      <div class="card span2 pulo">
+        <div class="kick">Bloco C · como vira o percentual</div>
+        <h3>O percentual é uma <em>conta</em>, não um chute</h3>
+        <div class="formula">fatia deles = Aporte B &divide; (Valor do ativo A + Aporte B)</div>
+        <div class="grid" style="margin-top:0.6rem;gap:clamp(18px,2.4vw,30px);">
+          <table class="pct-table">
+            <tr><th>Valor do ativo A</th><th style="text-align:right">Fatia que o aporte compra</th></tr>
+            <tr><td>R$ 88 mil (só reprodução)</td><td class="num">~42%</td></tr>
+            <tr><td>R$ 150 mil (com prêmio de prova)</td><td class="num">~30%</td></tr>
+            <tr><td>R$ 200 mil (prova + janela)</td><td class="num">~25%</td></tr>
+          </table>
+          <div>
+            <p class="headline">A briga inteira é o <b>valor de A</b>.</p>
+            <p class="note" style="margin-top:0.5rem">Sustentar A alto, com fatos, é o que protege a fatia. Quem ancora A para baixo está comprando uma fatia grande com um aporte pequeno. Encostar no prêmio de prova desde o começo: começar a conversa em <b>R$ 150 mil para cima</b>, nunca no piso.</p>
+            <p class="note"><b>O R$ 0,10 por placa não entra aqui.</b> Ele valora o fluxo recorrente futuro, é a conversa de receita, não a fatia inicial.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span>Mutualiza · motor de rateio · ELLO · AutoTruck · AVAP</span>
+      <span>Premissas de horas e prazo a confirmar · base R$ 110/h</span>
+    </div>
+
+  </div>
+</body>
+</html>

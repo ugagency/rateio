@@ -1,0 +1,74 @@
+<!-- CARD ORBITAL: conceito central + satélites orbitando em loop -->
+<section class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <div class="text-center mb-10" data-aos="fade-up">
+        <h2 class="text-5xl font-black">[TITULO_SLIDE]</h2>
+        <p class="text-soft text-lg mt-3">[SUBTITULO]</p>
+    </div>
+
+    <div class="glass-card w-full max-w-5xl p-8 relative" data-aos="fade-up">
+        <div id="orbital-stage" class="anim-stage"></div>
+    </div>
+
+    <script>
+        (function () {
+            const CENTRO = '[CONCEITO_CENTRAL]';
+            const SATELITES = ['[SATELITE_1]', '[SATELITE_2]', '[SATELITE_3]', '[SATELITE_4]', '[SATELITE_5]'];
+            const stage = d3.select('#orbital-stage');
+            const W = 960, H = 540;
+            const svg = stage.append('svg').attr('viewBox', `0 0 ${W} ${H}`);
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--mira-primary').trim();
+            const cx = W / 2, cy = H / 2, R = 190;
+
+            // Órbita
+            svg.append('ellipse').attr('cx', cx).attr('cy', cy)
+                .attr('rx', R).attr('ry', R * 0.62)
+                .attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.10)')
+                .attr('stroke-dasharray', '4 6');
+
+            // Núcleo com pulso em loop
+            const core = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+            core.append('circle').attr('r', 0).attr('fill', 'rgba(255,255,255,0.06)')
+                .attr('stroke', primary).attr('stroke-width', 2.5)
+                .transition().duration(800).ease(d3.easeBackOut).attr('r', 64);
+            core.append('text').text(CENTRO).attr('text-anchor', 'middle').attr('dy', 6)
+                .attr('fill', primary).attr('font-size', 18).attr('font-weight', 800)
+                .attr('opacity', 0).transition().delay(500).attr('opacity', 1);
+
+            const pulse = core.append('circle').attr('r', 64).attr('fill', 'none')
+                .attr('stroke', primary).attr('opacity', 0);
+
+            // LOOP INTERNO 1: pulso radial do núcleo
+            d3.interval(() => {
+                pulse.attr('r', 64).attr('opacity', 0.6)
+                    .transition().duration(1600).ease(d3.easeCubicOut)
+                    .attr('r', 110).attr('opacity', 0);
+            }, 2000);
+
+            // LOOP INTERNO 2: satélites orbitando perpetuamente
+            const sats = svg.selectAll('g.sat').data(SATELITES.map((s, i) => ({
+                label: s,
+                angle: (i / SATELITES.length) * Math.PI * 2
+            }))).join('g').attr('class', 'sat');
+
+            sats.append('circle').attr('r', 0).attr('fill', 'rgba(255,255,255,0.08)')
+                .attr('stroke', primary).attr('stroke-opacity', 0.5)
+                .transition().delay((d, i) => 800 + i * 150).duration(500)
+                .ease(d3.easeBackOut).attr('r', 30);
+
+            sats.append('text').text(d => d.label)
+                .attr('text-anchor', 'middle').attr('dy', 4)
+                .attr('fill', 'rgba(255,255,255,0.85)').attr('font-size', 11).attr('font-weight', 600)
+                .attr('opacity', 0)
+                .transition().delay((d, i) => 1000 + i * 150).attr('opacity', 1);
+
+            d3.timer(() => {
+                sats.attr('transform', d => {
+                    d.angle += 0.004;
+                    const x = cx + Math.cos(d.angle) * R;
+                    const y = cy + Math.sin(d.angle) * R * 0.62;
+                    return `translate(${x},${y})`;
+                });
+            });
+        })();
+    </script>
+</section>
