@@ -31,6 +31,8 @@ dist-ssr/
 
 # Material privado pré-NDA (transcrições, prints, planilhas reais de clientes)
 /Remonta/
+/ELLO/
+/AVAP/
 
 # Logs
 *.log
