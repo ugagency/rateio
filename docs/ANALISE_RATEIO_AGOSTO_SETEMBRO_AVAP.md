@@ -71,3 +71,15 @@ Consequências:
 - D1 (integrais): passa de dúvida para **rateadas inteiras**, conferir só a regra de seleção.
 - D7 (linhas de soma/dedução): agora há o catálogo real: E-SAUDE, RASTREAMENTO, INADIMPLÊNCIA, recuperados, salvados.
 - Aceite da fase 1: já existem dois fechamentos completos (ago e set) para reproduzir, falta o denominador e o valor por cota.
+
+## 7. Como o fechamento de setembro foi montado (achado da fase 1, 10/10/2026)
+
+Cruzando a aba `Rateio_setembro` com a foto de 28/09 (fila do SGA):
+
+- 79 dos 80 eventos da fila (Valor Rateado `0.00`) entraram no rateio. O 80º é o furto 2026819916 (R$ 67.092,44), excluído.
+- 24 eventos com Valor Rateado vazio foram incluídos à mão: 22 integrais, 1 colisão e 1 continuação de processo.
+- Total: 79 + 24 = 103 eventos, R$ 1.733.393,65, igual à planilha.
+
+Ou seja, a seleção real é a fila do SGA mais decisões do operador. O motor reproduz exatamente isso (teste `test_real_selecao_setembro_reproduz_fechamento`).
+
+Hipótese sobre o denominador, a confirmar com o Cícero: dividindo o total a ratear pelas cotas da base de 30/09 (361.262, sem peso zero), dá R$ 4,9993 por cota em agosto e R$ 4,9883 em setembro, perto de R$ 5,00. Com só veículos ativos (231.556) daria R$ 7,80 e R$ 7,78. Se o boleto real for perto de R$ 5,00, a divisão é por todas as cotas e a linha de inadimplência é o que mantém o caixa. Perguntar o valor por cota cobrado resolve.

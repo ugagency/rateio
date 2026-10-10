@@ -87,3 +87,111 @@ class LeituraEventos:
     conferencia: Conferencia
     layout: str  # "28/09" (com Nome/Placa) ou "30/09" (com Tipo Veiculo)
     protocolos_duplicados: list[int] = field(default_factory=list)
+
+
+# ───────────────────────── fase 1: seleção, lançamentos, motor ─────────────────────────
+
+
+class TipoLancamento(str, Enum):
+    SOMA = "SOMA"
+    DEDUCAO = "DEDUCAO"
+
+
+@dataclass(frozen=True)
+class Lancamento:
+    """Linha de soma ou dedução do fechamento (PRD 4.3). O valor é sempre positivo."""
+
+    tipo: TipoLancamento
+    codigo: str
+    descricao: str
+    valor: float
+    documento: str | None = None
+
+
+class Decisao(str, Enum):
+    INCLUIR = "INCLUIR"
+    EXCLUIR = "EXCLUIR"
+
+
+@dataclass(frozen=True)
+class DecisaoEvento:
+    protocolo: int
+    decisao: Decisao
+    justificativa: str
+
+
+@dataclass(frozen=True)
+class Alerta:
+    codigo: str  # A1..A7
+    protocolo: int
+    mensagem: str
+
+
+@dataclass(frozen=True)
+class EventoSelecionado:
+    evento: EventoAVAP
+    origem: str  # "REGRA" (fila do SGA sem alerta) ou "DECISAO" (operador)
+    alertas: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class EventoNaoSelecionado:
+    evento: EventoAVAP
+    motivo: str
+
+
+@dataclass
+class ResultadoSelecao:
+    selecionados: list[EventoSelecionado]
+    nao_selecionados: list[EventoNaoSelecionado]
+    alertas: list[Alerta]
+    pendencias: list[int]  # protocolos com alerta e sem decisão: bloqueiam a homologação
+    bloqueios: list[int]  # duplicatas divergentes: bloqueiam a homologação
+    auditoria: list[str]
+
+    @property
+    def homologavel(self) -> bool:
+        return not self.pendencias and not self.bloqueios
+
+    @property
+    def total_custo(self) -> float:
+        return round(sum(s.evento.custo_evento for s in self.selecionados), 2)
+
+
+@dataclass(frozen=True)
+class BoletoAVAP:
+    """Composição do boleto por veículo (split do art. 70 da Res. 491, PRD 9.4)."""
+
+    placa: str | None
+    matricula: int | None
+    peso_cota: float
+    contribuicao_rateio: float
+    contribuicao_estabilizacao: float
+    taxa_administracao: float
+    produtos_beneficios: float
+
+    @property
+    def total(self) -> float:
+        return round(
+            self.contribuicao_rateio + self.contribuicao_estabilizacao
+            + self.taxa_administracao + self.produtos_beneficios, 2)
+
+
+@dataclass
+class ResultadoAVAP:
+    custo_eventos: float
+    somas: float
+    deducoes: float
+    numerador: float
+    total_cotas: float
+    valor_cota: float
+    veiculos_elegiveis: int
+    veiculos_fora: dict[str, int]  # motivo -> quantidade
+    boletos: list[BoletoAVAP]
+    diferenca_arredondamento: float
+    invariantes: dict[str, bool]
+    eventos_por_motivo: dict[str, int]
+
+    @property
+    def aprovado(self) -> bool:
+        return all(self.invariantes.values())

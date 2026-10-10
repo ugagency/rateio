@@ -130,7 +130,7 @@ Particularidades do layout:
 |---|---|---|
 | igual ao custo | `RATEADO` | já entrou num fechamento anterior |
 | `"0.00"` | `NA_FILA` | candidato do fechamento em curso (a soma confere com o "Valor a Ratear" do rodapé); pode voltar para vazio se for tirado da fila no fechamento |
-| vazio | `NAO_RATEADO` | ainda não rateado: candidato, pelo critério da reunião (ver D1) |
+| vazio | `NAO_RATEADO` | fora da fila do SGA; só entra no fechamento por inclusão manual do operador (ver 5.1) |
 | outro valor | `RATEADO_DIVERGENTE` | alerta; não deveria acontecer na AVAP, que não faz rateio parcial |
 
 ### 4.3 Lançamentos (linhas de soma e dedução): entrada nova
@@ -165,7 +165,7 @@ Um evento é candidato quando atende às quatro condições:
 
 1. `situacao == FINALIZADO`;
 2. `tipo_evento == Evento Associado`;
-3. `estado_rateio ∈ {NA_FILA, NAO_RATEADO}`;
+3. `estado_rateio == NA_FILA` (a fila do SGA). O vazio (`NAO_RATEADO`) NÃO é candidato por regra: entra só por decisão INCLUIR do operador, com justificativa. Evidência: no fechamento real de 09/2026, 79 dos 80 eventos da fila de 28/09 entraram (o 80º, o furto 2026819916, foi excluído) mais 24 inclusões manuais de eventos vazios (22 integrais, 1 colisão, 1 continuação);
 4. `data_finalizacao <` data do fechamento (corte à meia-noite do dia anterior).
 
 Ficam fora por regra, sem precisar de decisão:
