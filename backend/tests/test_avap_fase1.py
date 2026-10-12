@@ -180,7 +180,8 @@ def test_motor_elegibilidade_d2_e_d4():
     veic = [vei("A"), vei("B", sv="INADIMPLENTE"), vei("C", sa="INADIMPLENTE"), vei("D", peso=0.0),
             vei("E", sa="PENDENTE ADESÃO"), vei(None, fipe=0.0)]
     base = dict(eventos=[ev(1, 1000.0)], lancamentos=[], veiculos=veic)
-    amb = calcular_rateio(**base)
+    assert calcular_rateio(**base).veiculos_elegiveis == 2  # default = VEICULO (D2 decidido)
+    amb = calcular_rateio(**base, regras=RegrasAVAP(criterio_elegibilidade="AMBOS"))
     assert amb.veiculos_elegiveis == 1 and amb.veiculos_fora == {
         "VEICULO_INADIMPLENTE": 1, "ASSOCIADO_INADIMPLENTE": 1, "PESO_ZERO": 1,
         "ASSOCIADO_PENDENTE": 1, "SEM_PLACA_SEM_FIPE": 1}

@@ -44,7 +44,7 @@ def test_calculo_bloqueado_com_pendencias_e_liberado_apos_decidir():
     res = client.post("/avap/10-2026/calcular", json={"criterio": "VEICULO"})
     assert res.status_code == 200
     d = res.json()
-    assert d["aprovado"] and d["valor_cota_estimado"] and set(d["comparativo_criterios"]) == {"TODOS", "VEICULO", "ASSOCIADO", "AMBOS"}
+    assert d["aprovado"] and not d["valor_cota_estimado"] and set(d["comparativo_criterios"]) == {"TODOS", "VEICULO", "ASSOCIADO", "AMBOS"}
     assert d["somas"] == 118173.45 and d["deducoes"] == 45521.49
 
 

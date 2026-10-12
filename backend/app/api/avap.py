@@ -2,8 +2,8 @@
 
 Fluxo: inspecionar arquivos -> selecionar (SGA) -> decidir pendências -> lançamentos -> calcular.
 O estado fica em memória por competência (formato `MM-AAAA` na URL), como o repositório json dos
-outros motores: zera a cada restart do backend. O critério de elegibilidade do denominador (D2) é
-um parâmetro, porque ainda aguarda confirmação do Cícero.
+outros motores: zera a cada restart do backend. O critério de elegibilidade do denominador (D2) está
+decidido (veículo ativo); os outros critérios aparecem só como comparação.
 """
 
 import tempfile
@@ -36,8 +36,8 @@ from app.avap.selecao import selecionar
 
 router = APIRouter(prefix="/avap", tags=["avap"])
 
-# D2 assumido (aguarda o Cícero): inadimplentes ficam fora do denominador, a compensação vem pelas
-# linhas INADIMPLÊNCIA e recuperados. Bate com ~R$ 7,8 por cota sobre as cotas de veículos ativos.
+# D2 decidido (docs/REGRAS_RATEIO_AVAP.md, 3.1): só veículo ativo; inadimplente fica fora e a compensação
+# vem pelas linhas INADIMPLÊNCIA e recuperados. R$ 7,78 por cota em 09/2026.
 CRITERIO_PADRAO = "VEICULO"
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -161,7 +161,7 @@ class ResultadoOut(BaseModel):
     eventos_por_motivo: dict[str, int]
     comparativo_criterios: dict[str, float]
     lancamentos: list[dict]
-    valor_cota_estimado: bool = True  # D2 aguardando confirmação do Cícero
+    valor_cota_estimado: bool = False  # D2 decidido (veículo ativo), ver docs/REGRAS_RATEIO_AVAP.md
 
 
 def _resultado_out(s: Sessao) -> ResultadoOut:

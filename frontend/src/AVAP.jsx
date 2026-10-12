@@ -12,7 +12,7 @@ const mascara = (p) => (p ? `${p.slice(0, 3)}****` : "-")
 
 const TABS = { rodar: "Rodar Mês", selecao: "Seleção", lanc: "Lançamentos", resultado: "Resultado", boletos: "Boletos" }
 const CRITERIOS = {
-  VEICULO: "Veículos ativos (premissa atual)",
+  VEICULO: "Veículos ativos (critério vigente)",
   AMBOS: "Veículo e associado ativos",
   ASSOCIADO: "Associados ativos",
   TODOS: "Todas as cotas",
@@ -396,7 +396,7 @@ function Resultado({ mes, sel, res, criterio, setCriterio, calcular, busy, irPar
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card label="Cotas no denominador" value={num(res.total_cotas)} sub={`${num(res.veiculos_elegiveis)} veículos`} />
-            <Card label="Valor por cota (estimado)" value={`R$ ${brl(res.valor_cota)}`} tone="green" sub={CRITERIOS[res.criterio]} />
+            <Card label="Valor por cota" value={`R$ ${brl(res.valor_cota)}`} tone="green" sub={CRITERIOS[res.criterio]} />
             <Card label="Boletos" value={num(res.total_boletos)} sub={`R$ ${brl(res.total_rateio)} somados`} />
             <Card label="Diferença de arredondamento" value={`R$ ${brl(res.diferenca_arredondamento)}`} sub="reportada, nunca redistribuída" tone={res.aprovado ? "green" : "red"} />
           </div>

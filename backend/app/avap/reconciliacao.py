@@ -103,7 +103,8 @@ def reconciliar(
             rec.add("Numerador", f"numerador ({crit})", hist.total, r.numerador)
             if valor_cota_declarado is None:
                 rec.add("Valor da cota", f"valor por cota ({crit}), {r.total_cotas:,.0f} cotas",
-                        None, round(r.valor_cota, 4), obs="informar o valor cobrado para decidir D2")
+                        None, round(r.valor_cota, 4),
+                        obs="critério vigente (D2)" if crit == regras.criterio_elegibilidade else "só comparação")
             else:
                 rec.add("Valor da cota", f"valor por cota ({crit}), {r.total_cotas:,.0f} cotas",
                         valor_cota_declarado, round(r.valor_cota, 2))

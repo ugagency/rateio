@@ -1,3 +1,5 @@
+> **Documento histórico.** A regra vigente do rateio AVAP está em `docs/REGRAS_RATEIO_AVAP.md`. Em caso de conflito, vale ela.
+
 # AVAP: o que o rateio real de agosto e setembro mostra
 
 Fonte: `AVAP/rateio_agosto.xlsx` (abas `Rateio_agosto` e `Rateio_setembro`), enviado pelo Cícero em 07/10/2026, cruzado com as fotos de 28/09 e 30/09 do SGA.

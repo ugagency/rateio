@@ -1,6 +1,7 @@
 # PRD: Motor de Rateio AVAP
 
 Status: especificação para implementação (MVP), com decisões abertas listadas na seção 12.
+Regras vigentes: `docs/REGRAS_RATEIO_AVAP.md` é a fonte única. Em caso de conflito, vale ela.
 Data: 01/10/2026.
 Isolamento: os motores ELLO (`app/core`) e AutoTruck (`app/autotruck`) **não são alterados**. A AVAP entra como terceira vertical, em módulo próprio, com domínio, engine e dados próprios.
 
@@ -57,11 +58,13 @@ rateio_veiculo = peso_cota_veiculo × valor_cota
 
 Arredondamento: `valor_cota` é calculado em precisão total. Cada parcela do boleto é arredondada a 2 casas. A diferença de arredondamento é reportada no invariante (seção 10) e nunca redistribuída em silêncio.
 
-Referência de ordem de grandeza (dados de 01/2025 a 09/2026, ver relatório):
+Referência de ordem de grandeza (fechamento real de set/2026, planilha `rateio_agosto.xlsx`):
 
-- rateio efetivo de cerca de R$ 0,74 milhão por mês;
-- 231.628 cotas de veículos ativos;
-- cerca de R$ 3,18 por cota por mês.
+- total a ratear de R$ 1.802.067,92 no mês (agosto: R$ 1.806.046,24);
+- 231.556 cotas de veículos ativos;
+- R$ 7,78 por cota.
+
+Os valores antigos (R$ 0,74 milhão e R$ 3,18 por cota) vinham do campo `Valor Rateado` do SGA, que não reflete o fechamento, e estão superados.
 
 ## 4. Contrato de dados (entradas)
 
@@ -135,7 +138,7 @@ Particularidades do layout:
 
 ### 4.3 Lançamentos (linhas de soma e dedução): entrada nova
 
-Ainda não recebida. Tabela informada pela operação a cada competência:
+Catálogo real observado em ago e set/2026 (ver D7 e `REGRAS_RATEIO_AVAP.md` seção 5). Tabela informada pela operação a cada competência:
 
 | Campo | Tipo | Exemplo |
 |---|---|---|
@@ -155,7 +158,7 @@ Regras:
 
 ### 4.4 Histórico do rateio: entrada de aceite
 
-Recebido em parte. CORREÇÃO de 10/10/2026: o rateio real de agosto e setembro (`AVAP/rateio_agosto.xlsx`, ver `ANALISE_RATEIO_AGOSTO_SETEMBRO_AVAP.md`) mostrou que o campo `Valor Rateado` do SGA não é a verdade do fechamento. O rateio real de setembro tem 103 eventos (R$ 1.733.393,65), incluindo 6 dos 7 eventos que eu havia dado como retirados; só o furto 2026819916 ficou de fora. A diferença entre as fotos mostra apenas o que o SGA marcou, não o fechamento. O aceite usa a planilha `rateio_agosto.xlsx` (ago e set), com totais de R$ 1.806.046,24 e R$ 1.802.067,92. Ainda faltam as linhas de soma e dedução, o denominador usado e o valor por cota cobrado no boleto. Serve só para a conciliação (seção 11); não alimenta o cálculo.
+Recebido em parte. CORREÇÃO de 10/10/2026: o rateio real de agosto e setembro (`AVAP/rateio_agosto.xlsx`, ver `ANALISE_RATEIO_AGOSTO_SETEMBRO_AVAP.md`) mostrou que o campo `Valor Rateado` do SGA não é a verdade do fechamento. O rateio real de setembro tem 103 eventos (R$ 1.733.393,65), incluindo 6 dos 7 eventos que eu havia dado como retirados; só o furto 2026819916 ficou de fora. A diferença entre as fotos mostra apenas o que o SGA marcou, não o fechamento. O aceite usa a planilha `rateio_agosto.xlsx` (ago e set), com totais de R$ 1.806.046,24 e R$ 1.802.067,92. As linhas de soma e dedução já vêm na planilha, e o denominador está decidido (veículos ativos, D2). O boleto real não separa o rateio dos produtos e não serve de aceite. Serve só para a conciliação (seção 11); não alimenta o cálculo.
 
 ## 5. Seleção dos eventos
 
@@ -206,9 +209,9 @@ A competência do evento é a do **fechamento em que ele foi rateado** (`mes_rat
 ## 6. Denominador
 
 - Soma do `peso_cota` dos veículos elegíveis na foto do fechamento.
-- O critério de elegibilidade é um parâmetro (D2): situação do veículo, situação do associado ou as duas.
+- Critério de elegibilidade (D2, decidido): situação do **veículo** ATIVO. O parâmetro continua existindo, mas o default é `VEICULO`.
 - Ficam sempre fora, com alerta: peso 0, situações PENDENTE (adesão e revistoria) e linhas sem placa e sem FIPE (D4).
-- Inadimplentes: dependem do D2. A inadimplência que for recuperada depois entra como linha de dedução (4.3).
+- Veículo inadimplente fica fora. A perda entra como linha de soma INADIMPLÊNCIA, e o que for recuperado depois entra como linha de dedução (4.3).
 
 ## 7. Regras de valor
 
@@ -270,7 +273,7 @@ Foto incremental: a cada mês entra uma nova exportação de eventos. O motor cr
    - mesmo total;
    - mesmo valor por cota.
 
-   Essa conciliação também define os parâmetros D1 e D2: valem os que reproduzirem o boleto. A ferramenta é uma CLI `python -m tools.reconciliar_avap <histórico.xlsx>`, que retorna código 0 quando aprovado, no padrão do AutoTruck.
+   D1 e D2 já estão decididos (ver seção 12). O boleto real traz só o total da mensalidade e não serve de aceite. A ferramenta é uma CLI `python -m tools.reconciliar_avap <histórico.xlsx>`, que retorna código 0 quando aprovado, no padrão do AutoTruck.
 2. **Seleção do fechamento de 09/2026 (dados já disponíveis):** rodando o motor sobre a foto de 28/09, a fila tem 80 eventos (R$ 849.115,48). Com as decisões de alerta registradas, a seleção final tem que reproduzir os eventos da aba `Rateio_setembro` (103 eventos, R$ 1.733.393,65). Dos 7 antes tidos como retirados, 6 entram; só o furto 2026819916 (R$ 67.092,44) aparece como EXCLUIR, com a justificativa a obter da AVAP. Mesma conferência para agosto (150 eventos, R$ 1.775.640,36).
 
 ## 12. Decisões abertas
@@ -278,7 +281,7 @@ Foto incremental: a cada mês entra uma nova exportação de eventos. O motor cr
 | # | Decisão | Default do MVP | O que desbloqueia |
 |---|---|---|---|
 | D1 | Integrais (V.F.I, furto, roubo): entram por regra? Os dados mostram que quase nunca entraram (13 de 322 V.F.I em 21 meses), mas a reunião diz que entram por inteiro. RESOLVIDA em 10/10/2026: integral é rateada inteira (set: 32 integrais, R$ 1.288.358,60; ago: 19, R$ 647.695,42), e o campo `Valor Rateado` do SGA não serve de seleção. Falta só o critério de corte (39 integrais, R$ 1,88 mi, ficaram fora de ago e set). | candidatas, rateio pelo valor total, alerta A5 para decisão do operador | critério de corte, perguntado à AVAP |
-| D2 | Elegibilidade no denominador: veículo ATIVO, associado ATIVO ou os dois. Há 3.267 veículos inadimplentes de associados ativos (12% das cotas). | parâmetro; o default é o que reproduzir o boleto | histórico do rateio e boleto |
+| D2 | Elegibilidade no denominador. RESOLVIDA: conta a situação do **veículo**; só veículo ativo entra; inadimplente fica fora e é compensado pelas linhas de inadimplência e recuperados (levantamento 1.18 e resposta da AVAP, ver análise de ago/set seção 2). R$ 7,78 por cota em set/2026. | `VEICULO` | nada |
 | D3 | Sufixos VP, DP, CP, TP | mesmo peso; guardados como atributo | resposta da AVAP |
 | D4 | Veículos com peso 0, FIPE 0 ou sem placa | fora do denominador, com alerta | resposta da AVAP |
 | D5 | Estabilização: a Res. 491, art. 69, torna obrigatória, mas a AVAP não tem hoje | informativa (média de 3 meses), componente 0 no boleto | definição da Mutualiza e do atuário |
@@ -286,11 +289,11 @@ Foto incremental: a cada mês entra uma nova exportação de eventos. O motor cr
 | D7 | Lista completa das linhas de soma e dedução | catálogo observado em ago/set: E-SAUDE, RASTREAMENTO, INADIMPLÊNCIA do mês (soma), recuperados do mês anterior e salvados (deduções). Inadimplência é por veículo. Confirmar fórmula da inadimplência, E-SAUDE x3 em agosto e a linha sem descrição de -R$ 129.253,00 em setembro | resposta da AVAP |
 | D8 | Layout do arquivo de cobrança para o SGA | CSV por placa e matrícula com os componentes do split | operação AVAP |
 
-## 12.1 Premissas assumidas na demonstração (10/2026)
+## 12.1 Configuração da demonstração (10/2026)
 
-Enquanto o Cícero não responde, a tela `/avap` roda com estas premissas, todas trocáveis sem deploy:
+A tela `/avap` roda com:
 
-- **D2 (denominador):** veículos ativos (`VEICULO`), cerca de R$ 7,78 por cota em 09/2026. Coerente com o que foi dito na reunião (inadimplente fica fora do rateio e é compensado pelas linhas INADIMPLÊNCIA e recuperados). Contra: o critério `TODOS` dá R$ 4,99 em set e R$ 5,00 em ago, perto de um valor redondo, e a comparação das linhas de inadimplência com as cotas inadimplentes não foi conclusiva. A tela mostra o valor por cota dos quatro critérios lado a lado e marca o resultado como estimado.
+- **D2 (denominador):** veículos ativos (`VEICULO`), decidido. R$ 7,78 por cota em 09/2026. A tela ainda mostra os outros critérios lado a lado, só como comparação.
 - **D5:** contribuição de estabilização, taxa de administração e produtos em 0 no boleto.
 - **D7:** linhas de soma e dedução digitadas pelo operador, com código reconhecido pela descrição.
 - **Integrais:** viram alerta A5 e exigem decisão do operador, com justificativa na trilha de auditoria.
@@ -365,7 +368,7 @@ Frontend: `frontend/src/AVAP.jsx`, com as sub-abas Importação, Candidatos e al
 | 0 | `ingestao.py` com parser de cota e conferência de rodapé, rodando sobre os arquivos reais (perfil igual ao do relatório) | nada; pode começar já |
 | 1 | `selecao.py`, `engine.py` e lançamentos; aceite da seleção de 08/2026 e 09/2026 (planilha real) | lista de linhas (D7), mesmo que parcial |
 | 2 | CLI `reconciliar_avap` e aceite principal com diferença zero; parâmetros D1 e D2 fixados | histórico do rateio (4.4) |
-| 3 | fechamento lacrado, API e tela AVAP | fase 2 aprovada |
+| 3 | fechamento lacrado, API e tela AVAP | fase 2 aprovada (setembro aprovado; agosto depende só dos 3 protocolos) |
 | 4 | estabilização e split completo do boleto | D5 |
 
 ## 17. Fora de escopo

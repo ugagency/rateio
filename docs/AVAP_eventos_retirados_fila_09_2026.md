@@ -1,3 +1,5 @@
+> **Documento histórico.** A regra vigente do rateio AVAP está em `docs/REGRAS_RATEIO_AVAP.md`. Em caso de conflito, vale ela.
+
 > CORREÇÃO de 10/10/2026: o rateio real de agosto e setembro (`AVAP/rateio_agosto.xlsx`, ver `ANALISE_RATEIO_AGOSTO_SETEMBRO_AVAP.md`) mostrou que o campo `Valor Rateado` do SGA não é a verdade do fechamento. O rateio real de setembro tem 103 eventos (R$ 1.733.393,65), incluindo 6 dos 7 eventos que eu havia dado como retirados; só o furto 2026819916 ficou de fora. A diferença entre as fotos mostra apenas o que o SGA marcou, não o fechamento.
 > Os protocolos abaixo ficaram vazios no SGA, mas 6 deles estão no rateio real de setembro. Só o 2026819916 ficou de fora.
 

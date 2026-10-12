@@ -7,7 +7,8 @@ Uso:
 
 Aprovado (código 0) quando nenhuma linha está em FALHA. Sem --valor-cota, o valor por cota sai
 como informativo (PENDENTE) para cada critério de elegibilidade. Com --valor-cota, os critérios
-que não reproduzem o valor aparecem em FALHA: o que fechar é o D2 da AVAP.
+que não reproduzem o valor aparecem em FALHA. O D2 já está decidido (VEICULO, ver
+docs/REGRAS_RATEIO_AVAP.md); os outros critérios ficam só como comparação.
 Obs.: com --valor-cota, os critérios que não batem reprovam por construção; use a linha do
 critério correto como o aceite.
 """

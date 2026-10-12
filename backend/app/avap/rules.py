@@ -18,7 +18,8 @@ class RegrasAVAP:
     motivos_integrais: frozenset[str] = MOTIVOS_INTEGRAIS  # A5
 
     # Denominador (6, D2): "VEICULO", "ASSOCIADO" ou "AMBOS" ativos; "TODOS" não filtra.
-    criterio_elegibilidade: str = "AMBOS"
+    # D2 decidido: conta o veículo ativo (docs/REGRAS_RATEIO_AVAP.md, 3.1). Os outros ficam só para comparação.
+    criterio_elegibilidade: str = "VEICULO"
 
     # Split do boleto (9.4)
     taxa_administracao_por_cota: float = 0.0

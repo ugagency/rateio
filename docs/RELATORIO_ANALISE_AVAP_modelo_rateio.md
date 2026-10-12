@@ -1,3 +1,5 @@
+> **Documento histórico.** A regra vigente do rateio AVAP está em `docs/REGRAS_RATEIO_AVAP.md`. Em caso de conflito, vale ela.
+
 # Análise do modelo de rateio: Associação AVAP
 
 Arquivos analisados (pasta `AVAP/`, exportações do SGA Hinova):

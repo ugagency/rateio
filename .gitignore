@@ -37,3 +37,7 @@ dist-ssr/
 # Logs
 *.log
 logs/
+
+# Boleto pessoal da AVAP (dado pessoal, não versionar)
+/docs/188FED24-5298-4C61-89BF-4909E1652982.pdf
+/docs/WhatsApp Image 2026-10-12 at 10.11.*.jpeg

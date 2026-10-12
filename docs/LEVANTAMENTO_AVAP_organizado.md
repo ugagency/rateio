@@ -1,3 +1,5 @@
+> **Documento histórico.** A regra vigente do rateio AVAP está em `docs/REGRAS_RATEIO_AVAP.md`. Em caso de conflito, vale ela.
+
 # Levantamento AVAP: informações organizadas por tema
 
 Fonte: `AVAP/Levantamento AVAP.pdf`, transcrição automática (22 páginas) de uma reunião presencial com o contato da Mutualiza em 30/09/2026.
