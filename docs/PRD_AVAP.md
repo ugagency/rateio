@@ -286,6 +286,16 @@ Foto incremental: a cada mês entra uma nova exportação de eventos. O motor cr
 | D7 | Lista completa das linhas de soma e dedução | catálogo observado em ago/set: E-SAUDE, RASTREAMENTO, INADIMPLÊNCIA do mês (soma), recuperados do mês anterior e salvados (deduções). Inadimplência é por veículo. Confirmar fórmula da inadimplência, E-SAUDE x3 em agosto e a linha sem descrição de -R$ 129.253,00 em setembro | resposta da AVAP |
 | D8 | Layout do arquivo de cobrança para o SGA | CSV por placa e matrícula com os componentes do split | operação AVAP |
 
+## 12.1 Premissas assumidas na demonstração (10/2026)
+
+Enquanto o Cícero não responde, a tela `/avap` roda com estas premissas, todas trocáveis sem deploy:
+
+- **D2 (denominador):** veículos ativos (`VEICULO`), cerca de R$ 7,78 por cota em 09/2026. Coerente com o que foi dito na reunião (inadimplente fica fora do rateio e é compensado pelas linhas INADIMPLÊNCIA e recuperados). Contra: o critério `TODOS` dá R$ 4,99 em set e R$ 5,00 em ago, perto de um valor redondo, e a comparação das linhas de inadimplência com as cotas inadimplentes não foi conclusiva. A tela mostra o valor por cota dos quatro critérios lado a lado e marca o resultado como estimado.
+- **D5:** contribuição de estabilização, taxa de administração e produtos em 0 no boleto.
+- **D7:** linhas de soma e dedução digitadas pelo operador, com código reconhecido pela descrição.
+- **Integrais:** viram alerta A5 e exigem decisão do operador, com justificativa na trilha de auditoria.
+- **Placas e matrículas** ficam ocultas por padrão na tela de boletos (demonstração pública).
+
 ## 13. Dados de teste
 
 - A pasta `AVAP/` está no `.gitignore` (dados de cliente). **Nenhum arquivo real entra no repositório**, diferente do precedente do AutoTruck.

@@ -12,6 +12,10 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/avap': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/rateio': {
         target: 'http://localhost:8000',
         changeOrigin: true,

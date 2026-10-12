@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import AutoTruck from './AutoTruck'
+import AVAP from './AVAP'
 
 const API = ""
 
@@ -458,14 +459,14 @@ function Root() {
     <div className="min-h-screen bg-slate-900">
       <div className="bg-slate-950 border-b border-slate-800 px-6 py-2 flex gap-2 items-center">
         <span className="text-xs text-slate-500 mr-2 uppercase tracking-widest">Produto</span>
-        {[["ello", "ELLO · Rateio & Faturamento"], ["autotruck", "AutoTruck · Modelo Ello retreinado"]].map(([k, l]) => (
+        {[["ello", "ELLO · Rateio & Faturamento"], ["autotruck", "AutoTruck · Modelo Ello retreinado"], ["avap", "AVAP · Rateio em pote único"]].map(([k, l]) => (
           <button key={k} onClick={() => setProduto(k)}
             className={`px-4 py-1.5 rounded text-sm font-semibold ${produto === k ? "bg-amber-500 text-slate-900" : "bg-slate-800 text-slate-300"}`}>
             {l}
           </button>
         ))}
       </div>
-      {produto === "ello" ? <App /> : <AutoTruck />}
+      {produto === "ello" ? <App /> : produto === "autotruck" ? <AutoTruck /> : <AVAP />}
     </div>
   )
 }
