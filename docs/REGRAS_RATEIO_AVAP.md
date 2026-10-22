@@ -99,7 +99,7 @@ No mês a mês, o operador digita essas linhas. Elas não precisam ser calculada
 | # | Regra | Status | Fonte |
 |---|---|---|---|
 | 6.1 | Um boleto real de 09/2026 (veículo de 20 cotas) traz **só o total** da mensalidade (R$ 270,73), sem separar rateio, taxa e produtos. Ele aponta para um "extrato de rateio" na área do associado. | **DECIDIDO** (verificado no documento) | boleto recebido em 12/10/2026, fora do git |
-| 6.2 | Por isso o boleto **não serve de aceite**. O aceite é a planilha PLAN. Com R$ 7,78, o rateio desse veículo seria R$ 155,60; o restante (R$ 115,13) seriam taxa e produtos. | **DECIDIDO** | consequência de 6.1 |
+| 6.2 | Por isso o boleto **não serve de aceite**. O aceite é a planilha PLAN. Pelo motor (20 cotas x R$ 7,7824..., arredondado só no boleto), o rateio desse veículo é R$ 155,65; o restante (R$ 115,08) seriam taxa e produtos. | **DECIDIDO** | consequência de 6.1 |
 | 6.3 | Split da Res. 491, art. 70 (rateio, estabilização, taxa de administração, produtos). Hoje só o rateio é calculado; os outros ficam em 0. | ABERTO, NÃO BLOQUEIA (D5) | depende da Mutualiza e do atuário |
 | 6.4 | Layout do arquivo de cobrança para o SGA. | ABERTO, NÃO BLOQUEIA (D8) | operação AVAP |
 
