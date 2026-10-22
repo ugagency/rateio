@@ -659,7 +659,7 @@ Convenção útil dos testes: a função `P(n)` converte números pequenos em pr
 | D7 | Catálogo de linhas de soma e dedução | parcialmente observado | fórmula da inadimplência, E-SAUDE x3, linha sem descrição de -R$ 129.253 |
 | D8 | Layout do arquivo de cobrança para o SGA | assumido: CSV por placa e matrícula | operação da associação |
 
-A lista do que ainda se pergunta à associação está em `docs/REGRAS_RATEIO_AVAP.md`, seção 8. Hoje **só os 3 protocolos de agosto bloqueiam** o aceite. O resto (corte dos integrais, E-SAUDE, linha sem descrição, fórmula da inadimplência, rastreamento, sufixos) não bloqueia. O furto 2026819916 está com o presidente da associação. **Nunca pergunte algo marcado como decidido nesse documento**: já aconteceu, e queima a credibilidade do projeto com o cliente.
+A lista do que ainda se pergunta à associação está em `docs/REGRAS_RATEIO_AVAP.md`, seção 8. Hoje **nada bloqueia**: o aceite é setembro/2026, já aprovado, e agosto serve só de comparação (os 3 protocolos de agosto não se perguntam). As dúvidas abertas (corte dos integrais, fórmula da inadimplência, layout de cobrança, linha sem descrição, rastreamento, sufixos, E-SAUDE) não bloqueiam. O furto 2026819916 está com o presidente da associação. **Nunca pergunte algo marcado como decidido nesse documento**: já aconteceu, e queima a credibilidade do projeto com o cliente.
 
 ### 8.16 O que o PRD diz e o código ainda não tem
 
@@ -680,7 +680,7 @@ O `docs/PRD_AVAP.md` é a especificação, mas parte dele descreve o **alvo**, n
 |---|---|---|
 | 0 | `ingestao.py`: parser de cota e conferência de rodapé | feita, commit `d4629f6` |
 | 1 | seleção, engine, lançamentos, histórico; aceite da seleção | feita, commit `3372584` |
-| 2 | CLI `reconciliar_avap` e aceite principal | feita, commit `a980c2b` (setembro aprova; agosto depende só dos 3 protocolos) |
+| 2 | CLI `reconciliar_avap` e aceite principal | feita, commit `a980c2b` (setembro aprova; agosto é só comparação) |
 | 3 | fechamento lacrado, API e tela | **parcial**: API e tela de demonstração commitadas (`317e67e`); lacre, estados e persistência não |
 | 4 | estabilização e split completo do boleto | não iniciada (D5) |
 
@@ -761,13 +761,12 @@ Situação em 12/10/2026.
 
 ### 11.2 Prioridades
 
-1. **Fenaprove (18 e 19/11/2026).** Deixar a tela AVAP robusta para demonstração ao vivo. Decidir se a demonstração pública usa dados reais ou uma base anonimizada (hoje as placas ficam mascaradas, mas a base é real).
-2. **Aceite de agosto da AVAP.** Depende só da resposta sobre os 3 protocolos (2026779124, 2026782899, 2026795888).
-3. **Fase 3 da AVAP** (lacre, estados, persistência). Já pode começar.
-4. **Dúvidas que não bloqueiam** (corte dos integrais, linhas de soma e dedução): ver `docs/REGRAS_RATEIO_AVAP.md`, seção 8.
-5. **ELLO com dados reais.** Falta a base de veículos, serviços fixos e um fechamento anterior para conciliar.
-6. **Admissão Verificada.** Provisionar o Supabase e rodar a esteira.
-7. **Política de versionamento de `.xlsx`.** Único entregável antigo do MVP original ainda em aberto.
+1. **Fenaprove (18 e 19/11/2026).** Deixar a tela AVAP robusta para demonstração ao vivo. A demonstração pública usa a aba Fenauto, com arquivos fictícios em `demo_fenauto/` (gerados por `backend/scripts/gerar_demo_fenauto.py`).
+2. **Fase 3 da AVAP** (lacre, estados, persistência). Já pode começar.
+3. **Dúvidas que não bloqueiam** (corte dos integrais, linhas de soma e dedução): ver `docs/REGRAS_RATEIO_AVAP.md`, seção 8.
+4. **ELLO com dados reais.** Falta a base de veículos, serviços fixos e um fechamento anterior para conciliar.
+5. **Admissão Verificada.** Provisionar o Supabase e rodar a esteira.
+6. **Política de versionamento de `.xlsx`.** Único entregável antigo do MVP original ainda em aberto.
 
 ### 11.3 Riscos a manter no radar
 

@@ -1,13 +1,13 @@
 # Regras do rateio AVAP: fonte única
 
-Atualizado em: 12/10/2026.
+Atualizado em: 22/10/2026.
 
 Este documento é a **referência vigente** de tudo o que sabemos sobre o rateio da AVAP. Os documentos anteriores (relatório, levantamento, análise de ago/set, listas de integrais e de retirados) ficam como histórico. Quando houver conflito, vale o que está aqui.
 
 Cada item tem um status:
 
 - **DECIDIDO**: confirmado pela AVAP ou provado pelos dados, com a fonte indicada. Não se pergunta de novo.
-- **ABERTO, BLOQUEIA**: falta para o aceite com diferença zero.
+- **ABERTO, BLOQUEIA**: falta para o aceite com diferença zero do mês de referência (setembro/2026). Hoje não há nenhum item neste status.
 - **ABERTO, NÃO BLOQUEIA**: dúvida real, mas o motor já funciona sem a resposta (o operador decide ou o valor vem pronto da planilha).
 
 Siglas das fontes:
@@ -105,38 +105,39 @@ No mês a mês, o operador digita essas linhas. Elas não precisam ser calculada
 
 ## 7. Aceite
 
+O mês de referência é **setembro/2026**. Agosto foi usado só como comparação, para entender as regras, e não é critério de aceite (decisão do Dudu em 22/10/2026).
+
 | Mês | Situação |
 |---|---|
-| Setembro/2026 | **APROVADO**: 103 eventos, total R$ 1.802.067,92, diferença zero. |
-| Agosto/2026 | **REPROVADO por 3 protocolos**. Único item que **BLOQUEIA**. |
+| Setembro/2026 | **APROVADO**: 103 eventos, total R$ 1.802.067,92, diferença zero. Referência do aceite. |
+| Agosto/2026 | Só comparação. 3 protocolos diferem entre a planilha de agosto e as fotos do SGA de setembro; **não bloqueia**. |
 
-Os 3 protocolos de agosto (ANA seção 4):
+Os 3 protocolos de agosto (ANA seção 4), guardados como histórico, sem pergunta pendente:
 
-- 2026779124 (colisão de R$ 12.525): está no rateio de agosto, mas não existe na foto do SGA de 30/09.
-- 2026782899: reparo de R$ 11.092,69 na planilha contra R$ 0 no SGA.
-- 2026795888: reparo de R$ 28.217,80 na planilha contra R$ 35.426,80 no SGA.
+- 2026779124 (colisão de R$ 12.525): está no rateio de agosto, mas não aparece nas fotos do SGA de 28/09 e 30/09.
+- 2026782899: reparo de R$ 11.092,69 na planilha contra R$ 0 na foto do SGA de 28/09 (veículo entregue, previsão de R$ 9.040,55).
+- 2026795888: reparo de R$ 28.217,80 na planilha contra R$ 35.426,80 na foto do SGA de 28/09.
+
+"SGA" aqui são sempre os relatórios exportados que a AVAP nos mandou (fotos de 28/09 e 30/09). Não temos acesso direto ao sistema.
 
 ## 8. O que perguntar à AVAP (e só isso)
 
-Bloqueia:
+Nada bloqueia. Perguntar só se houver espaço na conversa, nesta ordem (as três primeiras mudam a operação mês a mês):
 
-1. Os 3 protocolos de agosto (seção 7).
-
-Não bloqueia, perguntar só se houver espaço na conversa:
-
-2. Critério que deixa integrais finalizados de fora (4.10).
-3. E-SAUDE 3 vezes em agosto (5.1).
+1. Critério que deixa integrais finalizados de fora (4.10).
+2. Fórmula da linha de inadimplência (5.3).
+3. Layout do arquivo de cobrança para o SGA (6.4).
 4. Linha sem descrição de R$ 129.253,00 em setembro (5.6).
-5. Fórmula da linha de inadimplência (5.3).
-6. Rastreamento: custo do pote ou repasse (5.2).
-7. Sufixos VP, DP, CP, TP (3.8).
+5. Rastreamento: custo do pote ou repasse (5.2).
+6. Sufixos VP, DP, CP, TP (3.8).
+7. E-SAUDE 3 vezes em agosto (5.1).
 
 Já com o presidente da AVAP: furto 2026819916 (4.11).
 
-**Nunca perguntar** nada marcado como DECIDIDO acima, em especial o denominador e o valor por cota.
+**Nunca perguntar** nada marcado como DECIDIDO acima, em especial o denominador e o valor por cota. Também não perguntar os 3 protocolos de agosto.
 
 ## 9. Fora da regra de rateio, mas em aberto
 
-- Demonstração na Fenaprove (18 e 19/11/2026): dados reais de associados ou base anonimizada. As placas já ficam ocultas por padrão.
+- Demonstração na Fenaprove (18 e 19/11/2026): **DECIDIDO** base anonimizada (aba Fenauto, arquivos fictícios em `demo_fenauto/`, R$ 7,78 por cota exatos).
 - Estabilização obrigatória pela Res. 491, art. 69 (D5).
 - Modelo "associação cotista da administradora" e a vedação de partes relacionadas: levar ao jurídico.

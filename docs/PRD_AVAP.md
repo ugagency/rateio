@@ -368,7 +368,7 @@ Frontend: `frontend/src/AVAP.jsx`, com as sub-abas Importação, Candidatos e al
 | 0 | `ingestao.py` com parser de cota e conferência de rodapé, rodando sobre os arquivos reais (perfil igual ao do relatório) | nada; pode começar já |
 | 1 | `selecao.py`, `engine.py` e lançamentos; aceite da seleção de 08/2026 e 09/2026 (planilha real) | lista de linhas (D7), mesmo que parcial |
 | 2 | CLI `reconciliar_avap` e aceite principal com diferença zero; parâmetros D1 e D2 fixados | histórico do rateio (4.4) |
-| 3 | fechamento lacrado, API e tela AVAP | fase 2 aprovada (setembro aprovado; agosto depende só dos 3 protocolos) |
+| 3 | fechamento lacrado, API e tela AVAP | fase 2 aprovada (setembro aprovado; agosto é só comparação) |
 | 4 | estabilização e split completo do boleto | D5 |
 
 ## 17. Fora de escopo
