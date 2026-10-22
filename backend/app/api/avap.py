@@ -47,6 +47,13 @@ DEMO = {
     "historico": RAIZ / "AVAP" / "rateio_agosto.xlsx",
     "aba": "Rateio_setembro",
 }
+# Mesmos arquivos com protocolos, placas, matrículas e nomes fictícios (scripts/gerar_demo_fenauto.py).
+DEMO_FENAUTO = {
+    "veiculos": RAIZ / "demo_fenauto" / "Cotas_ativas_FENAUTO_09_26.xlsx",
+    "fila": RAIZ / "demo_fenauto" / "foto_eventos_28-09_FENAUTO.xlsx",
+    "historico": RAIZ / "demo_fenauto" / "rateio_setembro_FENAUTO.xlsx",
+    "aba": "Rateio_setembro",
+}
 
 
 @dataclass
@@ -264,25 +271,37 @@ async def selecionar_fechamento(
     return _selecao_out(s)
 
 
-@router.post("/demo-setembro", response_model=SelecaoOut)
-def demo_setembro() -> SelecaoOut:
-    """Carrega os arquivos reais de 09/2026 do servidor e reproduz as decisões e lançamentos do
-    fechamento feito hoje pela AVAP. Fallback do estande: o upload continua sendo o caminho principal."""
-    faltando = [str(p.name) for k, p in DEMO.items() if k != "aba" and not p.exists()]
+def _carregar_demo(arqs: dict, origem: str) -> SelecaoOut:
+    """Carrega os arquivos de 09/2026 do servidor e reproduz as decisões e lançamentos do fechamento
+    de setembro. Fallback do estande: o upload continua sendo o caminho principal."""
+    faltando = [str(p.relative_to(RAIZ)) for k, p in arqs.items() if k != "aba" and not p.exists()]
     if faltando:
-        raise HTTPException(404, f"Arquivos de demonstração ausentes em AVAP/: {', '.join(faltando)}")
-    veic = _ler_veic(DEMO["veiculos"]).veiculos
-    fila = _ler_ev(DEMO["fila"]).eventos
-    hist = ler_historico(DEMO["historico"])[DEMO["aba"]]
+        raise HTTPException(404, f"Arquivos de demonstração ausentes: {', '.join(faltando)}")
+    veic = _ler_veic(arqs["veiculos"]).veiculos
+    fila = _ler_ev(arqs["fila"]).eventos
+    hist = ler_historico(arqs["historico"])[arqs["aba"]]
     na_fila = {e.protocolo for e in fila if e.estado_rateio in REGRAS_PADRAO.estados_candidatos}
-    decisoes = {p: DecisaoEvento(p, Decisao.INCLUIR, "consta no fechamento real de 09/2026") for p in hist.protocolos}
-    decisoes.update({p: DecisaoEvento(p, Decisao.EXCLUIR, "na fila do SGA e fora do fechamento real")
+    decisoes = {p: DecisaoEvento(p, Decisao.INCLUIR, "consta no fechamento de 09/2026") for p in hist.protocolos}
+    decisoes.update({p: DecisaoEvento(p, Decisao.EXCLUIR, "na fila do SGA e fora do fechamento de 09/2026")
                      for p in na_fila - hist.protocolos})
     s = Sessao(mes="09/2026", veiculos=veic, eventos=fila, decisoes=decisoes,
-               lancamentos=list(hist.lancamentos), origem="demonstração (09/2026)")
+               lancamentos=list(hist.lancamentos), origem=origem)
     _SESSOES[_chave(s.mes)] = s
     _resselecionar(s)
     return _selecao_out(s)
+
+
+@router.post("/demo-setembro", response_model=SelecaoOut)
+def demo_setembro() -> SelecaoOut:
+    """Arquivos reais de 09/2026 da AVAP (pasta AVAP/, fora do git)."""
+    return _carregar_demo(DEMO, "demonstração (09/2026)")
+
+
+@router.post("/demo-fenauto", response_model=SelecaoOut)
+def demo_fenauto() -> SelecaoOut:
+    """Mesma demonstração de 09/2026 com dados fictícios (pasta demo_fenauto/, no git), para apresentar
+    em público sem expor a associação. O fechamento foi ajustado para R$ 7,78 por cota exatos."""
+    return _carregar_demo(DEMO_FENAUTO, "demonstração Fenauto (dados fictícios)")
 
 
 # ───────────────────────────── consultas e decisões ─────────────────────────────
@@ -432,9 +451,11 @@ def boletos(mes: str, q: str = "", page: int = Query(1, ge=1),
 
 @router.get("/{mes}/boletos.csv")
 def boletos_csv(mes: str) -> Response:
-    bs = _boletos_filtrados(_sessao(mes), "")
+    sessao = _sessao(mes)
+    bs = _boletos_filtrados(sessao, "")
+    marca = "fenauto" if "Fenauto" in sessao.origem else "avap"
     linhas = ["placa;matricula;peso_cota;contribuicao_rateio;total"]
     linhas += [f"{b.placa or ''};{b.matricula or ''};{b.peso_cota:.2f};"
                f"{b.contribuicao_rateio:.2f};{b.total:.2f}".replace(".", ",") for b in bs]
     return Response("\n".join(linhas), media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="boletos_avap_{_chave(mes)}.csv"'})
+                    headers={"Content-Disposition": f'attachment; filename="boletos_{marca}_{_chave(mes)}.csv"'})

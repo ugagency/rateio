@@ -31,7 +31,8 @@ async function pedir(url, opts) {
 }
 const post = (url, body) => pedir(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
 
-export default function AVAP() {
+export default function AVAP({ fenauto = false }) {
+  const nome = fenauto ? "Fenauto" : "AVAP"
   const [tab, setTab] = useState("rodar")
   const [mes, setMes] = useState(mesAnterior())
   const [sel, setSel] = useState(null)
@@ -52,7 +53,7 @@ export default function AVAP() {
   }
 
   const demo = () => rodar(async () => {
-    const s = await pedir("/avap/demo-setembro", { method: "POST" })
+    const s = await pedir(fenauto ? "/avap/demo-fenauto" : "/avap/demo-setembro", { method: "POST" })
     onSelecionado(s, "09/2026")
   }, "Carregando o fechamento de 09/2026 (leitura de 39 mil veículos)")
 
@@ -69,7 +70,7 @@ export default function AVAP() {
         <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center flex-wrap gap-2">
           <div>
             <div className="text-xs uppercase tracking-widest text-emerald-400">Motor de Rateio · Associação de proteção veicular</div>
-            <h1 className="text-2xl font-bold text-white">AVAP: Rateio em pote único</h1>
+            <h1 className="text-2xl font-bold text-white">{nome}: Rateio em pote único</h1>
           </div>
           <div className="text-right text-xs text-slate-500">
             {sel ? <>Competência {mes} · {sel.origem}</> : "Nenhum fechamento carregado"}
@@ -85,9 +86,9 @@ export default function AVAP() {
           ))}
           <span className="ml-auto flex gap-2 items-center">
             <button onClick={demo} disabled={!!busy}
-              title="Carrega os arquivos reais de 09/2026 que estão no servidor"
+              title={fenauto ? "Carrega 09/2026 com dados fictícios (protocolos, placas, matrículas e nomes)" : "Carrega os arquivos reais de 09/2026 que estão no servidor"}
               className="px-4 py-1.5 bg-amber-400 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
-              Demonstração 09/2026
+              {fenauto ? "Demonstração Fenauto" : "Demonstração 09/2026"}
             </button>
           </span>
         </nav>
@@ -100,7 +101,7 @@ export default function AVAP() {
         {tab === "selecao" && <Selecao mes={mes} sel={sel} rodar={rodar} onAtualizar={atualizarSelecao} irParaLanc={() => setTab("lanc")} irParaRodar={() => setTab("rodar")} />}
         {tab === "lanc" && <Lancamentos mes={mes} sel={sel} rodar={rodar} onAtualizar={atualizarSelecao}
           irParaResultado={() => setTab("resultado")} irParaRodar={() => setTab("rodar")} />}
-        {tab === "resultado" && <Resultado mes={mes} sel={sel} res={res} criterio={criterio} setCriterio={setCriterio} calcular={calcular} busy={!!busy} irParaRodar={() => setTab("rodar")} />}
+        {tab === "resultado" && <Resultado nome={nome} mes={mes} sel={sel} res={res} criterio={criterio} setCriterio={setCriterio} calcular={calcular} busy={!!busy} irParaRodar={() => setTab("rodar")} />}
         {tab === "boletos" && <Boletos mes={mes} res={res} />}
       </main>
     </div>
@@ -362,7 +363,7 @@ function Lancamentos({ mes, sel, rodar, onAtualizar, irParaResultado, irParaRoda
 
 // ─────────────────────────── Resultado ───────────────────────────
 
-function Resultado({ mes, sel, res, criterio, setCriterio, calcular, busy, irParaRodar }) {
+function Resultado({ nome, mes, sel, res, criterio, setCriterio, calcular, busy, irParaRodar }) {
   if (!sel) return <Vazio texto="Nenhum fechamento carregado." acao={irParaRodar} rotulo="Carregar arquivos" />
   return (
     <div>
@@ -381,9 +382,9 @@ function Resultado({ mes, sel, res, criterio, setCriterio, calcular, busy, irPar
           </button>
           {!sel.homologavel && <span className="text-sm text-amber-300">Resolva as pendências na aba Seleção.</span>}
         </div>
-        <p className="text-xs text-slate-400 mt-3">
-          Este critério ainda aguarda confirmação da AVAP. O valor por cota abaixo é uma estimativa e muda de acordo com ele.
-        </p>
+        {criterio !== "VEICULO" && <p className="text-xs text-slate-400 mt-3">
+          Critério só para comparação. O vigente na {nome} é veículos ativos.
+        </p>}
       </section>
 
       {!res ? <Vazio texto={`Rateio de ${mes} ainda não calculado.`} /> : (
