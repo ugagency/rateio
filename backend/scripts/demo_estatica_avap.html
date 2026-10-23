@@ -1,0 +1,312 @@
+<title>Demonstração Rateio AVAP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          fundo: 'var(--fundo)', painel: 'var(--painel)', painel2: 'var(--painel-2)', borda: 'var(--borda)',
+          menta: 'var(--menta)', menta2: 'var(--menta-2)', texto: 'var(--texto)', suave: 'var(--suave)',
+          fraco: 'var(--fraco)', alerta: 'var(--alerta)', erro: 'var(--erro)',
+        },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'] },
+      },
+    },
+  }
+</script>
+<style>
+  /* Layout: cabeçalho com abas e uma área de trabalho por aba; cartões só onde separam um bloco. */
+  :root {
+    --fundo: #04150F;
+    --painel: #0A261D;
+    --painel-2: #0E3125;
+    --borda: rgba(52, 217, 165, 0.16);
+    --menta: #34D9A5;
+    --menta-2: #A3F0CF;
+    --texto: #F2FBF7;
+    --suave: rgba(226, 244, 236, 0.74);
+    --fraco: rgba(226, 244, 236, 0.50);
+    --alerta: #F2C76B;
+    --erro: #F08A8A;
+    --brilho: rgba(52, 217, 165, 0.22);
+    color-scheme: dark;
+  }
+  body {
+    background: radial-gradient(ellipse at 85% -10%, rgba(52, 217, 165, 0.10), transparent 55%), var(--fundo);
+    background-attachment: fixed;
+    color: var(--texto);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .num { font-variant-numeric: tabular-nums; }
+  .rotulo { font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.08em; }
+  .aba { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--menta); outline-offset: 2px; }
+  .botao { background: var(--menta); color: var(--fundo); box-shadow: 0 6px 24px var(--brilho); }
+  .carregando-barra { height: 4px; background: var(--menta); width: 0; transition: width 2.4s cubic-bezier(.3,.7,.4,1); box-shadow: 0 0 14px var(--brilho); }
+  table td, table th { white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .carregando-barra { transition: none; } }
+</style>
+
+<div id="app">
+  <header class="border-b border-borda sticky top-0 z-20 backdrop-blur" style="background: rgba(4, 21, 15, 0.86); top: env(safe-area-inset-top, 0px);">
+    <div class="gutter max-w-7xl mx-auto py-5 flex justify-between items-center flex-wrap gap-3">
+      <div>
+        <div class="rotulo text-xs uppercase text-menta">Motor de Rateio · Associação de proteção veicular</div>
+        <h1 class="text-2xl md:text-3xl font-bold text-texto">AVAP: rateio em pote único</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right text-xs text-fraco">
+          <div id="origem">Competência 09/2026 · demonstração</div>
+          <div>LC 213/2025 · Res. CNSP 491/2026</div>
+        </div>
+        <a id="voltar" href="DECK_URL" class="aba text-sm px-4 py-2 rounded-lg border border-borda text-suave hover:text-menta">Voltar à apresentação</a>
+      </div>
+    </div>
+    <nav id="abas" class="gutter max-w-7xl mx-auto pb-4 flex gap-2 flex-wrap"></nav>
+  </header>
+
+  <main class="gutter max-w-7xl mx-auto py-8">
+    <div id="carregando" class="mb-6 bg-painel border border-borda rounded-xl overflow-hidden">
+      <div class="px-5 py-4 text-suave" id="carregando-texto">Carregando o fechamento de 09/2026 (leitura de 39 mil veículos)…</div>
+      <div class="carregando-barra" id="barra"></div>
+    </div>
+    <div id="conteudo"></div>
+  </main>
+</div>
+
+<script id="dados" type="application/json">__DADOS__</script>
+<script>
+  const D = JSON.parse(document.getElementById('dados').textContent)
+  const brl = (v) => (typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v)
+  const num = (v) => (typeof v === 'number' ? v.toLocaleString('pt-BR') : v)
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+  const data = (d) => (d ? d.split('-').reverse().join('/') : '-')
+
+  const TABS = { rodar: 'Rodar Mês', selecao: 'Seleção', lanc: 'Lançamentos', resultado: 'Resultado', boletos: 'Boletos' }
+  const CRITERIOS = {
+    VEICULO: 'Veículos ativos (critério vigente)',
+    AMBOS: 'Veículo e associado ativos',
+    ASSOCIADO: 'Associados ativos',
+    TODOS: 'Todas as cotas',
+  }
+  const ALERTAS = {
+    A1: 'Protocolo atípico', A2: 'Custo menor ou igual a zero', A3: 'Sem participação e custo baixo',
+    A4: 'Concentração acima de 10% do total', A5: 'Indenização integral', A6: 'Data de finalização mudou',
+    A7: 'Custo diferente de reparo menos participação',
+  }
+  const FORA = { VEICULO_INADIMPLENTE: 'Veículo inadimplente', ASSOCIADO_PENDENTE: 'Associado pendente', PESO_ZERO: 'Peso de cota zero' }
+
+  const estado = { tab: 'rodar', carregado: false, criterio: 'VEICULO', calculado: false, busca: '', pagina: 1 }
+
+  const card = (label, value, sub, tom = '') => `
+    <div class="bg-painel border border-borda rounded-xl p-4 min-w-0">
+      <div class="rotulo text-[11px] uppercase text-fraco">${label}</div>
+      <div class="num text-xl md:text-2xl font-bold mt-1 ${tom || 'text-texto'}">${value}</div>
+      ${sub ? `<div class="text-xs text-fraco mt-1">${sub}</div>` : ''}
+    </div>`
+  const tabela = (cab, linhas) => `
+    <div class="overflow-x-auto"><table class="w-full text-sm num">
+      <thead class="rotulo text-[11px] text-fraco uppercase"><tr>${cab}</tr></thead>
+      <tbody>${linhas}</tbody></table></div>`
+
+  function renderAbas() {
+    document.getElementById('abas').innerHTML = Object.entries(TABS).map(([k, l]) => `
+      <button data-tab="${k}" class="aba px-4 py-2 rounded-lg text-sm font-semibold ${estado.tab === k ? 'botao' : 'bg-painel2 text-suave border border-borda'}">${l}</button>`).join('')
+  }
+
+  function rodar() {
+    const s = D.selecao
+    return `
+    <div class="max-w-3xl">
+      <h2 class="text-xl font-bold mb-1">Exportações do SGA de 09/2026</h2>
+      <p class="text-suave text-sm mb-6">Cada arquivo é conferido com o rodapé do próprio SGA assim que é escolhido. Se a contagem ou a soma não bater, o arquivo é recusado.</p>
+      <div class="space-y-4">
+        <div class="bg-painel border border-borda rounded-xl p-4">
+          <div class="font-semibold">1. Base de veículos e cotas</div>
+          <div class="text-xs text-fraco mb-2">Relatório de veículos do SGA (peso da cota lido do próprio rótulo)</div>
+          <div class="text-sm text-menta">Conferido com o rodapé do SGA: ${num(D.resultados.TODOS.total_boletos)} veículos</div>
+        </div>
+        <div class="bg-painel border border-borda rounded-xl p-4">
+          <div class="font-semibold">2. Relatório de eventos (fila do fechamento)</div>
+          <div class="text-xs text-fraco mb-2">Exportação de eventos do SGA com a coluna Valor Rateado</div>
+          <div class="text-sm text-menta">Conferido com o rodapé do SGA: ${num(s.total_eventos_lidos)} eventos</div>
+        </div>
+      </div>
+      <button data-ir="selecao" class="botao mt-6 px-6 py-3 font-bold rounded-lg">Ver a seleção do mês</button>
+    </div>`
+  }
+
+  function selecao() {
+    const s = D.selecao
+    const itens = [...D.eventos.items].sort((a, b) => b.custo_evento - a.custo_evento).slice(0, 15)
+    const linhas = itens.map((e) => `
+      <tr class="border-t border-borda">
+        <td class="p-2 font-mono">${e.protocolo}</td><td class="p-2">${esc(e.motivo)}</td>
+        <td class="p-2">${data(e.data_finalizacao)}</td>
+        <td class="p-2 text-right">R$ ${brl(e.custo_evento)}</td>
+        <td class="p-2 text-xs">${e.origem === 'REGRA' ? 'Fila do SGA' : 'Decisão do operador'}</td>
+        <td class="p-2 text-xs text-alerta" title="${esc(e.alertas.map((c) => `${c} ${ALERTAS[c] || ''}`).join(' · '))}">${e.alertas.join(', ')}</td>
+      </tr>`).join('')
+    return `
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        ${card('Eventos lidos', num(s.total_eventos_lidos))}
+        ${card('Selecionados', num(s.selecionados), `R$ ${brl(s.custo_selecionado)}`, 'text-menta')}
+        ${card('Aguardando decisão', num(s.pendencias.length), 'alertas sem decisão do operador', s.pendencias.length ? 'text-alerta' : 'text-menta')}
+        ${card('Homologável', s.homologavel ? 'Sim' : 'Não', `${s.decisoes} decisões registradas`, s.homologavel ? 'text-menta' : 'text-erro')}
+      </div>
+      <section class="bg-painel border border-borda rounded-xl p-4 mb-6">
+        <h3 class="font-bold mb-3">Maiores eventos selecionados (${num(D.eventos.total)} no total)</h3>
+        ${tabela('<th class="text-left p-2">Protocolo</th><th class="text-left p-2">Motivo</th><th class="text-left p-2">Finalização</th><th class="text-right p-2">Custo</th><th class="text-left p-2">Origem</th><th class="text-left p-2">Alertas</th>', linhas)}
+      </section>
+      ${s.auditoria.length ? `<details class="mb-6 text-xs text-fraco">
+        <summary class="cursor-pointer text-suave">Trilha de auditoria (${s.auditoria.length}${s.auditoria.length === 50 ? '+' : ''} registros)</summary>
+        <ul class="mt-2 space-y-1 font-mono">${s.auditoria.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></details>` : ''}
+      <button data-ir="lanc" class="botao px-6 py-3 font-bold rounded-lg">Seguir para os lançamentos</button>`
+  }
+
+  function lanc() {
+    const total = D.lancamentos.reduce((a, l) => a + l.valor, 0)
+    const linhas = D.lancamentos.map((l) => `
+      <div class="flex gap-2 items-center">
+        <div class="flex-1 min-w-0 px-3 py-2 bg-painel border border-borda rounded-lg text-sm">${esc(l.descricao)} <span class="text-xs text-fraco">${esc(l.codigo)}</span></div>
+        <div class="num w-40 px-3 py-2 bg-painel border border-borda rounded-lg text-sm text-right ${l.valor < 0 ? 'text-erro' : 'text-menta'}">${brl(l.valor)}</div>
+      </div>`).join('')
+    return `
+    <div class="max-w-3xl">
+      <h2 class="text-xl font-bold mb-1">Linhas de soma e dedução</h2>
+      <p class="text-suave text-sm mb-4">Entram no numerador junto com o custo dos eventos. Valor positivo soma, valor negativo deduz. O código contábil é reconhecido pela descrição.</p>
+      <div class="space-y-2 mb-4">${linhas}</div>
+      <div class="flex gap-3 items-center flex-wrap">
+        <span class="text-sm text-suave">Saldo das linhas: <b class="num ${total < 0 ? 'text-erro' : 'text-menta'}">R$ ${brl(total)}</b></span>
+        <button data-ir="resultado" class="botao ml-auto px-6 py-3 font-bold rounded-lg">Ir ao resultado</button>
+      </div>
+    </div>`
+  }
+
+  function resultado() {
+    const r = D.resultados[estado.criterio]
+    const s = D.selecao
+    const opcoes = Object.entries(CRITERIOS).map(([k, l]) => `<option value="${k}" ${k === estado.criterio ? 'selected' : ''}>${l}</option>`).join('')
+    const topo = `
+      <section class="bg-painel border border-borda rounded-xl p-4 mb-6">
+        <div class="flex gap-4 items-end flex-wrap">
+          <label class="text-sm" for="criterio">
+            <div class="text-fraco mb-1">Quem entra no denominador (cotas)</div>
+            <select id="criterio" class="px-3 py-2 bg-fundo border border-borda rounded-lg text-texto">${opcoes}</select>
+          </label>
+          <button id="calcular" class="botao px-6 py-3 font-bold rounded-lg">${estado.calculado ? 'Recalcular' : 'Calcular rateio'}</button>
+        </div>
+        ${estado.criterio !== 'VEICULO' ? '<p class="text-xs text-fraco mt-3">Critério só para comparação. O vigente na AVAP é veículos ativos.</p>' : ''}
+      </section>`
+    if (!estado.calculado) return topo + '<div class="text-center py-16 text-suave">Rateio de 09/2026 ainda não calculado.</div>'
+    const comp = Object.entries(r.comparativo_criterios).map(([k, v]) => `
+      <tr class="border-t border-borda ${k === r.criterio ? 'text-menta font-semibold' : ''}"><td class="p-2">${CRITERIOS[k]}</td><td class="p-2 text-right">R$ ${brl(v)}</td></tr>`).join('')
+    const fora = Object.entries(r.veiculos_fora).map(([k, v]) => `
+      <tr class="border-t border-borda"><td class="p-2">${FORA[k] || k.replaceAll('_', ' ').toLowerCase()}</td><td class="p-2 text-right">${num(v)}</td></tr>`).join('')
+    const compo = `<tr class="border-t border-borda"><td class="p-2">Eventos selecionados</td><td class="p-2 text-right">R$ ${brl(r.custo_eventos)}</td></tr>` +
+      r.lancamentos.map((l) => `
+      <tr class="border-t border-borda"><td class="p-2">${esc(l.descricao)} <span class="text-xs text-fraco">${esc(l.codigo)}</span></td>
+      <td class="p-2 text-right ${l.tipo === 'DEDUCAO' ? 'text-erro' : 'text-menta'}">${l.tipo === 'DEDUCAO' ? '-' : '+'} R$ ${brl(l.valor)}</td></tr>`).join('') +
+      `<tr class="border-t border-borda font-bold"><td class="p-2">Total a ratear</td><td class="p-2 text-right text-menta2">R$ ${brl(r.numerador)}</td></tr>`
+    const inv = Object.entries(r.invariantes).map(([k, ok]) => `
+      <span class="rotulo px-3 py-1 rounded-lg ${ok ? 'text-menta border border-borda' : 'text-erro border border-erro'}">${ok ? 'OK' : 'FALHA'}: ${k.replaceAll('_', ' ')}</span>`).join('')
+    return topo + `
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        ${card('Custo dos eventos', `R$ ${brl(r.custo_eventos)}`, `${num(s.selecionados)} eventos`)}
+        ${card('Linhas de soma', `+ R$ ${brl(r.somas)}`, '', 'text-menta')}
+        ${card('Linhas de dedução', `- R$ ${brl(r.deducoes)}`, '', 'text-erro')}
+        ${card('Total a ratear', `R$ ${brl(r.numerador)}`, '', 'text-menta2')}
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        ${card('Cotas no denominador', num(r.total_cotas), `${num(r.veiculos_elegiveis)} veículos`)}
+        ${card('Valor por cota', `R$ ${brl(r.valor_cota)}`, CRITERIOS[r.criterio], 'text-menta')}
+        ${card('Boletos', num(r.total_boletos), `R$ ${brl(r.total_rateio)} somados`)}
+        ${card('Diferença de arredondamento', `R$ ${brl(r.diferenca_arredondamento)}`, 'reportada, nunca redistribuída', r.aprovado ? 'text-menta' : 'text-erro')}
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <section class="bg-painel border border-borda rounded-xl p-4 min-w-0"><h3 class="font-bold mb-2">Valor por cota em cada critério</h3>${tabela('', comp)}</section>
+        <section class="bg-painel border border-borda rounded-xl p-4 min-w-0"><h3 class="font-bold mb-2">Veículos fora do denominador</h3>${tabela('', fora)}</section>
+      </div>
+      <section class="bg-painel border border-borda rounded-xl p-4 mb-6"><h3 class="font-bold mb-2">Composição do total a ratear</h3>${tabela('', compo)}</section>
+      <div class="flex gap-3 flex-wrap text-xs">${inv}</div>`
+  }
+
+  function boletos() {
+    if (!estado.calculado) return `<div class="text-center py-16"><p class="text-suave mb-4">Calcule o rateio para gerar os boletos.</p><button data-ir="resultado" class="botao px-5 py-3 font-bold rounded-lg">Ir ao resultado</button></div>`
+    const PS = 20
+    const q = estado.busca.trim().toUpperCase()
+    const lista = q ? D.boletos.items.filter((b) => (b.placa || '').startsWith(q.slice(0, 3))) : D.boletos.items
+    const paginas = Math.max(1, Math.ceil(lista.length / PS))
+    estado.pagina = Math.min(estado.pagina, paginas)
+    const ini = (estado.pagina - 1) * PS
+    const soma = lista.reduce((a, b) => a + b.contribuicao_rateio, 0)
+    const linhas = lista.slice(ini, ini + PS).map((b) => `
+      <tr class="border-t border-borda">
+        <td class="p-2 font-mono">${esc(b.placa || '-')}</td>
+        <td class="p-2 text-right">${brl(b.peso_cota)}</td>
+        <td class="p-2 text-right">R$ ${brl(b.contribuicao_rateio)}</td>
+        <td class="p-2 text-right font-semibold">R$ ${brl(b.total)}</td>
+      </tr>`).join('')
+    return `
+      <p class="text-xs text-fraco mb-3">Critério vigente (veículos ativos). Placas mascaradas na demonstração.</p>
+      <div class="flex gap-3 mb-4 items-center flex-wrap">
+        <input id="busca" value="${esc(estado.busca)}" placeholder="Buscar pelas 3 primeiras letras da placa" maxlength="3"
+          class="px-3 py-2 bg-painel border border-borda rounded-lg text-texto text-sm w-72 max-w-full">
+        <span class="num text-sm text-suave">${num(lista.length)} boletos · R$ ${brl(Math.round(soma * 100) / 100)}</span>
+      </div>
+      <div class="bg-painel border border-borda rounded-xl">
+        ${tabela('<th class="text-left p-2">Placa</th><th class="text-right p-2">Peso da cota</th><th class="text-right p-2">Contribuição do rateio</th><th class="text-right p-2">Total do boleto</th>', linhas)}
+      </div>
+      <div class="flex gap-3 items-center justify-end mt-3 text-sm">
+        <button data-pag="-1" ${estado.pagina <= 1 ? 'disabled' : ''} class="px-4 py-2 bg-painel2 border border-borda rounded-lg disabled:opacity-40">Anterior</button>
+        <span class="num">Página ${estado.pagina} de ${num(paginas)}</span>
+        <button data-pag="1" ${estado.pagina >= paginas ? 'disabled' : ''} class="px-4 py-2 bg-painel2 border border-borda rounded-lg disabled:opacity-40">Próxima</button>
+      </div>`
+  }
+
+  const VIEWS = { rodar, selecao, lanc, resultado, boletos }
+  function render() {
+    renderAbas()
+    document.getElementById('conteudo').innerHTML = estado.carregado ? VIEWS[estado.tab]() : ''
+  }
+  function ir(tab) { estado.tab = tab; render(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
+  document.addEventListener('click', (ev) => {
+    const t = ev.target.closest('[data-tab],[data-ir],[data-pag],#calcular')
+    if (!t || !estado.carregado) return
+    if (t.dataset.tab) ir(t.dataset.tab)
+    else if (t.dataset.ir) ir(t.dataset.ir)
+    else if (t.dataset.pag) { estado.pagina += Number(t.dataset.pag); render() }
+    else if (t.id === 'calcular') {
+      const el = document.getElementById('carregando'); const tx = document.getElementById('carregando-texto'); const bar = document.getElementById('barra')
+      tx.textContent = 'Calculando o rateio…'; bar.style.transition = 'none'; bar.style.width = '0'; el.hidden = false
+      requestAnimationFrame(() => { bar.style.transition = 'width 0.9s ease-out'; bar.style.width = '100%' })
+      setTimeout(() => { el.hidden = true; estado.calculado = true; render() }, 950)
+    }
+  })
+  document.addEventListener('change', (ev) => {
+    if (ev.target.id === 'criterio') { estado.criterio = ev.target.value; render() }
+  })
+  document.addEventListener('input', (ev) => {
+    if (ev.target.id === 'busca') {
+      estado.busca = ev.target.value; estado.pagina = 1; render()
+      const i = document.getElementById('busca'); i.focus(); i.setSelectionRange(i.value.length, i.value.length)
+    }
+  })
+
+  // Abertura: simula a leitura dos arquivos e cai na Seleção já carregada.
+  render()
+  requestAnimationFrame(() => { document.getElementById('barra').style.width = '100%' })
+  setTimeout(() => {
+    document.getElementById('carregando').hidden = true
+    estado.carregado = true
+    document.getElementById('origem').textContent = `Competência ${D.selecao.mes} · arquivos da associação`
+    ir('selecao')
+  }, 2500)
+</script>

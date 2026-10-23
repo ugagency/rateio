@@ -16,25 +16,25 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* @MIRA:THEME:START */
-/* MIRA THEME: mira-dark (padrão)
-   Identidade clássica do canal: fundo preto, laranja vibrante,
-   glassmorphism no estilo clássico do canal. */
+/* MIRA THEME: mira-dark com paleta verde (identidade dudu.ia.br)
+   Fundo verde quase preto, verde menta como cor principal,
+   glassmorphism com borda verde suave. */
 :root {
-    --mira-primary: #FF904D;
-    --mira-bg: #000000;
+    --mira-primary: #34D9A5;
+    --mira-bg: #04150F;
     --mira-text: #ffffff;
-    --mira-text-soft: rgba(255, 255, 255, 0.70);
-    --mira-text-softer: rgba(255, 255, 255, 0.50);
-    --mira-card-bg: rgba(255, 255, 255, 0.05);
-    --mira-card-border: rgba(255, 255, 255, 0.10);
-    --mira-glow-soft: rgba(255, 144, 77, 0.15);
-    --mira-glow-strong: rgba(255, 144, 77, 0.25);
-    --mira-icon-bg: rgba(255, 144, 77, 0.15);
-    --mira-icon-border: rgba(255, 144, 77, 0.30);
-    --mira-pill-bg: rgba(255, 255, 255, 0.04);
-    --mira-pill-border: rgba(255, 255, 255, 0.08);
-    --mira-stage-glow: rgba(255, 144, 77, 0.06);
-    --mira-accent-2: #FFC766;
+    --mira-text-soft: rgba(226, 244, 236, 0.74);
+    --mira-text-softer: rgba(226, 244, 236, 0.52);
+    --mira-card-bg: rgba(10, 38, 29, 0.72);
+    --mira-card-border: rgba(52, 217, 165, 0.16);
+    --mira-glow-soft: rgba(52, 217, 165, 0.12);
+    --mira-glow-strong: rgba(52, 217, 165, 0.24);
+    --mira-icon-bg: rgba(52, 217, 165, 0.13);
+    --mira-icon-border: rgba(52, 217, 165, 0.32);
+    --mira-pill-bg: rgba(52, 217, 165, 0.05);
+    --mira-pill-border: rgba(52, 217, 165, 0.20);
+    --mira-stage-glow: rgba(52, 217, 165, 0.07);
+    --mira-accent-2: #A3F0CF;
 }
 
 /* ============================================================
@@ -44,7 +44,8 @@
    ============================================================ */
 
 body {
-    background: var(--mira-bg);
+    background: radial-gradient(ellipse at 80% 0%, var(--mira-glow-soft), transparent 55%), var(--mira-bg);
+    background-attachment: fixed;
     min-height: 100vh;
     color: var(--mira-text);
     font-family: 'Inter', sans-serif;
@@ -408,7 +409,7 @@ body {
             <h2 class="text-5xl md:text-6xl font-black mb-6">Veja setembro <span class="primary-color italic">rodar agora</span></h2>
             <p class="text-xl text-soft mb-10">A demonstração carrega a base de veículos e a foto de eventos de setembro, aplica as decisões do fechamento e chega ao mesmo total. A leitura dos 39 mil veículos leva cerca de 5 segundos.</p>
             <div class="flex flex-wrap items-center justify-center gap-4">
-                <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="play" class="inline w-4 h-4 mr-2 primary-color"></i>Abrir a demonstração 09/2026</span>
+                <a href="https://claude.ai/artifact/QiUe8QbHTL74GaBhqFeA1S" id="abrir-demo" class="px-8 py-4 text-lg font-bold rounded-xl primary-bg inline-flex items-center gap-2" style="color: var(--mira-bg); box-shadow: 0 8px 32px var(--mira-glow-strong);"><i data-lucide="play" class="w-5 h-5"></i>Abrir a demonstração 09/2026</a>
             </div>
         </div>
     </section>
