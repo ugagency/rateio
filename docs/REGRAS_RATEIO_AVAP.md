@@ -84,7 +84,7 @@ Os valores antigos de "R$ 0,74 milhão por mês" e "R$ 3,18 por cota" (relatóri
 | # | Linha | Tipo | Ago | Set | Status |
 |---|---|---|---:|---:|---|
 | 5.1 | E-SAUDE (telemedicina) | soma | 3 x 16.310,38 | 16.239,82 | valor **DECIDIDO** (vem da planilha); por que aparece 3 vezes em agosto: ABERTO, NÃO BLOQUEIA |
-| 5.2 | RASTREAMENTO | soma | 119.481,22 | 118.173,45 | valor **DECIDIDO**; se é custo do pote ou repasse: ABERTO, NÃO BLOQUEIA |
+| 5.2 | RASTREAMENTO | soma | 119.481,22 | 118.173,45 | valor **DECIDIDO**; se é custo do pote ou repasse: ABERTO, NÃO BLOQUEIA. Atenção: o rastreador também aparece como produto pago à parte no boleto (R$ 30,00 no caso de 6.5); perguntar se a linha do pote é o custo de quem não paga o produto ou se há cobrança em dobro |
 | 5.3 | INADIMPLÊNCIA do mês | soma | 99.605,19 | 109.035,49 | valor **DECIDIDO**; fórmula: ABERTO, NÃO BLOQUEIA |
 | 5.4 | Recuperados do mês anterior | dedução | 42.840,20 | 45.521,49 | **DECIDIDO** |
 | 5.5 | Salvados vendidos | dedução | 194.771,47 | (ver 5.6) | **DECIDIDO** |
@@ -102,6 +102,8 @@ No mês a mês, o operador digita essas linhas. Elas não precisam ser calculada
 | 6.2 | Por isso o boleto **não serve de aceite**. O aceite é a planilha PLAN. Pelo motor (20 cotas x R$ 7,7824..., arredondado só no boleto), o rateio desse veículo é R$ 155,65; o restante (R$ 115,08) seriam taxa e produtos. | **DECIDIDO** | consequência de 6.1 |
 | 6.3 | Split da Res. 491, art. 70 (rateio, estabilização, taxa de administração, produtos). Hoje só o rateio é calculado; os outros ficam em 0. | ABERTO, NÃO BLOQUEIA (D5) | depende da Mutualiza e do atuário |
 | 6.4 | Layout do arquivo de cobrança para o SGA. | ABERTO, NÃO BLOQUEIA (D8) | operação AVAP |
+| 6.5 | Conferência por amostra (5 veículos, rateio pelo motor). O SGA não "explode" o boleto, mas o relatório de proteção veicular mostra, por placa, o total do último boleto (emitido em 01/10/2026, referente a setembro) e os produtos contratados com valor. Caso aberto, veículo de 24 cotas: boleto R$ 379,66 = rateio do motor R$ 186,78 (24 x 7,7824...) + produtos R$ 99,60 (assistência 300 km 26,80; carro reserva 6,90; rastreador 30,00; terceiros 30 mil 24,00; vidros 11,90; colisão 0,00; roubo/furto 0,00) + restante R$ 93,28 (taxa de administração e o que mais houver: não confirmado). Colisão e roubo/furto a R$ 0,00 confirmam que a cobertura é paga pelo rateio e o resto é produto. Os outros dois totais (R$ 126,73 e R$ 283,74) ainda sem placa confirmada. Para fechar: valor da taxa de administração do veículo; com ele, rateio = boleto - produtos - taxa, e dividido pelas cotas tem que dar 7,78. | ABERTO, NÃO BLOQUEIA | conversa com a Mutualiza em 22/10/2026 |
+| 6.6 | A Mutualiza confirmou que **precisa** da discriminação rateio, produtos e taxa no boleto. Isso puxa o 6.3 (split) de "um dia" para requisito do produto. | **DECIDIDO** (requisito) | conversa com a Mutualiza em 22/10/2026 |
 
 ## 7. Aceite
 

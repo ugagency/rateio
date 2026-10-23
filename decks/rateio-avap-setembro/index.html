@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rateio AVAP: setembro ao centavo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* @MIRA:THEME:START */
+/* MIRA THEME: mira-dark (padrão)
+   Identidade clássica do canal: fundo preto, laranja vibrante,
+   glassmorphism no estilo clássico do canal. */
+:root {
+    --mira-primary: #FF904D;
+    --mira-bg: #000000;
+    --mira-text: #ffffff;
+    --mira-text-soft: rgba(255, 255, 255, 0.70);
+    --mira-text-softer: rgba(255, 255, 255, 0.50);
+    --mira-card-bg: rgba(255, 255, 255, 0.05);
+    --mira-card-border: rgba(255, 255, 255, 0.10);
+    --mira-glow-soft: rgba(255, 144, 77, 0.15);
+    --mira-glow-strong: rgba(255, 144, 77, 0.25);
+    --mira-icon-bg: rgba(255, 144, 77, 0.15);
+    --mira-icon-border: rgba(255, 144, 77, 0.30);
+    --mira-pill-bg: rgba(255, 255, 255, 0.04);
+    --mira-pill-border: rgba(255, 255, 255, 0.08);
+    --mira-stage-glow: rgba(255, 144, 77, 0.06);
+    --mira-accent-2: #FFC766;
+}
+
+/* ============================================================
+   MIRA — base.css
+   Estrutura compartilhada por todos os temas.
+   Os temas definem apenas as CSS variables (--mira-*).
+   ============================================================ */
+
+body {
+    background: var(--mira-bg);
+    min-height: 100vh;
+    color: var(--mira-text);
+    font-family: 'Inter', sans-serif;
+}
+
+.primary-color { color: var(--mira-primary); }
+.primary-bg { background: var(--mira-primary); }
+
+.glass-card {
+    background: var(--mira-card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--mira-card-border);
+    box-shadow: 0 10px 30px var(--mira-glow-soft);
+    transition: all 0.3s ease;
+    border-radius: 0.75rem;
+}
+
+.glass-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px var(--mira-glow-strong);
+}
+
+.icon-hero {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    background: var(--mira-icon-bg);
+    border: 1px solid var(--mira-icon-border);
+}
+
+.attribute-pill {
+    background: var(--mira-pill-bg);
+    border: 1px solid var(--mira-pill-border);
+    transition: all 0.25s ease;
+    border-radius: 9999px;
+}
+
+.attribute-pill:hover {
+    background: var(--mira-icon-bg);
+    border-color: var(--mira-icon-border);
+    transform: translateY(-3px);
+}
+
+/* Palco de animação D3 — tamanho padrão do canvas */
+.anim-stage {
+    width: 100%;
+    height: clamp(400px, 60vh, 620px);
+    background: radial-gradient(circle at 50% 50%, var(--mira-stage-glow), transparent 70%);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.anim-stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.replay-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    background: var(--mira-pill-bg);
+    border: 1px solid var(--mira-pill-border);
+    color: var(--mira-text-soft);
+    border-radius: 9999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.replay-btn:hover {
+    background: var(--mira-icon-bg);
+    color: var(--mira-primary);
+}
+
+.text-soft { color: var(--mira-text-soft); }
+.text-softer { color: var(--mira-text-softer); }
+
+@keyframes mira-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+}
+
+@keyframes mira-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes mira-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* @MIRA:THEME:END */
+
+        /* === CONTROLES DE SLIDE (passagem card-a-card) === */
+        html { scroll-behavior: smooth; }
+
+        #mira-progress {
+            position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+            background: linear-gradient(90deg, var(--mira-primary), var(--mira-accent-2), var(--mira-primary));
+            background-size: 200% 100%;
+            animation: mira-shimmer 2s linear infinite;
+            z-index: 9999; transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--mira-glow-strong);
+        }
+
+        @keyframes mira-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        #mira-next {
+            position: fixed; bottom: 32px; right: 32px;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--mira-primary); color: var(--mira-bg);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none;
+            opacity: 0; transform: translateY(20px);
+            transition: all 0.3s ease; z-index: 9998;
+            box-shadow: 0 4px 20px var(--mira-glow-strong);
+        }
+        #mira-next.visible { opacity: 1; transform: translateY(0); }
+        #mira-next:hover { transform: translateY(-3px) scale(1.1); }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            line-height: 1.7;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--mira-card-border);
+            border-radius: 12px;
+        }
+
+        .code-cursor {
+            display: inline-block;
+            width: 9px;
+            height: 18px;
+            background: var(--mira-primary);
+            vertical-align: middle;
+            animation: blink 1s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* === SLIDES DO DECK RATEIO AVAP === */
+        .metric-card .metric-value { font-variant-numeric: tabular-nums; }
+        .scan-card { position: relative; overflow: hidden; }
+        .scan-card::after {
+            content: ""; position: absolute; left: 0; right: 0; height: 2px; top: -10%;
+            background: linear-gradient(90deg, transparent, var(--mira-primary), transparent);
+            box-shadow: 0 0 14px var(--mira-glow-strong);
+            animation: scan 3.6s ease-in-out infinite;
+        }
+        .scan-card:nth-child(2)::after { animation-delay: 1.2s; }
+        .scan-card:nth-child(3)::after { animation-delay: 2.4s; }
+        @keyframes scan { 0% { top: -5%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 105%; opacity: 0; } }
+        .scan-card .check {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 1px solid var(--mira-icon-border); background: var(--mira-icon-bg);
+            display: flex; align-items: center; justify-content: center;
+            animation: mira-pulse 3.6s ease-in-out infinite;
+        }
+        .scan-card:nth-child(2) .check { animation-delay: 1.2s; }
+        .scan-card:nth-child(3) .check { animation-delay: 2.4s; }
+        .breathe {
+            background: radial-gradient(ellipse at 50% 55%, var(--mira-glow-strong), transparent 65%);
+            animation: mira-pulse 4s ease-in-out infinite;
+        }
+        #paralelo-stage { height: clamp(220px, 30vh, 320px); }
+        .anim-stage + .border-t { padding-top: 0.25rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+    </style>
+</head>
+
+<body>
+    <div id="mira-progress"></div>
+    <button id="mira-next" aria-label="Próximo slide">
+        <i data-lucide="chevron-down" class="w-6 h-6" id="mira-next-icon"></i>
+    </button>
+
+    <!-- ============ SLIDE 1: ABERTURA ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <div id="capa-stage" class="absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 text-center max-w-5xl w-full" data-aos="fade-up">
+            <p class="attribute-pill inline-block px-5 py-2 text-sm tracking-widest uppercase text-soft mb-8">Motor de rateio · AVAP · competência 09/2026</p>
+            <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
+                Setembro fechou igual,<br><span class="primary-color italic">ao centavo</span>
+            </h1>
+            <p class="text-xl text-soft max-w-3xl mx-auto mb-12">O motor refez o fechamento real da associação, com os mesmos eventos, o mesmo total e o mesmo valor por cota.</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <div class="glass-card metric-card p-6 relative overflow-hidden">
+                    <svg class="metric-ring absolute -top-8 -right-8 w-24 h-24 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                    <p class="metric-value text-4xl font-black primary-color" data-target="103" data-dec="0">0</p>
+                    <p class="text-soft mt-2 text-sm">eventos rateados</p>
+                </div>
+                <div class="glass-card metric-card p-6 relative overflow-hidden">
+                    <svg class="metric-ring absolute -top-8 -right-8 w-24 h-24 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                    <p class="metric-value text-xl md:text-2xl font-black primary-color pt-3 whitespace-nowrap" data-target="1802067.92" data-dec="2" data-prefix="R$ ">0</p>
+                    <p class="text-soft mt-3 text-sm">total a ratear</p>
+                </div>
+                <div class="glass-card metric-card p-6 relative overflow-hidden">
+                    <svg class="metric-ring absolute -top-8 -right-8 w-24 h-24 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                    <p class="metric-value text-4xl font-black primary-color" data-target="7.78" data-dec="2" data-prefix="R$ ">0</p>
+                    <p class="text-soft mt-2 text-sm">por cota</p>
+                </div>
+                <div class="glass-card metric-card p-6 relative overflow-hidden">
+                    <svg class="metric-ring absolute -top-8 -right-8 w-24 h-24 opacity-30" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"></circle></svg>
+                    <p class="text-4xl font-black primary-color">zero</p>
+                    <p class="text-soft mt-2 text-sm">diferença para o fechamento</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 2: POTE ÚNICO ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">Um pote, <span class="primary-color italic">dividido por cota</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">Sem categoria, sem risco, sem fila: só o peso de cada veículo.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="droplets" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">A conta de setembro</p>
+                            <p class="text-white/50 text-xs italic">Custo do mês mais somas, menos deduções, sobre as cotas ativas.</p>
+                        </div>
+                    </div>
+                    <button id="replay-pote" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="pote-stage"><svg id="pote-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+                <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                    <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">Boleto do veículo = cotas do veículo x valor da cota</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div class="attribute-pill text-center p-1 rounded-xl"><i data-lucide="car" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">1 cota a cada R$ 5 mil</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><i data-lucide="tag" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">Peso lido do relatório</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><i data-lucide="layers" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">231.556 cotas ativas</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><i data-lucide="circle-dollar-sign" class="w-4 h-4 primary-color mx-auto mb-1"></i><p class="text-sm font-semibold">R$ 7,78 por cota</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 3: ENTRADAS CONFERIDAS ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-5xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">Três entradas, <span class="primary-color italic">todas conferidas</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">Os mesmos relatórios que a associação já exporta do SGA.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card scan-card p-8">
+                    <div class="flex items-center justify-between mb-6"><i data-lucide="car-front" class="w-7 h-7 primary-color"></i><div class="check"><i data-lucide="check" class="w-4 h-4 primary-color"></i></div></div>
+                    <p class="text-sm uppercase tracking-widest text-softer">Base de veículos</p>
+                    <p class="text-5xl font-black primary-color my-3">39.242</p>
+                    <p class="text-soft">veículos, com situação e cotas lidas do próprio rótulo.</p>
+                </div>
+                <div class="glass-card scan-card p-8">
+                    <div class="flex items-center justify-between mb-6"><i data-lucide="file-spreadsheet" class="w-7 h-7 primary-color"></i><div class="check"><i data-lucide="check" class="w-4 h-4 primary-color"></i></div></div>
+                    <p class="text-sm uppercase tracking-widest text-softer">Foto de eventos</p>
+                    <p class="text-5xl font-black primary-color my-3">3.095</p>
+                    <p class="text-soft">eventos, com situação, reparo, participação e fila do mês.</p>
+                </div>
+                <div class="glass-card scan-card p-8">
+                    <div class="flex items-center justify-between mb-6"><i data-lucide="list-plus" class="w-7 h-7 primary-color"></i><div class="check"><i data-lucide="check" class="w-4 h-4 primary-color"></i></div></div>
+                    <p class="text-sm uppercase tracking-widest text-softer">Linhas do mês</p>
+                    <p class="text-5xl font-black primary-color my-3">5</p>
+                    <p class="text-soft">somas e deduções, lançadas pelo operador como já são hoje.</p>
+                </div>
+            </div>
+            <p class="text-softer text-center mt-8 max-w-3xl mx-auto">Contagem e soma de cada relatório são conferidas com o rodapé do próprio arquivo. Se não batem, o arquivo é recusado antes de qualquer cálculo.</p>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 4: QUEM PAGA ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">Só o veículo <span class="primary-color italic">ativo paga</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">Conta a situação do veículo, não a do associado.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="users" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Base de 30/09: 39.242 veículos</p>
+                            <p class="text-white/50 text-xs italic">Cada quadrado representa cerca de 1% da base.</p>
+                        </div>
+                    </div>
+                    <button id="replay-quem" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="quem-stage"><svg id="quem-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+                <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                    <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">Quem pagou não fica no prejuízo</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">22.530 ativos no denominador</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">16.683 inadimplentes fora</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Perda volta pela linha do mês</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Recuperado vira dedução</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 5: QUAIS EVENTOS ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">103 eventos: <span class="primary-color italic">regra mais decisão</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">A fila entra por regra; o resto, só com a palavra do operador.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="git-merge" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Como setembro foi montado</p>
+                            <p class="text-white/50 text-xs italic">O campo Valor Rateado do relatório, sozinho, não define o fechamento.</p>
+                        </div>
+                    </div>
+                    <button id="replay-eventos" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="eventos-stage"><svg id="eventos-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+                <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                    <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">Integral é rateada inteira</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Só evento finalizado</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Reparo menos participação</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">32 integrais, 74% do custo</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Terceiros não entram</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 6: CTA DEMONSTRAÇÃO ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <div class="breathe absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 text-center max-w-3xl" data-aos="zoom-in">
+            <p class="text-xs uppercase tracking-[3px] text-white/40 mb-6">Ao vivo, com os arquivos da associação</p>
+            <h2 class="text-5xl md:text-6xl font-black mb-6">Veja setembro <span class="primary-color italic">rodar agora</span></h2>
+            <p class="text-xl text-soft mb-10">A demonstração carrega a base de veículos e a foto de eventos de setembro, aplica as decisões do fechamento e chega ao mesmo total. A leitura dos 39 mil veículos leva cerca de 5 segundos.</p>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <span class="attribute-pill px-6 py-3 text-base"><i data-lucide="play" class="inline w-4 h-4 mr-2 primary-color"></i>Abrir a demonstração 09/2026</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 7: CASCATA ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">Do custo ao <span class="primary-color italic">total a ratear</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">As linhas sem placa ajustam o pote antes da divisão.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="bar-chart-3" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Setembro/2026, em reais</p>
+                            <p class="text-white/50 text-xs italic">Eixo a partir de R$ 1,55 milhão para mostrar as linhas menores.</p>
+                        </div>
+                    </div>
+                    <button id="replay-cascata" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="cascata-stage"><svg id="cascata-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+                <div class="border-t border-white/10 pt-1 mt-1 mb-1">
+                    <p class="text-xs uppercase tracking-[3px] text-white/40 text-center mb-1">O operador lança as linhas; o motor não as calcula</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Somas: + R$ 243.448,76</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Deduções: - R$ 174.774,49</p></div>
+                        <div class="attribute-pill text-center p-1 rounded-xl"><p class="text-sm font-semibold">Valor sempre positivo, sinal pelo tipo</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 8: ALERTAS ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">O motor alerta, <span class="primary-color italic">você decide</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">Nada é excluído sozinho. Toda decisão fica registrada com justificativa.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="radar" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Seis alertas varrendo a fila</p>
+                            <p class="text-white/50 text-xs italic">Em setembro, todos já decididos: zero pendências.</p>
+                        </div>
+                    </div>
+                    <button id="replay-alertas" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="alertas-stage"><svg id="alertas-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 9: MÊS A MÊS ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">O fechamento em <span class="primary-color italic">cinco passos</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">O mesmo roteiro todo mês, na mesma tela.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="route" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Da exportação ao boleto</p>
+                            <p class="text-white/50 text-xs italic">Cada passo confere o anterior antes de seguir.</p>
+                        </div>
+                    </div>
+                    <button id="replay-passos" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="passos-stage"><svg id="passos-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 10: PRÓXIMO PASSO ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-3 pb-6">
+        <div class="w-full max-w-6xl" data-aos="fade-up" data-aos-delay="100">
+            <div class="text-center mb-2">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">Outubro em paralelo, <span class="primary-color italic">lado a lado</span></h2>
+                <p class="text-white/60 italic text-lg md:text-xl">A associação fecha como sempre; o motor fecha junto; comparamos.</p>
+            </div>
+            <div class="glass-card rounded-2xl p-1 md:p-2">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--mira-icon-bg);"><i data-lucide="columns-2" class="w-5 h-5 primary-color"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">Segundo mês com diferença zero consolida o aceite</p>
+                            <p class="text-white/50 text-xs italic">Mesmos arquivos, mesma rotina, nenhum trabalho a mais.</p>
+                        </div>
+                    </div>
+                    <button id="replay-paralelo" class="replay-btn" type="button"><i data-lucide="rotate-cw" class="w-4 h-4"></i> Replay</button>
+                </div>
+                <!-- @MIRA:SIZE 3/10 -->
+                <div class="anim-stage" id="paralelo-stage"><svg id="paralelo-svg" viewBox="0 0 1280 400" preserveAspectRatio="xMidYMid meet"></svg></div>
+                <div class="border-t border-white/10 pt-3 mt-1 mb-1 px-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-[3px] text-white/40 mb-2">Depois de outubro</p>
+                            <div class="space-y-2">
+                                <div class="attribute-pill p-3 rounded-xl"><p class="font-semibold">Lacre do fechamento</p><p class="text-soft text-sm">Mês travado, com histórico e trilha de auditoria.</p></div>
+                                <div class="attribute-pill p-3 rounded-xl"><p class="font-semibold">Arquivo de cobrança pronto</p><p class="text-soft text-sm">No layout que o SGA importa.</p></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-[3px] text-white/40 mb-2">Três respostas que ajudam a operação</p>
+                            <div class="space-y-2">
+                                <div class="attribute-pill p-3 rounded-xl"><p class="font-semibold">Integrais finalizadas fora do mês</p><p class="text-soft text-sm">Qual critério deixa uma integral para depois?</p></div>
+                                <div class="attribute-pill p-3 rounded-xl"><p class="font-semibold">Linha de inadimplência</p><p class="text-soft text-sm">Como o valor do mês é calculado?</p></div>
+                                <div class="attribute-pill p-3 rounded-xl"><p class="font-semibold">Modelo do arquivo de cobrança</p><p class="text-soft text-sm">Existe um layout de importação do SGA?</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SLIDE 11: FECHAMENTO ============ -->
+    <section class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <div class="breathe absolute inset-0 pointer-events-none"></div>
+        <div id="fim-stage" class="absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 text-center max-w-4xl" data-aos="zoom-in">
+            <h2 class="text-5xl md:text-6xl font-black mb-8">A regra continua <span class="primary-color italic">da AVAP</span></h2>
+            <p class="text-2xl text-soft leading-relaxed mb-10">O motor não muda o jeito de fechar. Ele garante que o fechamento saia igual, conferido e registrado, todo mês.</p>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                <span class="attribute-pill px-5 py-2 text-sm">Setembro: diferença zero</span>
+                <span class="attribute-pill px-5 py-2 text-sm">Operador no comando</span>
+                <span class="attribute-pill px-5 py-2 text-sm">Outubro em paralelo</span>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        AOS.init({ duration: 800, once: true });
+        lucide.createIcons();
+        const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+        const PRIMARY = css('--mira-primary');
+        const ACCENT = css('--mira-accent-2');
+        const TEXT = css('--mira-text');
+        const SOFT = css('--mira-text-soft');
+        const SOFTER = css('--mira-text-softer');
+        const BORDER = css('--mira-card-border');
+        const CARD = css('--mira-card-bg');
+        const BR = d3.formatLocale({ decimal: ',', thousands: '.', grouping: [3], currency: ['R$ ', ''] });
+        const brl = BR.format(',.2f');
+        const int = BR.format(',d');
+
+        // Partícula viajando por um path (usada em vários slides)
+        function viajar(svg, path, cor, dur, r = 5, reverso = false) {
+            const len = path.getTotalLength();
+            const p0 = path.getPointAtLength(reverso ? len : 0);
+            const c = svg.append('circle').attr('r', r).attr('fill', cor)
+                .attr('transform', `translate(${p0.x},${p0.y})`)
+                .style('filter', `drop-shadow(0 0 8px ${cor})`);
+            c.transition().duration(dur).ease(d3.easeQuadInOut)
+                .attrTween('transform', () => t => {
+                    const p = path.getPointAtLength((reverso ? 1 - t : t) * len);
+                    return `translate(${p.x},${p.y})`;
+                })
+                .on('end', () => c.remove());
+            return c;
+        }
+
+        // ABERTURA: partículas orbitando + contadores + anéis (loop)
+        (function () {
+            const W = window.innerWidth, H = window.innerHeight;
+            const svg = d3.select('#capa-stage').append('svg').attr('viewBox', `0 0 ${W} ${H}`);
+            const cx = W / 2, cy = H / 2;
+            const ps = d3.range(28).map(() => ({ r: 200 + Math.random() * Math.min(W, H) * 0.4, a: Math.random() * Math.PI * 2, s: 0.002 + Math.random() * 0.004, z: 1.5 + Math.random() * 3 }));
+            const dots = svg.selectAll('circle').data(ps).join('circle').attr('r', d => d.z).attr('fill', PRIMARY).attr('opacity', 0.3);
+            d3.timer(() => {
+                dots.attr('cx', d => { d.a += d.s; return cx + Math.cos(d.a) * d.r; }).attr('cy', d => cy + Math.sin(d.a) * d.r * 0.6);
+            });
+            const io = new IntersectionObserver(es => es.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el = e.target, alvo = +el.dataset.target, dec = +el.dataset.dec, pre = el.dataset.prefix || '';
+                const f = dec ? BR.format(`,.${dec}f`) : int;
+                d3.select(el).transition().duration(2000).ease(d3.easeCubicOut)
+                    .tween('n', () => { const i = d3.interpolateNumber(0, alvo); return t => el.textContent = pre + f(i(t)); });
+                io.unobserve(el);
+            }), { threshold: 0.4 });
+            document.querySelectorAll('.metric-value').forEach(c => io.observe(c));
+            document.querySelectorAll('.metric-ring circle').forEach((ring, i) => {
+                let o = 0;
+                setInterval(() => { o = (o + 1.2 + i * 0.3) % 260; ring.setAttribute('stroke-dashoffset', -o); }, 30);
+            });
+        })();
+
+        // SLIDE 2: pote único. Afluentes entram no pote, deduções saem, a cota sai pela direita (loop de partículas)
+        function animatePote() {
+            clearInterval(window.__poteFlow);
+            window.__poteGen = (window.__poteGen || 0) + 1;
+            const gen = window.__poteGen;
+            const svg = d3.select('#pote-svg'); svg.selectAll('*').remove();
+            const pot = { x: 640, y: 360, r: 120 };
+            const fontes = [
+                { y: 150, rot: 'Custo dos eventos', val: 'R$ 1.733.393,65', cor: PRIMARY, sai: false },
+                { y: 360, rot: 'Linhas de soma', val: '+ R$ 243.448,76', cor: ACCENT, sai: false },
+                { y: 570, rot: 'Linhas de dedução', val: '- R$ 174.774,49', cor: SOFT, sai: true }
+            ];
+            const paths = fontes.map((f, i) => {
+                const p = svg.append('path')
+                    .attr('d', `M 300 ${f.y} C 430 ${f.y}, 470 ${pot.y + (i - 1) * 40}, ${pot.x - pot.r} ${pot.y + (i - 1) * 40}`)
+                    .attr('fill', 'none').attr('stroke', f.cor).attr('stroke-opacity', 0.35).attr('stroke-width', 2).attr('stroke-dasharray', '5,5');
+                const len = p.node().getTotalLength();
+                p.attr('stroke-dashoffset', len).transition().delay(300 + i * 250).duration(700).attr('stroke-dashoffset', 0);
+                const g = svg.append('g').attr('transform', `translate(70,${f.y})`).attr('opacity', 0);
+                g.append('rect').attr('x', 0).attr('y', -46).attr('width', 230).attr('height', 92).attr('rx', 16)
+                    .attr('fill', CARD).attr('stroke', f.cor).attr('stroke-opacity', 0.6);
+                g.append('text').text(f.rot).attr('x', 18).attr('y', -10).attr('fill', SOFT).attr('font-size', 18);
+                g.append('text').text(f.val).attr('x', 18).attr('y', 22).attr('fill', f.cor).attr('font-size', 22).attr('font-weight', 800);
+                g.transition().delay(i * 250).duration(600).attr('opacity', 1);
+                return { node: p.node(), f };
+            });
+            const pg = svg.append('g').attr('transform', `translate(${pot.x},${pot.y})`);
+            const halo = pg.append('circle').attr('r', pot.r).attr('fill', 'none').attr('stroke', PRIMARY).attr('opacity', 0);
+            pg.append('circle').attr('r', 0).attr('fill', CARD).attr('stroke', PRIMARY).attr('stroke-width', 3)
+                .transition().delay(900).duration(800).ease(d3.easeBackOut.overshoot(1.1)).attr('r', pot.r);
+            pg.append('text').text('Total a ratear').attr('text-anchor', 'middle').attr('y', -22).attr('fill', SOFT).attr('font-size', 18).attr('opacity', 0).transition().delay(1500).attr('opacity', 1);
+            pg.append('text').text('R$ 1.802.067,92').attr('text-anchor', 'middle').attr('y', 14).attr('fill', PRIMARY).attr('font-size', 26).attr('font-weight', 900).attr('opacity', 0).transition().delay(1600).attr('opacity', 1);
+            pg.append('text').text('pote único').attr('text-anchor', 'middle').attr('y', 46).attr('fill', SOFTER).attr('font-size', 15).attr('opacity', 0).transition().delay(1700).attr('opacity', 1);
+            const saida = svg.append('path').attr('d', `M ${pot.x + pot.r} ${pot.y} L 960 ${pot.y}`)
+                .attr('stroke', PRIMARY).attr('stroke-width', 2).attr('stroke-dasharray', '5,5').attr('stroke-opacity', 0.5).attr('fill', 'none');
+            svg.append('text').text('÷ 231.556 cotas').attr('x', 860).attr('y', pot.y - 18).attr('text-anchor', 'middle').attr('fill', SOFT).attr('font-size', 18)
+                .attr('opacity', 0).transition().delay(1900).attr('opacity', 1);
+            const og = svg.append('g').attr('transform', `translate(1080,${pot.y})`).attr('opacity', 0);
+            og.append('rect').attr('x', -110).attr('y', -70).attr('width', 220).attr('height', 140).attr('rx', 20).attr('fill', CARD).attr('stroke', PRIMARY);
+            og.append('text').text('R$ 7,78').attr('text-anchor', 'middle').attr('y', 10).attr('fill', PRIMARY).attr('font-size', 44).attr('font-weight', 900);
+            og.append('text').text('por cota').attr('text-anchor', 'middle').attr('y', 44).attr('fill', SOFT).attr('font-size', 18);
+            og.transition().delay(2100).duration(700).attr('opacity', 1);
+            setTimeout(() => {
+                if (gen !== window.__poteGen) return;
+                let k = 0;
+                window.__poteFlow = setInterval(() => {
+                    if (gen !== window.__poteGen) return clearInterval(window.__poteFlow);
+                    const p = paths[k % 3]; k++;
+                    viajar(svg, p.node, p.f.cor, 1600, 6, p.f.sai);
+                    if (k % 3 === 0) {
+                        viajar(svg, saida.node(), PRIMARY, 1200, 5);
+                        halo.attr('r', pot.r).attr('opacity', 0.6).transition().duration(1400).attr('r', pot.r + 40).attr('opacity', 0);
+                    }
+                }, 420);
+            }, 2200);
+        }
+
+        // SLIDE 4: grade de 100 quadrados (ativos x inadimplentes). Loop: onda varrendo os ativos e retorno da inadimplência
+        function animateQuem() {
+            clearInterval(window.__quemWave);
+            window.__quemGen = (window.__quemGen || 0) + 1;
+            const gen = window.__quemGen;
+            const svg = d3.select('#quem-svg'); svg.selectAll('*').remove();
+            const ativos = Math.round(22530 / 39242 * 100); // 57
+            const cols = 20, size = 38, gap = 8, x0 = 190, y0 = 150;
+            const cells = d3.range(100).map(i => ({ i, c: i % cols, r: Math.floor(i / cols), ativo: i < ativos }));
+            const rects = svg.selectAll('rect.cel').data(cells).join('rect').attr('class', 'cel')
+                .attr('x', d => x0 + d.c * (size + gap)).attr('y', d => y0 + d.r * (size + gap))
+                .attr('width', size).attr('height', size).attr('rx', 8)
+                .attr('fill', d => d.ativo ? PRIMARY : 'transparent')
+                .attr('fill-opacity', d => d.ativo ? 0.75 : 0)
+                .attr('stroke', d => d.ativo ? PRIMARY : SOFTER).attr('stroke-opacity', d => d.ativo ? 0.9 : 0.6)
+                .attr('opacity', 0).attr('transform', 'scale(1)')
+                .transition().delay(d => d.i * 18).duration(400).attr('opacity', 1);
+            const lg = svg.append('g').attr('opacity', 0);
+            lg.append('text').text('22.530 ativos').attr('x', x0).attr('y', 110).attr('fill', PRIMARY).attr('font-size', 28).attr('font-weight', 800);
+            lg.append('text').text('pagam o rateio: 231.556 cotas').attr('x', x0 + 200).attr('y', 110).attr('fill', SOFT).attr('font-size', 20);
+            lg.append('text').text('16.683 inadimplentes').attr('x', x0).attr('y', 430).attr('fill', TEXT).attr('font-size', 26).attr('font-weight', 800);
+            lg.append('text').text('ficam fora do denominador').attr('x', x0 + 275).attr('y', 430).attr('fill', SOFT).attr('font-size', 20);
+            lg.append('text').text('mais 29 fora por cadastro pendente ou peso zero').attr('x', x0).attr('y', 462).attr('fill', SOFTER).attr('font-size', 16);
+            lg.transition().delay(1900).duration(600).attr('opacity', 1);
+            // retorno: a perda volta ao pote pela linha de inadimplência
+            const ret = svg.append('path').attr('d', `M ${x0 + 300} 500 C ${x0 + 300} 640, 1000 640, 1000 520`)
+                .attr('fill', 'none').attr('stroke', ACCENT).attr('stroke-opacity', 0.45).attr('stroke-dasharray', '5,5').attr('stroke-width', 2);
+            const rg = svg.append('g').attr('transform', 'translate(1000,480)').attr('opacity', 0);
+            rg.append('rect').attr('x', -150).attr('y', -40).attr('width', 300).attr('height', 80).attr('rx', 16).attr('fill', CARD).attr('stroke', ACCENT);
+            rg.append('text').text('Linha INADIMPLÊNCIA').attr('text-anchor', 'middle').attr('y', -6).attr('fill', ACCENT).attr('font-size', 20).attr('font-weight', 800);
+            rg.append('text').text('+ R$ 109.035,49 no pote').attr('text-anchor', 'middle').attr('y', 22).attr('fill', SOFT).attr('font-size', 17);
+            rg.transition().delay(2300).duration(600).attr('opacity', 1);
+            setTimeout(() => {
+                if (gen !== window.__quemGen) return;
+                let col = 0;
+                window.__quemWave = setInterval(() => {
+                    if (gen !== window.__quemGen) return clearInterval(window.__quemWave);
+                    svg.selectAll('rect.cel').filter(d => d.ativo && d.c === col)
+                        .transition().duration(300).attr('fill-opacity', 1).style('filter', `drop-shadow(0 0 10px ${PRIMARY})`)
+                        .transition().duration(500).attr('fill-opacity', 0.75).style('filter', null);
+                    if (col === 0) viajar(svg, ret.node(), ACCENT, 2200, 6);
+                    col = (col + 1) % cols;
+                }, 140);
+            }, 2400);
+        }
+
+        // SLIDE 5: convergência. Fila e inclusões do operador desaguam nos 103; 1 da fila é desviado (loop de partículas)
+        function animateEventos() {
+            clearInterval(window.__evFlow);
+            window.__evGen = (window.__evGen || 0) + 1;
+            const gen = window.__evGen;
+            const svg = d3.select('#eventos-svg'); svg.selectAll('*').remove();
+            const dest = { x: 900, y: 380 };
+            function caixa(x, y, w, t1, t2, cor, delay) {
+                const g = svg.append('g').attr('transform', `translate(${x},${y})`).attr('opacity', 0);
+                g.append('rect').attr('x', 0).attr('y', -55).attr('width', w).attr('height', 110).attr('rx', 18).attr('fill', CARD).attr('stroke', cor);
+                g.append('text').text(t1).attr('x', 22).attr('y', -12).attr('fill', cor).attr('font-size', 30).attr('font-weight', 900);
+                g.append('text').text(t2).attr('x', 22).attr('y', 24).attr('fill', SOFT).attr('font-size', 18);
+                g.transition().delay(delay).duration(600).attr('opacity', 1);
+            }
+            caixa(60, 200, 330, '79 de 80', 'da fila do relatório, por regra', PRIMARY, 0);
+            caixa(60, 560, 330, '24', 'incluídos pelo operador', ACCENT, 300);
+            const pFila = svg.append('path').attr('d', `M 390 200 C 600 200, 680 ${dest.y - 30}, ${dest.x - 120} ${dest.y - 30}`);
+            const pOp = svg.append('path').attr('d', `M 390 560 C 600 560, 680 ${dest.y + 30}, ${dest.x - 120} ${dest.y + 30}`);
+            const pFora = svg.append('path').attr('d', `M 390 200 C 520 200, 560 90, 700 80`);
+            [[pFila, PRIMARY], [pOp, ACCENT], [pFora, SOFTER]].forEach(([p, c], i) => {
+                p.attr('fill', 'none').attr('stroke', c).attr('stroke-opacity', 0.4).attr('stroke-width', 2).attr('stroke-dasharray', '5,5');
+                const len = p.node().getTotalLength();
+                p.attr('stroke-dashoffset', len).transition().delay(500 + i * 200).duration(800).attr('stroke-dashoffset', 0);
+            });
+            svg.append('text').text('1 excluído').attr('x', 712).attr('y', 86).attr('fill', SOFTER).attr('font-size', 18).attr('opacity', 0).transition().delay(1300).attr('opacity', 1);
+            const dg = svg.append('g').attr('transform', `translate(${dest.x},${dest.y})`);
+            const halo = dg.append('circle').attr('r', 120).attr('fill', 'none').attr('stroke', PRIMARY).attr('opacity', 0);
+            dg.append('circle').attr('r', 0).attr('fill', CARD).attr('stroke', PRIMARY).attr('stroke-width', 3)
+                .transition().delay(1000).duration(800).ease(d3.easeBackOut.overshoot(1.1)).attr('r', 120);
+            const num = dg.append('text').attr('text-anchor', 'middle').attr('y', 10).attr('fill', PRIMARY).attr('font-size', 64).attr('font-weight', 900).text('0');
+            dg.append('text').text('eventos rateados').attr('text-anchor', 'middle').attr('y', 48).attr('fill', SOFT).attr('font-size', 18);
+            num.transition().delay(1200).duration(1600).tween('n', () => { const i = d3.interpolateRound(0, 103); return t => num.text(i(t)); });
+            const ng = svg.append('g').attr('transform', 'translate(1090,620)').attr('opacity', 0);
+            ng.append('text').text('R$ 1.733.393,65').attr('text-anchor', 'middle').attr('fill', TEXT).attr('font-size', 22).attr('font-weight', 800);
+            ng.append('text').text('custo dos eventos').attr('text-anchor', 'middle').attr('y', 26).attr('fill', SOFT).attr('font-size', 16);
+            ng.transition().delay(2600).duration(600).attr('opacity', 1);
+            setTimeout(() => {
+                if (gen !== window.__evGen) return;
+                let k = 0;
+                window.__evFlow = setInterval(() => {
+                    if (gen !== window.__evGen) return clearInterval(window.__evFlow);
+                    k++;
+                    if (k % 11 === 0) viajar(svg, pFora.node(), SOFTER, 1500, 5);
+                    else if (k % 4 === 0) viajar(svg, pOp.node(), ACCENT, 1700, 6);
+                    else viajar(svg, pFila.node(), PRIMARY, 1700, 6);
+                    if (k % 4 === 0) halo.attr('r', 120).attr('opacity', 0.55).transition().duration(1300).attr('r', 165).attr('opacity', 0);
+                }, 330);
+            }, 2000);
+        }
+
+        // SLIDE 7: cascata. Barras crescem em sequência; loop: holofote percorre as barras e o acumulado acompanha
+        function animateCascata() {
+            clearInterval(window.__casSpot);
+            window.__casGen = (window.__casGen || 0) + 1;
+            const gen = window.__casGen;
+            const svg = d3.select('#cascata-svg'); svg.selectAll('*').remove();
+            const itens = [
+                { n: 'Eventos', v: 1733393.65, t: 'base' },
+                { n: 'E-SAÚDE', v: 16239.82, t: 'soma' },
+                { n: 'Rastreamento', v: 118173.45, t: 'soma' },
+                { n: 'Inadimplência', v: 109035.49, t: 'soma' },
+                { n: 'Recuperados', v: -45521.49, t: 'deducao' },
+                { n: 'Salvados', v: -129253.00, t: 'deducao' },
+                { n: 'Total a ratear', v: 1802067.92, t: 'total' }
+            ];
+            let acc = 0;
+            itens.forEach(d => {
+                if (d.t === 'base') { d.y0 = 1550000; d.y1 = d.v; acc = d.v; }
+                else if (d.t === 'total') { d.y0 = 1550000; d.y1 = d.v; }
+                else { d.y0 = acc; acc += d.v; d.y1 = acc; }
+                d.acc = d.t === 'total' ? d.v : acc;
+            });
+            const x = d3.scaleBand().domain(itens.map(d => d.n)).range([90, 1230]).padding(0.28);
+            const y = d3.scaleLinear().domain([1550000, 2000000]).range([600, 90]);
+            const cor = d => d.t === 'soma' ? ACCENT : d.t === 'deducao' ? SOFT : PRIMARY;
+            svg.append('g').attr('transform', 'translate(0,600)').call(d3.axisBottom(x).tickSize(0))
+                .call(g => g.select('.domain').attr('stroke', BORDER))
+                .selectAll('text').attr('fill', SOFT).attr('font-size', 16).attr('dy', 18);
+            svg.append('g').attr('transform', 'translate(90,0)').call(d3.axisLeft(y).ticks(5).tickFormat(v => 'R$ ' + BR.format(',.2f')(v / 1e6) + ' mi'))
+                .call(g => g.select('.domain').remove()).call(g => g.selectAll('line').attr('stroke', BORDER))
+                .selectAll('text').attr('fill', SOFTER).attr('font-size', 13);
+            const spot = svg.append('rect').attr('rx', 12).attr('fill', 'none').attr('stroke', PRIMARY).attr('stroke-width', 2).attr('opacity', 0)
+                .style('filter', `drop-shadow(0 0 12px ${PRIMARY})`);
+            svg.selectAll('rect.bar').data(itens).join('rect').attr('class', 'bar')
+                .attr('x', d => x(d.n)).attr('width', x.bandwidth()).attr('rx', 6)
+                .attr('y', d => y(d.y0)).attr('height', 0).attr('fill', cor).attr('fill-opacity', d => d.t === 'deducao' ? 0.35 : 0.85)
+                .attr('stroke', cor)
+                .transition().delay((d, i) => 200 + i * 300).duration(600).ease(d3.easeCubicOut)
+                .attr('y', d => y(Math.max(d.y0, d.y1))).attr('height', d => Math.abs(y(d.y0) - y(d.y1)));
+            svg.selectAll('text.val').data(itens).join('text').attr('class', 'val')
+                .attr('x', d => x(d.n) + x.bandwidth() / 2).attr('y', d => y(Math.max(d.y0, d.y1)) - 10).attr('text-anchor', 'middle')
+                .attr('fill', d => d.t === 'total' ? PRIMARY : TEXT).attr('font-size', d => d.t === 'total' || d.t === 'base' ? 17 : 15).attr('font-weight', 700)
+                .text(d => (d.t === 'soma' ? '+ ' : d.t === 'deducao' ? '- ' : '') + brl(Math.abs(d.v)))
+                .attr('opacity', 0).transition().delay((d, i) => 600 + i * 300).attr('opacity', 1);
+            const acum = svg.append('text').attr('x', 1230).attr('y', 50).attr('text-anchor', 'end').attr('fill', PRIMARY).attr('font-size', 24).attr('font-weight', 800).attr('opacity', 0);
+            setTimeout(() => {
+                if (gen !== window.__casGen) return;
+                let i = 0;
+                acum.attr('opacity', 1);
+                const step = () => {
+                    const d = itens[i];
+                    spot.transition().duration(500).attr('opacity', 1)
+                        .attr('x', x(d.n) - 8).attr('width', x.bandwidth() + 16)
+                        .attr('y', y(Math.max(d.y0, d.y1)) - 36).attr('height', Math.abs(y(d.y0) - y(d.y1)) + 44);
+                    acum.text('Acumulado: R$ ' + brl(d.acc));
+                    i = (i + 1) % itens.length;
+                };
+                step();
+                window.__casSpot = setInterval(() => {
+                    if (gen !== window.__casGen) return clearInterval(window.__casSpot);
+                    step();
+                }, 1300);
+            }, 2600);
+        }
+
+        // SLIDE 8: radar. Seis alertas ao redor do operador; o feixe gira e cada alerta pulsa ao ser varrido (loop)
+        function animateAlertas() {
+            if (window.__alTimer) window.__alTimer.stop();
+            window.__alGen = (window.__alGen || 0) + 1;
+            const gen = window.__alGen;
+            const svg = d3.select('#alertas-svg'); svg.selectAll('*').remove();
+            const cx = 640, cy = 370;
+            const alertas = [
+                { c: 'A1', t: 'Protocolo atípico' },
+                { c: 'A2', t: 'Custo zero ou negativo' },
+                { c: 'A3', t: 'Sem participação, custo baixo' },
+                { c: 'A4', t: 'Evento acima de 10% do total' },
+                { c: 'A5', t: 'Indenização integral' },
+                { c: 'A6', t: 'Data de finalização alterada' }
+            ].map((a, i) => ({ ...a, ang: -Math.PI / 2 + i * Math.PI / 3, rr: 230 }));
+            [100, 190, 280].forEach((r, i) => svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 0)
+                .attr('fill', 'none').attr('stroke', BORDER).attr('stroke-dasharray', '4,6')
+                .transition().delay(i * 150).duration(700).attr('r', r));
+            const defs = svg.append('defs');
+            const grad = defs.append('linearGradient').attr('id', 'feixe').attr('x1', '0').attr('x2', '1');
+            grad.append('stop').attr('offset', '0%').attr('stop-color', PRIMARY).attr('stop-opacity', 0);
+            grad.append('stop').attr('offset', '100%').attr('stop-color', PRIMARY).attr('stop-opacity', 0.35);
+            const beam = svg.append('g').attr('transform', `translate(${cx},${cy})`).attr('opacity', 0);
+            const a0 = -0.5;
+            beam.append('path').attr('d', `M 0 0 L ${280 * Math.cos(a0)} ${280 * Math.sin(a0)} A 280 280 0 0 1 280 0 Z`).attr('fill', 'url(#feixe)');
+            beam.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 280).attr('y2', 0).attr('stroke', PRIMARY).attr('stroke-width', 2);
+            beam.transition().delay(900).duration(500).attr('opacity', 1);
+            const core = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+            core.append('circle').attr('r', 0).attr('fill', CARD).attr('stroke', PRIMARY).attr('stroke-width', 2.5)
+                .transition().delay(300).duration(700).ease(d3.easeBackOut.overshoot(1.1)).attr('r', 70);
+            core.append('text').text('Operador').attr('text-anchor', 'middle').attr('y', -2).attr('fill', PRIMARY).attr('font-size', 20).attr('font-weight', 800);
+            core.append('text').text('decide').attr('text-anchor', 'middle').attr('y', 22).attr('fill', SOFT).attr('font-size', 16);
+            const blips = svg.selectAll('g.blip').data(alertas).join('g').attr('class', 'blip')
+                .attr('transform', d => `translate(${cx + Math.cos(d.ang) * d.rr},${cy + Math.sin(d.ang) * d.rr})`).attr('opacity', 0);
+            blips.append('circle').attr('class', 'ping').attr('r', 22).attr('fill', 'none').attr('stroke', PRIMARY).attr('opacity', 0);
+            blips.append('circle').attr('r', 22).attr('fill', CARD).attr('stroke', PRIMARY);
+            blips.append('text').text(d => d.c).attr('text-anchor', 'middle').attr('dy', 6).attr('fill', PRIMARY).attr('font-size', 16).attr('font-weight', 800);
+            blips.append('text').text(d => d.t)
+                .attr('text-anchor', d => Math.cos(d.ang) > 0.2 ? 'start' : Math.cos(d.ang) < -0.2 ? 'end' : 'middle')
+                .attr('x', d => Math.cos(d.ang) > 0.2 ? 34 : Math.cos(d.ang) < -0.2 ? -34 : 0)
+                .attr('y', d => Math.abs(Math.cos(d.ang)) <= 0.2 ? (Math.sin(d.ang) < 0 ? -34 : 44) : 6)
+                .attr('fill', TEXT).attr('font-size', 19).attr('font-weight', 600);
+            blips.transition().delay((d, i) => 700 + i * 160).duration(500).attr('opacity', 1);
+            let ang = 0, last = 0;
+            const vistos = new Set();
+            setTimeout(() => {
+                if (gen !== window.__alGen) return;
+                window.__alTimer = d3.timer((el) => {
+                    if (gen !== window.__alGen) return window.__alTimer.stop();
+                    const dt = el - last; last = el;
+                    ang = (ang + dt * 0.0012) % (Math.PI * 2);
+                    beam.attr('transform', `translate(${cx},${cy}) rotate(${ang * 180 / Math.PI})`);
+                    blips.each(function (d) {
+                        const a = ((d.ang % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                        const diff = Math.abs(a - ang);
+                        if (diff < 0.05 && !vistos.has(d.c)) {
+                            vistos.add(d.c);
+                            d3.select(this).select('.ping').attr('r', 22).attr('opacity', 0.8)
+                                .transition().duration(1100).attr('r', 56).attr('opacity', 0)
+                                .on('end', () => vistos.delete(d.c));
+                        }
+                    });
+                });
+            }, 1400);
+        }
+
+        // SLIDE 9: escada de cinco passos; um orbe sobe passo a passo e recomeça (loop)
+        function animatePassos() {
+            clearTimeout(window.__pasTo);
+            window.__pasGen = (window.__pasGen || 0) + 1;
+            const gen = window.__pasGen;
+            const svg = d3.select('#passos-svg'); svg.selectAll('*').remove();
+            const passos = [
+                { n: 'Rodar', d: ['Subir a base de veículos', 'e a foto de eventos'] },
+                { n: 'Seleção', d: ['Fila entra por regra;', 'alertas decididos'] },
+                { n: 'Lançamentos', d: ['Somas e deduções', 'do mês'] },
+                { n: 'Resultado', d: ['Total, cotas e', 'valor por cota'] },
+                { n: 'Boletos', d: ['Um valor por veículo,', 'exportado em CSV'] }
+            ].map((p, i) => ({ ...p, i, x: 150 + i * 245, y: 560 - i * 95 }));
+            const linha = d3.line().curve(d3.curveStepAfter)(passos.map(p => [p.x - 90, p.y]).concat([[passos[4].x + 90, passos[4].y]]));
+            const path = svg.append('path').attr('d', linha).attr('fill', 'none').attr('stroke', BORDER).attr('stroke-width', 3);
+            const len = path.node().getTotalLength();
+            path.attr('stroke-dasharray', len).attr('stroke-dashoffset', len).transition().duration(1400).ease(d3.easeCubicInOut).attr('stroke-dashoffset', 0);
+            const g = svg.selectAll('g.passo').data(passos).join('g').attr('class', 'passo').attr('transform', d => `translate(${d.x},${d.y})`).attr('opacity', 0);
+            g.append('circle').attr('class', 'no').attr('r', 26).attr('fill', CARD).attr('stroke', PRIMARY).attr('stroke-width', 2);
+            g.append('text').text(d => d.i + 1).attr('text-anchor', 'middle').attr('dy', 7).attr('fill', PRIMARY).attr('font-size', 20).attr('font-weight', 900);
+            g.append('text').text(d => d.n).attr('text-anchor', 'middle').attr('y', -44).attr('fill', TEXT).attr('font-size', 24).attr('font-weight', 800);
+            g.each(function (d) {
+                d.d.forEach((l, k) => d3.select(this).append('text').text(l).attr('text-anchor', 'middle').attr('y', 58 + k * 22).attr('fill', SOFT).attr('font-size', 17));
+            });
+            g.transition().delay(d => 300 + d.i * 220).duration(500).attr('opacity', 1);
+            const orbe = svg.append('circle').attr('r', 10).attr('fill', PRIMARY).style('filter', `drop-shadow(0 0 12px ${PRIMARY})`).attr('opacity', 0);
+            function sobe(i) {
+                if (gen !== window.__pasGen) return;
+                const p = passos[i];
+                orbe.transition().duration(i === 0 ? 0 : 700).ease(d3.easeQuadInOut).attr('opacity', 1).attr('cx', p.x).attr('cy', p.y - 26);
+                svg.selectAll('circle.no').filter(d => d.i === i).transition().delay(500).duration(250).attr('fill', PRIMARY).attr('fill-opacity', 0.35)
+                    .transition().duration(900).attr('fill', CARD).attr('fill-opacity', 1);
+                window.__pasTo = setTimeout(() => {
+                    if (i < passos.length - 1) sobe(i + 1);
+                    else { orbe.transition().duration(400).attr('opacity', 0); window.__pasTo = setTimeout(() => sobe(0), 700); }
+                }, 1100);
+            }
+            window.__pasTo = setTimeout(() => sobe(0), 1700);
+        }
+
+        // SLIDE 10: duas raias paralelas (associação e motor) seguem juntas até a comparação, que pulsa diferença zero (loop)
+        function animateParalelo() {
+            clearInterval(window.__parFlow);
+            window.__parGen = (window.__parGen || 0) + 1;
+            const gen = window.__parGen;
+            const svg = d3.select('#paralelo-svg'); svg.selectAll('*').remove();
+            const fim = { x: 1060, y: 200 };
+            const raias = [
+                { y: 110, rot: 'Associação fecha outubro', cor: ACCENT },
+                { y: 290, rot: 'Motor calcula outubro', cor: PRIMARY }
+            ];
+            const paths = raias.map((r, i) => {
+                svg.append('text').text(r.rot).attr('x', 60).attr('y', r.y - 20).attr('fill', r.cor).attr('font-size', 22).attr('font-weight', 800)
+                    .attr('opacity', 0).transition().delay(i * 200).attr('opacity', 1);
+                const p = svg.append('path').attr('d', `M 60 ${r.y} L 760 ${r.y} C 880 ${r.y}, 900 ${fim.y}, ${fim.x - 80} ${fim.y}`)
+                    .attr('fill', 'none').attr('stroke', r.cor).attr('stroke-opacity', 0.4).attr('stroke-width', 2).attr('stroke-dasharray', '5,5');
+                const len = p.node().getTotalLength();
+                p.attr('stroke-dashoffset', len).transition().delay(300 + i * 200).duration(1000).attr('stroke-dashoffset', 0);
+                return { node: p.node(), cor: r.cor };
+            });
+            const fg = svg.append('g').attr('transform', `translate(${fim.x},${fim.y})`);
+            const halo = fg.append('circle').attr('r', 80).attr('fill', 'none').attr('stroke', PRIMARY).attr('opacity', 0);
+            fg.append('circle').attr('r', 0).attr('fill', CARD).attr('stroke', PRIMARY).attr('stroke-width', 3)
+                .transition().delay(1100).duration(700).ease(d3.easeBackOut.overshoot(1.1)).attr('r', 80);
+            fg.append('text').text('Comparar').attr('text-anchor', 'middle').attr('y', -8).attr('fill', SOFT).attr('font-size', 17);
+            fg.append('text').text('diferença zero').attr('text-anchor', 'middle').attr('y', 20).attr('fill', PRIMARY).attr('font-size', 20).attr('font-weight', 900);
+            setTimeout(() => {
+                if (gen !== window.__parGen) return;
+                window.__parFlow = setInterval(() => {
+                    if (gen !== window.__parGen) return clearInterval(window.__parFlow);
+                    paths.forEach(p => viajar(svg, p.node, p.cor, 2200, 7));
+                    setTimeout(() => {
+                        if (gen !== window.__parGen) return;
+                        halo.attr('r', 80).attr('opacity', 0.7).transition().duration(1200).attr('r', 125).attr('opacity', 0);
+                    }, 2100);
+                }, 1600);
+            }, 1700);
+        }
+
+        // FECHAMENTO: pontos subindo devagar ao fundo (loop)
+        (function () {
+            const W = window.innerWidth, H = window.innerHeight;
+            const svg = d3.select('#fim-stage').append('svg').attr('viewBox', `0 0 ${W} ${H}`);
+            const ps = d3.range(30).map(() => ({ x: Math.random() * W, y: Math.random() * H, v: 0.2 + Math.random() * 0.5, z: 1 + Math.random() * 2.5 }));
+            const dots = svg.selectAll('circle').data(ps).join('circle').attr('r', d => d.z).attr('fill', PRIMARY).attr('opacity', 0.3);
+            d3.timer(() => dots.attr('cx', d => d.x).attr('cy', d => { d.y -= d.v; if (d.y < -10) d.y = H + 10; return d.y; }));
+        })();
+
+        // === Gatilhos: anima ao entrar no viewport, rearma ao sair, Replay refaz ===
+        function setupAnimationTriggers() {
+            const stages = [
+                { stage: document.getElementById('pote-stage'), fn: animatePote, replay: 'replay-pote' },
+                { stage: document.getElementById('quem-stage'), fn: animateQuem, replay: 'replay-quem' },
+                { stage: document.getElementById('eventos-stage'), fn: animateEventos, replay: 'replay-eventos' },
+                { stage: document.getElementById('cascata-stage'), fn: animateCascata, replay: 'replay-cascata' },
+                { stage: document.getElementById('alertas-stage'), fn: animateAlertas, replay: 'replay-alertas' },
+                { stage: document.getElementById('passos-stage'), fn: animatePassos, replay: 'replay-passos' },
+                { stage: document.getElementById('paralelo-stage'), fn: animateParalelo, replay: 'replay-paralelo' }
+            ].filter(s => s.stage);
+            const armado = new Map(stages.map(s => [s.stage, true]));
+            const io = new IntersectionObserver(es => es.forEach(e => {
+                const s = stages.find(x => x.stage === e.target);
+                if (e.isIntersecting && armado.get(s.stage)) { armado.set(s.stage, false); s.fn(); }
+                else if (!e.isIntersecting) armado.set(s.stage, true);
+            }), { threshold: 0.35 });
+            stages.forEach(s => {
+                io.observe(s.stage);
+                const b = document.getElementById(s.replay);
+                if (b) b.addEventListener('click', s.fn);
+            });
+        }
+        setupAnimationTriggers();
+
+        // === CONTROLES DE SLIDE: navegação card-a-card (progresso + botão + teclado) ===
+        (function () {
+            const cardSections = Array.from(document.querySelectorAll('body > section'));
+            if (cardSections.length === 0) return;
+            const progress = document.getElementById('mira-progress');
+            const nextBtn = document.getElementById('mira-next');
+            const nextIcon = document.getElementById('mira-next-icon');
+            const atBottom = () => (window.scrollY + window.innerHeight) >= (document.documentElement.scrollHeight - 100);
+            function currentIndex() {
+                const y = window.scrollY + window.innerHeight * 0.3;
+                let idx = -1;
+                for (let i = 0; i < cardSections.length; i++) if (cardSections[i].offsetTop <= y) idx = i;
+                return idx;
+            }
+            function goTo(i) {
+                const idx = Math.max(0, Math.min(cardSections.length - 1, i));
+                cardSections[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            window.addEventListener('scroll', () => {
+                const docH = document.documentElement.scrollHeight - window.innerHeight;
+                progress.style.width = (docH > 0 ? (window.scrollY / docH) * 100 : 0) + '%';
+                nextBtn.classList.toggle('visible', window.scrollY > 300);
+                nextIcon.setAttribute('data-lucide', atBottom() ? 'chevron-up' : 'chevron-down');
+                lucide.createIcons();
+            });
+            nextBtn.addEventListener('click', () => {
+                if (atBottom()) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+                goTo(currentIndex() + 1);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key)) { e.preventDefault(); goTo(currentIndex() + 1); }
+                else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+                    e.preventDefault();
+                    const idx = currentIndex();
+                    if (idx <= 0) window.scrollTo({ top: 0, behavior: 'smooth' }); else goTo(idx - 1);
+                } else if (e.key === 'Home') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                else if (e.key === 'End') { e.preventDefault(); goTo(cardSections.length - 1); }
+                else if (e.key.toLowerCase() === 'f') {
+                    if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen();
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>
