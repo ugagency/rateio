@@ -1,0 +1,86 @@
+/*
+  Identidade visual da Mutualiza no simulador (cores lidas do CSS de mutualiza.org em 04/11/2026).
+  Todas as cores ficam nas variáveis abaixo: para ajustar a marca, mude só este bloco.
+  Fonte da marca: Grandis Extended (licenciada). Sem o arquivo, cai em Archivo, se instalada, ou na fonte do sistema.
+*/
+.mut-sim {
+  --marinho: #12173e;
+  --indigo: #4b5bec;
+  --indigo-escuro: #3b49cf;
+  --indigo-suave: #eef0fe;
+  --lavanda: #cacefc;
+  --fundo: #f4f4fb;
+  --superficie: #ffffff;
+  --linha: #d7d9ea;
+  --texto: #12173e;
+  --texto-suave: #4f5378;
+  --texto-fraco: #6d7194;
+  --erro-fundo: #fef3f2; --erro-borda: #fda29b; --erro-texto: #912018;
+  --aviso-fundo: #fffaeb; --aviso-borda: #fec84b; --aviso-texto: #93370d;
+  --raio-botao: 14px;
+  --raio-cartao: 20px;
+
+  background: var(--fundo);
+  color: var(--texto);
+  min-height: calc(100vh - 44px);
+  font-family: "Grandis Extended", "Archivo", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+.mut-sim .mut-hero { background: var(--marinho); color: #fff; }
+.mut-sim .mut-eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--lavanda); }
+.mut-sim .mut-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; color: #fff; }
+.mut-sim .mut-passo { padding: .25rem .8rem; border-radius: 999px; font-size: .75rem; background: rgba(255,255,255,.1); color: var(--lavanda); }
+.mut-sim .mut-passo[data-ativo="true"] { background: var(--indigo); color: #fff; font-weight: 600; }
+
+.mut-sim .mut-intro { color: var(--texto-suave); }
+.mut-sim .mut-cartao { background: var(--superficie); border: 1px solid var(--linha); border-radius: var(--raio-cartao); padding: 1.25rem; }
+.mut-sim .mut-cartao h3 { font-size: .9rem; font-weight: 700; margin-bottom: 1rem; color: var(--texto); }
+.mut-sim .mut-obrig { color: var(--indigo); }
+
+.mut-sim .mut-rotulo { display: block; font-size: .75rem; font-weight: 500; color: var(--texto-suave); margin-bottom: .25rem; }
+.mut-sim .mut-dica { display: block; font-size: .75rem; color: var(--texto-fraco); margin-top: .25rem; }
+.mut-sim .mut-campo {
+  width: 100%; background: #fff; color: var(--texto); border: 1px solid var(--linha);
+  border-radius: 10px; padding: .55rem .75rem; outline: none;
+}
+.mut-sim .mut-campo:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(75, 91, 236, .18); }
+
+.mut-sim .mut-opcao {
+  padding: .5rem 1rem; border-radius: 12px; border: 1px solid var(--linha); background: #fff;
+  color: var(--texto-suave); font-size: .875rem; cursor: pointer;
+}
+.mut-sim .mut-opcao:hover { border-color: var(--lavanda); background: var(--indigo-suave); }
+.mut-sim .mut-opcao[aria-checked="true"] {
+  border-color: var(--indigo); background: var(--indigo-suave); color: var(--texto); font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--indigo);
+}
+
+.mut-sim .mut-botao {
+  background: var(--indigo); color: #fff; font-weight: 700; padding: .75rem 1.5rem;
+  border-radius: var(--raio-botao); cursor: pointer;
+}
+.mut-sim .mut-botao:hover:not(:disabled) { background: var(--indigo-escuro); }
+.mut-sim .mut-botao:disabled { opacity: .45; cursor: not-allowed; }
+.mut-sim .mut-botao-sec {
+  background: #fff; color: var(--texto); font-weight: 600; padding: .75rem 1.25rem;
+  border: 1px solid var(--linha); border-radius: var(--raio-botao); cursor: pointer;
+}
+.mut-sim .mut-botao-sec:hover { border-color: var(--lavanda); background: var(--indigo-suave); }
+
+.mut-sim .mut-destaque { background: var(--marinho); color: #fff; border-radius: var(--raio-cartao); padding: 1.5rem; }
+.mut-sim .mut-destaque .mut-eyebrow { color: var(--lavanda); }
+.mut-sim .mut-destaque-valor { font-size: 3rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin-top: .5rem; }
+.mut-sim .mut-destaque-sub { font-size: .875rem; color: var(--lavanda); margin-top: .5rem; }
+
+.mut-sim .mut-indicador-rotulo { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-fraco); }
+.mut-sim .mut-indicador-valor { font-size: 1.25rem; font-weight: 700; margin-top: .25rem; color: var(--texto); }
+.mut-sim .mut-indicador-sub { font-size: .75rem; color: var(--texto-fraco); margin-top: .25rem; }
+
+.mut-sim .mut-nota { background: var(--indigo-suave); border: 1px solid var(--lavanda); border-radius: 14px; padding: 1rem; font-size: .875rem; color: var(--texto); }
+.mut-sim .mut-fino { font-size: .75rem; color: var(--texto-fraco); }
+.mut-sim .mut-erro { background: var(--erro-fundo); border: 1px solid var(--erro-borda); color: var(--erro-texto); border-radius: 12px; padding: .5rem 1rem; }
+.mut-sim .mut-aviso { background: var(--aviso-fundo); border: 1px solid var(--aviso-borda); color: var(--aviso-texto); border-radius: 12px; padding: .5rem 1rem; font-size: .875rem; }
+.mut-sim .mut-consentimento { color: var(--texto-suave); font-size: .875rem; }
+.mut-sim .mut-consentimento input { accent-color: var(--indigo); }
+.mut-sim .mut-equipe { border-top: 1px solid var(--linha); color: var(--texto-fraco); font-size: .75rem; }
+.mut-sim .mut-equipe a, .mut-sim .mut-equipe button { text-decoration: underline; cursor: pointer; }

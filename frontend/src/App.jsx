@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import AutoTruck from './AutoTruck'
 import AVAP from './AVAP'
+import Simulador from './Simulador'
+import Menu from './Shell'
 
 const API = ""
 
@@ -454,19 +456,20 @@ function CardELLO({ label, value, sub, tone = "slate" }) {
 // Seletor de produto (novo menu). O componente ELLO `App` e seus filhos
 // permanecem inalterados — apenas embrulhados por este wrapper aditivo.
 function Root() {
-  const [produto, setProduto] = useState("ello")
+  // ?feira na URL: só a demonstração Fenaprove e o simulador (esconde ELLO, AutoTruck e AVAP real).
+  // ?equipe na URL: mostra no simulador o atalho para ver e baixar os contatos.
+  const params = new URLSearchParams(window.location.search)
+  const feira = params.has("feira")
+  const equipe = params.has("equipe")
+  const todos = [["ello", "ELLO · Rateio & Faturamento"], ["autotruck", "AutoTruck · Modelo Ello retreinado"], ["avap", "AVAP · Rateio em pote único"], ["fenauto", "Fenaprove · Demonstração"], ["simulador", "Simulador rápido"]]
+  const produtos = feira ? todos.filter(([k]) => k === "fenauto" || k === "simulador") : todos
+  const [produto, setProduto] = useState(feira ? "fenauto" : "ello")
   return (
-    <div className="min-h-screen bg-slate-900">
-      <div className="bg-slate-950 border-b border-slate-800 px-6 py-2 flex gap-2 items-center">
-        <span className="text-xs text-slate-500 mr-2 uppercase tracking-widest">Produto</span>
-        {[["ello", "ELLO · Rateio & Faturamento"], ["autotruck", "AutoTruck · Modelo Ello retreinado"], ["avap", "AVAP · Rateio em pote único"], ["fenauto", "Fenauto · Demonstração"]].map(([k, l]) => (
-          <button key={k} onClick={() => setProduto(k)}
-            className={`px-4 py-1.5 rounded text-sm font-semibold ${produto === k ? "bg-amber-500 text-slate-900" : "bg-slate-800 text-slate-300"}`}>
-            {l}
-          </button>
-        ))}
+    <div className="mut mut-shell">
+      <Menu produtos={produtos} produto={produto} onEscolher={setProduto} />
+      <div className="mut-conteudo">
+        {produto === "ello" ? <App /> : produto === "autotruck" ? <AutoTruck /> : produto === "fenauto" ? <AVAP key="fenauto" fenauto /> : produto === "simulador" ? <Simulador equipe={equipe} /> : <AVAP key="avap" />}
       </div>
-      {produto === "ello" ? <App /> : produto === "autotruck" ? <AutoTruck /> : produto === "fenauto" ? <AVAP key="fenauto" fenauto /> : <AVAP key="avap" />}
     </div>
   )
 }

@@ -1,0 +1,107 @@
+/* Identidade Mutualiza: menu lateral + camada de tema para as telas existentes.
+   Cores num só lugar (variáveis abaixo). O simulador tem o próprio Simulador.css. */
+.mut {
+  --marinho: #12173e;
+  --indigo: #4b5bec;
+  --indigo-escuro: #3b49cf;
+  --indigo-claro: #5767f0;
+  --indigo-suave: #eef0fe;
+  --lavanda: #cacefc;
+  --fundo: #f4f4fb;
+  --linha: #d7d9ea;
+  --muted: #5b6182;
+  --ok: #14633b; --ok-bg: #ddf5e8; --ok-linha: #a9dfc1;
+  --aviso: #7a4b00; --aviso-bg: #fff0d6; --aviso-linha: #e8c27a;
+  --erro: #9b1c1c; --erro-bg: #fde3e3; --erro-linha: #f3b5b5;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  background: var(--fundo);
+  color: var(--marinho);
+}
+.mut h1, .mut h2, .mut h3 { font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -0.3px; }
+
+/* ---------- Shell ---------- */
+.mut-shell { display: flex; gap: 20px; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+.mut-conteudo { flex: 1; min-width: 0; border-radius: 28px; overflow: hidden; }
+.mut-rail {
+  flex: 0 0 88px; position: sticky; top: 20px; align-self: flex-start;
+  height: calc(100vh - 40px); box-sizing: border-box; border-radius: 32px;
+  background: linear-gradient(180deg, var(--indigo-claro) 0%, var(--indigo) 45%, var(--indigo-escuro) 100%);
+  box-shadow: 0 18px 40px rgba(75, 91, 236, 0.28);
+  padding: 22px 0; display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.mut-rail-logo {
+  width: 48px; height: 48px; border-radius: 16px; background: #fff; color: var(--indigo);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px;
+}
+.mut-rail-nav { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 10px; }
+.mut-rail-item {
+  width: 68px; padding: 10px 0 8px; border: 0; border-radius: 18px; background: transparent; color: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;
+  font-family: inherit; font-size: 10px; font-weight: 600;
+}
+.mut-rail-item:hover { background: rgba(255, 255, 255, 0.14); }
+.mut-rail-item[aria-current="page"] { background: rgba(18, 23, 62, 0.4); }
+.mut-rail-item:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@media (max-width: 760px) {
+  .mut-shell { flex-direction: column; padding: 12px; }
+  .mut-rail { position: static; height: auto; flex: none; width: 100%; flex-direction: row; padding: 10px 14px; border-radius: 24px; }
+  .mut-rail-nav { flex-direction: row; margin-top: 0; gap: 4px; overflow-x: auto; }
+}
+
+/* ---------- Camada de tema (telas ELLO, AutoTruck, AVAP) ---------- */
+.mut [class*="bg-slate-950"], .mut [class*="bg-slate-900"] { background: var(--fundo); }
+.mut [class*="bg-slate-800"] { background: #fff; }
+.mut [class*="bg-slate-700"], .mut [class*="bg-slate-600"] { background: var(--lavanda); }
+.mut thead[class*="bg-slate-700"] { background: var(--indigo-suave); }
+.mut [class*="bg-black/30"] { background: var(--indigo-suave); }
+.mut [class*="border-slate-"] { border-color: var(--linha); }
+
+.mut [class*="rounded-xl"][class*="bg-slate-"], .mut [class*="rounded-lg"][class*="bg-slate-"] { border-radius: 22px; }
+.mut [class*="rounded-2xl"][class*="bg-slate-"] { border-radius: 28px; }
+.mut section[class*="bg-slate-800"], .mut div[class*="bg-slate-800"][class*="p-"] { box-shadow: 0 1px 0 rgba(18, 23, 62, 0.02); }
+.mut input, .mut select { border-radius: 12px; color: var(--marinho); }
+.mut input:not([type="file"]), .mut select { background: var(--fundo); border-color: var(--linha); }
+.mut input::placeholder { color: var(--muted); }
+.mut button, .mut nav button { font-family: inherit; }
+.mut nav button, .mut header button { border-radius: 14px; }
+
+/* Texto */
+.mut .text-white, .mut [class*="text-slate-200"], .mut [class*="text-slate-100"] { color: var(--marinho); }
+.mut [class*="text-slate-300"] { color: #2e3560; }
+.mut [class*="text-slate-400"], .mut [class*="text-slate-500"] { color: var(--muted); }
+.mut [class*="text-slate-900"] { color: #fff; }
+.mut [class*="text-emerald-300"] { color: var(--ok); }
+.mut [class*="text-red-200"], .mut [class*="text-red-300"], .mut [class*="text-red-400"] { color: var(--erro); }
+.mut [class*="text-amber-100"], .mut [class*="text-amber-300"] { color: var(--aviso); }
+.mut [class*="text-emerald-400"], .mut [class*="text-cyan-400"], .mut [class*="text-amber-400"], .mut [class*="text-cyan-300"] { color: var(--indigo); }
+
+/* Botões e abas com cor de destaque */
+.mut [class*="bg-emerald-500"], .mut [class*="bg-emerald-600"], .mut [class*="bg-cyan-500"], .mut [class*="bg-amber-500"] { background: var(--indigo); color: #fff; }
+.mut [class*="bg-amber-400"] { background: var(--marinho); color: #fff; }
+.mut button[class*="bg-emerald-500"]:hover, .mut button[class*="bg-emerald-600"]:hover { background: var(--indigo-escuro); }
+.mut [class*="bg-slate-600"][class*="text-white"], .mut button[class*="bg-slate-600"] { color: var(--marinho); }
+
+/* Avisos */
+.mut [class*="bg-red-900"] { background: var(--erro-bg); }
+.mut [class*="bg-emerald-900"] { background: var(--ok-bg); }
+.mut [class*="bg-amber-900"] { background: var(--aviso-bg); }
+.mut [class*="border-red-"] { border-color: var(--erro-linha); }
+.mut [class*="border-emerald-"] { border-color: var(--ok-linha); }
+.mut [class*="border-amber-"] { border-color: var(--aviso-linha); }
+
+/* Cartão de destaque (degradê) */
+.mut [class*="from-slate-800"] {
+  --tw-gradient-from: var(--indigo-claro); --tw-gradient-to: var(--indigo-escuro);
+  background-image: linear-gradient(135deg, var(--indigo-claro), var(--indigo) 50%, var(--indigo-escuro));
+  border-color: transparent; color: #fff;
+}
+.mut [class*="from-slate-800"] .text-white, .mut [class*="from-slate-800"] [class*="text-slate-"] { color: #fff; }
+
+/* Botão de arquivo */
+.mut input[type="file"]::file-selector-button {
+  background: var(--lavanda); color: var(--marinho); border: 0; border-radius: 12px; font-weight: 700;
+  padding: 8px 16px; margin-right: 16px; cursor: pointer;
+}
+.mut table { font-size: 14px; }
+.mut tbody tr:hover { background: var(--fundo); }

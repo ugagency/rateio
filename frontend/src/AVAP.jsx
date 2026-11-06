@@ -32,7 +32,7 @@ async function pedir(url, opts) {
 const post = (url, body) => pedir(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
 
 export default function AVAP({ fenauto = false }) {
-  const nome = fenauto ? "Fenauto" : "AVAP"
+  const nome = fenauto ? "Fenaprove" : "AVAP"
   const [tab, setTab] = useState("rodar")
   const [mes, setMes] = useState(mesAnterior())
   const [sel, setSel] = useState(null)
@@ -73,7 +73,7 @@ export default function AVAP({ fenauto = false }) {
             <h1 className="text-2xl font-bold text-white">{nome}: Rateio em pote único</h1>
           </div>
           <div className="text-right text-xs text-slate-500">
-            {sel ? <>Competência {mes} · {sel.origem}</> : "Nenhum fechamento carregado"}
+            {sel ? <>Competência {mes} · {sel.origem.replace("Fenauto", "Fenaprove")}</> : "Nenhum fechamento carregado"}
             <div>LC 213/2025 · Res. CNSP 491/2026</div>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function AVAP({ fenauto = false }) {
             <button onClick={demo} disabled={!!busy}
               title={fenauto ? "Carrega 09/2026 com dados fictícios (protocolos, placas, matrículas e nomes)" : "Carrega os arquivos reais de 09/2026 que estão no servidor"}
               className="px-4 py-1.5 bg-amber-400 text-slate-900 font-bold rounded text-sm disabled:opacity-50">
-              {fenauto ? "Demonstração Fenauto" : "Demonstração 09/2026"}
+              {fenauto ? "Demonstração Fenaprove" : "Demonstração 09/2026"}
             </button>
           </span>
         </nav>

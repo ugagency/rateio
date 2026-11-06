@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import autotruck, avap, consultas, rateio
+from app.api import autotruck, avap, consultas, rateio, simulador
 from app.config import get_settings
 
 
@@ -29,6 +29,8 @@ def create_app() -> FastAPI:
     app.include_router(rateio.router)
     # AutoTruck: módulo paralelo, prefixo /autotruck (não colide com rotas ELLO).
     app.include_router(autotruck.router)
+    # Simulador da Fenaprove (/avap/simulador): antes do router AVAP, que tem rotas /avap/{mes}/...
+    app.include_router(simulador.router)
     # AVAP: terceira vertical, prefixo /avap.
     app.include_router(avap.router)
 
