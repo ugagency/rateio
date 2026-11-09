@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/__pycache__
+**/.venv
+frontend/dist
+backend/tests
+outputs
+decks
+demos
+docs
+simulacoes
+inputs
+Claude outputs
+AVAP
+Remonta

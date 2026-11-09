@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = ""
+const API = import.meta.env.VITE_API_URL ?? ""
 const mesAnteriorPadrao = () => {
   const d = new Date()
   d.setDate(1); d.setMonth(d.getMonth() - 1)

@@ -4,7 +4,7 @@ import AVAP from './AVAP'
 import Simulador from './Simulador'
 import Menu from './Shell'
 
-const API = ""
+const API = import.meta.env.VITE_API_URL ?? ""
 
 const mesAnteriorPadrao = () => {
   const d = new Date()
