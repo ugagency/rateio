@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    container_name: mut-api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"   # so local; exponha por proxy reverso com HTTPS
+    volumes:
+      - mut-leads:/data/leads
+
+volumes:
+  mut-leads:

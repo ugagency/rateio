@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = ""
+const API = import.meta.env.VITE_API_URL ?? ""
 const enc = (m) => encodeURIComponent(m.replace("/", "-"))
 const brl = (v) => (typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v)
 const num = (v) => (typeof v === 'number' ? v.toLocaleString('pt-BR') : v)
