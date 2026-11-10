@@ -27,7 +27,12 @@
 }
 
 .mut-sim .mut-hero { background: var(--marinho); color: #fff; }
-.mut-sim .mut-logo { height: 44px; width: auto; display: block; }
+.mut-sim .mut-hero-linha { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.mut-sim .mut-logo { height: 96px; width: auto; display: block; flex: none; }
+@media (max-width: 640px) {
+  .mut-sim .mut-hero-linha { flex-direction: column-reverse; align-items: flex-start; gap: 16px; }
+  .mut-sim .mut-logo { height: 64px; }
+}
 .mut-sim .mut-eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--lavanda); }
 .mut-sim .mut-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; color: #fff; }
 .mut-sim .mut-passo { padding: .25rem .8rem; border-radius: 999px; font-size: .75rem; background: rgba(255,255,255,.1); color: var(--lavanda); }
