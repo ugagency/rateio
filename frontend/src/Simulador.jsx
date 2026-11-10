@@ -7,6 +7,9 @@ import './Simulador.css'
 // Cada faixa vale pelo seu ponto médio, então o resultado é uma estimativa, e a tela diz isso.
 // O contato vai ao backend (/avap/simulador/lead) já no passo 1, e a mesma linha é atualizada no passo 3.
 
+// Mesmo endereço de API das outras telas: vazio em desenvolvimento (proxy do Vite), URL do backend em produção.
+const API = import.meta.env.VITE_API_URL ?? ""
+
 const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const num = (v) => Math.round(v).toLocaleString('pt-BR')
 const R_POR_COTA_FIPE = 5000 // regra da AVAP: 1 cota a cada R$ 5 mil de FIPE
@@ -23,8 +26,10 @@ const CUSTO = [["Até R$ 5 mil", 3000], ["R$ 5 a 10 mil", 7500], ["R$ 10 a 20 mi
 const PERGUNTAS = [
   { k: "veiculos", titulo: "Quantos veículos ativos a associação tem?", faixas: VEICULOS },
   { k: "fipe", titulo: "Qual o valor médio dos veículos (tabela FIPE)?", dica: "Usamos 1 cota a cada R$ 5 mil de FIPE, a regra da AVAP.", faixas: FIPE },
-  { k: "eventos", titulo: "Quantos eventos entraram no rateio no último mês?", faixas: EVENTOS },
-  { k: "custo", titulo: "Qual o custo médio de cada evento?", faixas: CUSTO },
+  { k: "eventos", titulo: "Quantos eventos entraram no rateio no último mês?", faixas: EVENTOS,
+    livre: { rotulo: "Ou digite o número exato de eventos", exemplo: "ex.: 137", max: 100000, inteiro: true } },
+  { k: "custo", titulo: "Qual o custo médio de cada evento?", faixas: CUSTO,
+    livre: { rotulo: "Ou digite o custo médio exato (R$)", exemplo: "ex.: 23.500", max: 10000000 } },
 ]
 
 const MODELOS = [
@@ -43,6 +48,46 @@ const CONTATO_VAZIO = {
   rateio_hoje: "", modelo: null, quer_versao: null, consentimento: false,
 }
 const SEL_VAZIA = { veiculos: null, fipe: null, eventos: null, custo: null }
+const EXATO_VAZIO = { eventos: "", custo: "" }
+
+// Valor digitado no campo livre, já validado pelos limites da pergunta, ou null.
+function exatoValido(k, texto) {
+  const p = PERGUNTAS.find((q) => q.k === k)
+  const n = lerNumero(texto)
+  if (n === null || !p?.livre || n > p.livre.max) return null
+  if (p.livre.inteiro && !Number.isInteger(n)) return null
+  return n
+}
+
+// DDDs em uso no Brasil (Anatel).
+const DDDS = new Set([11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99])
+
+// Devolve a mensagem de erro do WhatsApp, ou "" se estiver válido. Aceita com ou sem +55, com ou sem máscara.
+function erroWhatsapp(valor) {
+  let d = String(valor).replace(/\D/g, "")
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2)
+  if (d.length !== 10 && d.length !== 11) return "Informe o WhatsApp com DDD, por exemplo (31) 99999-0000."
+  if (!DDDS.has(Number(d.slice(0, 2)))) return "O DDD informado não existe. Confira os dois primeiros números."
+  const numero = d.slice(2)
+  if (/^(\d)\1+$/.test(numero)) return "Esse número de WhatsApp não parece real. Confira os dígitos."
+  if (numero.length === 9 && numero[0] !== "9") return "Celular com 9 dígitos deve começar com 9."
+  return ""
+}
+// E-mail é opcional: vazio passa; preenchido precisa ter um formato válido.
+function erroEmail(valor) {
+  const v = String(valor).trim()
+  if (!v) return ""
+  return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[A-Za-z]{2,}$/.test(v) ? "" : "O e-mail não parece válido. Confira ou deixe em branco."
+}
+// Número digitado no formato brasileiro: "25.000", "25000" ou "25.000,50". Devolve null se não der para ler.
+function lerNumero(valor) {
+  const v = String(valor).trim().replace(/\s|R\$/g, "")
+  if (!v || !/^[\d.,]+$/.test(v)) return null
+  const n = Number(v.replace(/\./g, "").replace(",", "."))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
 
 const novoId = () => "L" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
 
@@ -55,7 +100,7 @@ function guardarPendente(lead) {
   } catch { return false }
 }
 async function enviar(lead) {
-  const r = await fetch("/avap/simulador/lead", {
+  const r = await fetch(`${API}/avap/simulador/lead`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(lead),
   })
   if (!r.ok) {
@@ -75,13 +120,21 @@ async function reenviarPendentes() {
   try { localStorage.setItem("mut_leads_pendentes", JSON.stringify(sobra)) } catch { /* sem armazenamento */ }
 }
 
-function calcular(s) {
-  if (PERGUNTAS.some(({ k }) => s[k] === null)) return null
-  const veiculos = VEICULOS[s.veiculos][1]
-  const cotasPorVeiculo = FIPE[s.fipe][1] / R_POR_COTA_FIPE
+// Valor usado na conta para cada pergunta: o número exato digitado, se houver, senão o ponto médio da faixa.
+function valorDe(k, s, exato) {
+  const n = exato && k in exato ? exatoValido(k, exato[k]) : null
+  if (n !== null) return n
+  if (s[k] === null) return null
+  return PERGUNTAS.find((q) => q.k === k).faixas[s[k]][1]
+}
+function calcular(s, exato = EXATO_VAZIO) {
+  const v = Object.fromEntries(PERGUNTAS.map(({ k }) => [k, valorDe(k, s, exato)]))
+  if (Object.values(v).some((x) => x === null)) return null
+  const veiculos = v.veiculos
+  const cotasPorVeiculo = v.fipe / R_POR_COTA_FIPE
   const cotasTotal = veiculos * cotasPorVeiculo
-  const eventosQtd = EVENTOS[s.eventos][1]
-  const eventosValor = eventosQtd * CUSTO[s.custo][1]
+  const eventosQtd = v.eventos
+  const eventosValor = eventosQtd * v.custo
   const valorCota = eventosValor / cotasTotal
   return { veiculos, cotasPorVeiculo, cotasTotal, eventosQtd, eventosValor, valorCota, rateioMedio: cotasPorVeiculo * valorCota }
 }
@@ -91,14 +144,23 @@ export default function Simulador({ equipe = false }) {
   const [id, setId] = useState(novoId)
   const [c, setC] = useState(CONTATO_VAZIO)
   const [s, setS] = useState(SEL_VAZIA)
+  const [exato, setExato] = useState(EXATO_VAZIO)
   const [erro, setErro] = useState("")
   const [aviso, setAviso] = useState("")
   const [enviando, setEnviando] = useState(false)
   const [leads, setLeads] = useState(null)
-  const r = calcular(s)
+  const r = calcular(s, exato)
   const setc = (k) => (e) => { setErro(""); setC({ ...c, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }) }
   const escolherC = (k, valor) => { setErro(""); setC({ ...c, [k]: valor }) }
-  const escolherS = (k, i) => { setErro(""); setS({ ...s, [k]: i }) }
+  // Tocar numa faixa limpa o número exato daquela pergunta, e digitar o número exato desmarca a faixa.
+  const escolherS = (k, i) => { setErro(""); setS({ ...s, [k]: i }); if (k in exato) setExato({ ...exato, [k]: "" }) }
+  const digitarExato = (k, texto) => { setErro(""); setExato({ ...exato, [k]: texto }); if (texto.trim()) setS({ ...s, [k]: null }) }
+  // Texto da faixa para o registro do lead: a faixa escolhida ou o número exato digitado.
+  const faixaTexto = (k) => {
+    const n = k in exato ? exatoValido(k, exato[k]) : null
+    if (n !== null) return k === "custo" ? `exato: ${brl(n)}` : `exato: ${num(n)}`
+    return PERGUNTAS.find((q) => q.k === k).faixas[s[k]][0]
+  }
 
   const montarLead = (etapa, simulacao = {}) => ({
     id, etapa, nome: c.nome.trim(), whatsapp: c.whatsapp.trim(), email: c.email.trim(),
@@ -123,7 +185,10 @@ export default function Simulador({ equipe = false }) {
 
   const continuar = async () => {
     if (c.nome.trim().length < 2) return setErro("Informe seu nome.")
-    if (c.whatsapp.replace(/\D/g, "").length < 10) return setErro("Informe o WhatsApp com DDD.")
+    const eW = erroWhatsapp(c.whatsapp)
+    if (eW) return setErro(eW)
+    const eE = erroEmail(c.email)
+    if (eE) return setErro(eE)
     if (c.quer_versao === null) return setErro("Diga se quer receber a versão simplificada do rateio da sua associação.")
     if (!c.consentimento) return setErro("Para continuar, marque a autorização de contato.")
     setErro(""); setEnviando(true)
@@ -132,21 +197,25 @@ export default function Simulador({ equipe = false }) {
   }
 
   const simular = () => {
+    for (const { k, livre } of PERGUNTAS) {
+      if (livre && exato[k].trim() && exatoValido(k, exato[k]) === null)
+        return setErro(`Confira o número digitado em "${livre.rotulo.replace(/^Ou digite /, "")}". Use só números${livre.inteiro ? " inteiros" : ""}, até ${num(livre.max)}.`)
+    }
     if (!r) return setErro("Responda as quatro perguntas para simular.")
     setErro(""); setPasso("resultado")
     salvar(montarLead("resultado", {
       faixa_veiculos: VEICULOS[s.veiculos][0], faixa_fipe: FIPE[s.fipe][0],
-      faixa_eventos: EVENTOS[s.eventos][0], faixa_custo: CUSTO[s.custo][0],
+      faixa_eventos: faixaTexto("eventos"), faixa_custo: faixaTexto("custo"),
       veiculos_ativos: r.veiculos, cotas_total: Math.round(r.cotasTotal), eventos_qtd: r.eventosQtd,
       eventos_valor: r.eventosValor.toFixed(2), valor_cota: r.valorCota.toFixed(4),
     })).catch((e) => setErro(e.message))
   }
 
   const novoAtendimento = () => {
-    setC(CONTATO_VAZIO); setS(SEL_VAZIA); setId(novoId()); setErro(""); setAviso(""); setPasso("contato")
+    setC(CONTATO_VAZIO); setS(SEL_VAZIA); setExato(EXATO_VAZIO); setId(novoId()); setErro(""); setAviso(""); setPasso("contato")
   }
   const verLeads = async () => {
-    try { setLeads(await (await fetch("/avap/simulador/leads")).json()) } catch { setLeads({ erro: true }) }
+    try { setLeads(await (await fetch(`${API}/avap/simulador/leads`)).json()) } catch { setLeads({ erro: true }) }
   }
 
   return (
@@ -165,15 +234,17 @@ export default function Simulador({ equipe = false }) {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {erro && <div className="mut-erro mb-4">{erro}</div>}
+        {erro && passo === "resultado" && <div className="mut-erro mb-4">{erro}</div>}
 
         {passo === "contato" && (
           <div className="space-y-6 max-w-4xl">
-            <p className="mut-intro">Primeiro, alguns dados para a gente saber com quem está falando. Depois é só escolher faixas, sem digitar números.</p>
+            <p className="mut-intro">Primeiro, alguns dados para a gente saber com quem está falando. Depois é só escolher faixas ou, se preferir, digitar os números exatos.</p>
             <Grupo titulo="Seus dados">
               <Campo rotulo="Nome" obrig><Txt value={c.nome} onChange={setc("nome")} /></Campo>
-              <Campo rotulo="WhatsApp com DDD" obrig><Txt value={c.whatsapp} onChange={setc("whatsapp")} placeholder="(31) 9...." inputMode="tel" /></Campo>
-              <Campo rotulo="E-mail (opcional)"><Txt value={c.email} onChange={setc("email")} inputMode="email" /></Campo>
+              <Campo rotulo="WhatsApp com DDD" obrig><Txt value={c.whatsapp} onChange={setc("whatsapp")} placeholder="(31) 9...." inputMode="tel"
+                aria-invalid={Boolean(erro) && Boolean(erroWhatsapp(c.whatsapp))} /></Campo>
+              <Campo rotulo="E-mail (opcional)"><Txt value={c.email} onChange={setc("email")} inputMode="email"
+                aria-invalid={Boolean(erro) && Boolean(erroEmail(c.email))} /></Campo>
               <Campo rotulo="Associação"><Txt value={c.associacao} onChange={setc("associacao")} /></Campo>
               <Campo rotulo="Cargo"><Sel value={c.cargo} onChange={setc("cargo")} opcoes={CARGOS} /></Campo>
               <Campo rotulo="Sistema de gestão"><Sel value={c.sistema_gestao} onChange={setc("sistema_gestao")} opcoes={SISTEMAS} /></Campo>
@@ -195,22 +266,32 @@ export default function Simulador({ equipe = false }) {
               <input type="checkbox" className="mt-1" checked={c.consentimento} onChange={setc("consentimento")} />
               <span>Autorizo o contato sobre este resultado e a guarda destes dados para esse fim. Posso pedir a exclusão a qualquer momento.</span>
             </label>
+            {erro && <div className="mut-erro" role="alert">{erro}</div>}
             <button onClick={continuar} disabled={enviando} className="mut-botao">{enviando ? "Registrando…" : "Continuar para a simulação"}</button>
           </div>
         )}
 
         {passo === "simulacao" && (
           <div className="space-y-6">
-            <p className="mut-intro">Quatro perguntas, é só tocar na faixa mais próxima da realidade da associação.</p>
-            {PERGUNTAS.map(({ k, titulo, dica, faixas }) => (
+            <p className="mut-intro">Quatro perguntas, é só tocar na faixa mais próxima da realidade da associação. Em eventos e custo médio, dá para digitar o número exato.</p>
+            {PERGUNTAS.map(({ k, titulo, dica, faixas, livre }) => (
               <Grupo key={k} titulo={titulo} obrig>
                 <div className="md:col-span-3 space-y-2">
                   <Opcoes opcoes={faixas.map(([l]) => l)} valor={s[k]} onChange={(i) => escolherS(k, i)} />
                   {dica && <span className="mut-dica">{dica}</span>}
+                  {livre && (
+                    <label className="mut-livre">
+                      <span className="mut-rotulo">{livre.rotulo}</span>
+                      <input className="mut-campo" inputMode={livre.inteiro ? "numeric" : "decimal"} placeholder={livre.exemplo}
+                        value={exato[k]} onChange={(e) => digitarExato(k, e.target.value)}
+                        aria-invalid={Boolean(exato[k].trim()) && exatoValido(k, exato[k]) === null} />
+                    </label>
+                  )}
                 </div>
               </Grupo>
             ))}
             {aviso && <div className="mut-aviso">{aviso}</div>}
+            {erro && <div className="mut-erro" role="alert">{erro}</div>}
             <div className="flex gap-3">
               <button onClick={simular} disabled={!r} className="mut-botao">Simular o rateio</button>
               <button onClick={() => { setErro(""); setPasso("contato") }} className="mut-botao-sec">Voltar</button>
@@ -228,7 +309,7 @@ export default function Simulador({ equipe = false }) {
               </div>
             </div>
             <div className="grid md:grid-cols-4 gap-3">
-              <Card rotulo="Eventos do mês (estimado)" valor={brl(r.eventosValor)} sub={`${num(r.eventosQtd)} eventos no mês`} />
+              <Card rotulo="Eventos do mês (estimado)" valor={brl(r.eventosValor)} sub={`${num(r.eventosQtd)} eventos de ${brl(r.eventosValor / r.eventosQtd)} em média`} />
               <Card rotulo="Veículos ativos" valor={VEICULOS[s.veiculos][0]} sub="faixa informada" />
               <Card rotulo="Cotas estimadas" valor={num(r.cotasTotal)} sub={`${r.cotasPorVeiculo.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} cotas por veículo`} />
               <Card rotulo="Rateio do veículo médio" valor={brl(r.rateioMedio)} sub="por mês" />
@@ -260,7 +341,7 @@ export default function Simulador({ equipe = false }) {
             <button onClick={verLeads}>Ver contatos registrados</button>
             {leads && !leads.erro && <span>{leads.total} {leads.total === 1 ? "contato" : "contatos"} (quentes {leads.quente}, mornos {leads.morno}, frios {leads.frio}), {leads.com_simulacao} com simulação concluída. Arquivo: {leads.arquivo}</span>}
             {leads?.erro && <span>Servidor indisponível.</span>}
-            <a href="/avap/simulador/leads.csv">Baixar planilha</a>
+            <a href={`${API}/avap/simulador/leads.csv`}>Baixar planilha</a>
           </div>
         )}
       </main>

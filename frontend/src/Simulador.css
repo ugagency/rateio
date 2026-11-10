@@ -84,3 +84,5 @@
 .mut-sim .mut-consentimento input { accent-color: var(--indigo); }
 .mut-sim .mut-equipe { border-top: 1px solid var(--linha); color: var(--texto-fraco); font-size: .75rem; }
 .mut-sim .mut-equipe a, .mut-sim .mut-equipe button { text-decoration: underline; cursor: pointer; }
+.mut-sim .mut-livre { display: block; max-width: 22rem; margin-top: .75rem; }
+.mut-sim .mut-campo[aria-invalid="true"] { border-color: var(--erro-borda); box-shadow: 0 0 0 3px rgba(220, 38, 38, .12); }

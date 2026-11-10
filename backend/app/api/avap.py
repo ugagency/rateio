@@ -8,13 +8,14 @@ decidido (veículo ativo); os outros critérios aparecem só como comparação.
 
 import tempfile
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from app.avap.ajuste import sugerir_ajuste
 from app.avap.domain import (
     Decisao,
     DecisaoEvento,
@@ -69,6 +70,10 @@ class Sessao:
     resultado: ResultadoAVAP | None = None
     comparativo: dict[str, float] = field(default_factory=dict)
     origem: str = "upload"
+    # Assistente de ajuste: eventos postergados (com a decisão que tinham antes, para poder devolver)
+    # e o registro de cada movimentação, com a cota antes e depois.
+    postergados: dict[int, DecisaoEvento | None] = field(default_factory=dict)
+    ajustes: list[dict] = field(default_factory=list)
 
 
 _SESSOES: dict[str, Sessao] = {}
@@ -459,3 +464,143 @@ def boletos_csv(mes: str) -> Response:
                f"{b.contribuicao_rateio:.2f};{b.total:.2f}".replace(".", ",") for b in bs]
     return Response("\n".join(linhas), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="boletos_{marca}_{_chave(mes)}.csv"'})
+
+
+# ───────────────────────────── assistente de ajuste da cota ─────────────────────────────
+# Adaptado do assistente da AutoTruck para o pote único (regra em app/avap/ajuste.py). Postergar é uma
+# decisão EXCLUIR com justificativa, então entra na trilha de auditoria da seleção como as demais; além
+# disso, cada movimentação fica em `Sessao.ajustes` com a cota antes e depois. Como toda a sessão AVAP,
+# fica em memória e zera quando a demonstração é recarregada ou o backend reinicia.
+
+_BRT = timezone(timedelta(hours=-3))  # horário de Brasília (sem horário de verão desde 2019)
+
+
+def _garantir_resultado(s: Sessao) -> ResultadoAVAP:
+    if s.resultado is None:
+        calcular(s.mes, CalcularIn(criterio=s.criterio))
+    return s.resultado
+
+
+def _custos(s: Sessao) -> dict[int, EventoAVAP]:
+    sel = s.selecao or _resselecionar(s)
+    return {x.evento.protocolo: x.evento for x in sel.selecionados}
+
+
+class SugerirAjusteIn(BaseModel):
+    alvo_cota: float = Field(gt=0)
+
+
+class EventoSugeridoOut(BaseModel):
+    protocolo: int
+    motivo: str
+    placa: str | None
+    data_finalizacao: date | None
+    custo_evento: float
+
+
+class SugestaoAjusteOut(BaseModel):
+    cota_atual: float
+    alvo_cota: float
+    precisa_ajuste: bool
+    reducao_necessaria: float
+    reducao_obtida: float
+    cota_resultante: float
+    atingiu_alvo: bool
+    mensagem: str
+    eventos_sugeridos: list[EventoSugeridoOut]
+    numerador: float  # para a tela recalcular a cota na hora, ao marcar ou desmarcar eventos
+    total_cotas: float
+
+
+class AjusteIn(BaseModel):
+    protocolos: list[int] = Field(min_length=1)
+    justificativa: str = Field(min_length=3, max_length=300)
+    alvo_cota: float | None = None
+
+
+class AjustesOut(BaseModel):
+    cota_atual: float
+    numerador: float
+    total_cotas: float
+    postergados: list[EventoOut]
+    ajustes: list[dict]
+    auditoria: list[str]
+
+
+def _ajustes_out(s: Sessao) -> AjustesOut:
+    r = _garantir_resultado(s)
+    por_protocolo = {e.protocolo: e for e in s.eventos}
+    sel = s.selecao or _resselecionar(s)
+    return AjustesOut(
+        cota_atual=round(r.valor_cota, 4), numerador=r.numerador, total_cotas=r.total_cotas,
+        postergados=[_ev(por_protocolo[p]) for p in s.postergados if p in por_protocolo],
+        ajustes=list(reversed(s.ajustes)), auditoria=sel.auditoria[:50])
+
+
+def _registrar(s: Sessao, acao: str, protocolos: list[int], valor: float, antes: float,
+               justificativa: str, alvo: float | None) -> None:
+    depois = _garantir_resultado(s).valor_cota
+    s.ajustes.append({
+        "quando": datetime.now(_BRT).strftime("%d/%m/%Y %H:%M:%S"), "acao": acao,
+        "protocolos": protocolos, "eventos": len(protocolos), "valor": round(valor, 2),
+        "cota_antes": round(antes, 4), "cota_depois": round(depois, 4),
+        "alvo_cota": alvo, "justificativa": justificativa,
+    })
+
+
+@router.post("/{mes}/sugerir-ajuste", response_model=SugestaoAjusteOut)
+def sugerir_ajuste_cota(mes: str, body: SugerirAjusteIn) -> SugestaoAjusteOut:
+    """Menor conjunto de eventos a postergar para a cota ficar no alvo. Só sugere, não altera nada."""
+    s = _sessao(mes)
+    r = _garantir_resultado(s)
+    sug = sugerir_ajuste(list(_custos(s).values()), r.numerador, r.total_cotas, body.alvo_cota)
+    return SugestaoAjusteOut(
+        **{k: v for k, v in sug.__dict__.items() if k != "eventos_sugeridos"},
+        eventos_sugeridos=[EventoSugeridoOut(**e.__dict__) for e in sug.eventos_sugeridos],
+        numerador=r.numerador, total_cotas=r.total_cotas)
+
+
+@router.post("/{mes}/aplicar-ajuste", response_model=AjustesOut)
+def aplicar_ajuste_cota(mes: str, body: AjusteIn) -> AjustesOut:
+    """Posterga os eventos (decisão EXCLUIR com justificativa) e recalcula o rateio."""
+    s = _sessao(mes)
+    antes = _garantir_resultado(s).valor_cota
+    selecionados = _custos(s)
+    fora = [p for p in body.protocolos if p not in selecionados]
+    if fora:
+        raise HTTPException(400, f"Protocolo(s) fora do rateio deste mês: {', '.join(map(str, fora))}.")
+    just = body.justificativa.strip()
+    for p in body.protocolos:
+        s.postergados.setdefault(p, s.decisoes.get(p))
+        s.decisoes[p] = DecisaoEvento(p, Decisao.EXCLUIR, f"Postergado no ajuste da cota: {just}")
+    _resselecionar(s)
+    _registrar(s, "postergar", body.protocolos, sum(selecionados[p].custo_evento for p in body.protocolos),
+               antes, just, body.alvo_cota)
+    return _ajustes_out(s)
+
+
+@router.post("/{mes}/devolver-ajuste", response_model=AjustesOut)
+def devolver_ajuste_cota(mes: str, body: AjusteIn) -> AjustesOut:
+    """Devolve ao rateio eventos postergados pelo assistente, com a decisão que tinham antes."""
+    s = _sessao(mes)
+    antes = _garantir_resultado(s).valor_cota
+    fora = [p for p in body.protocolos if p not in s.postergados]
+    if fora:
+        raise HTTPException(400, f"Protocolo(s) que não foram postergados no ajuste: {', '.join(map(str, fora))}.")
+    por_protocolo = {e.protocolo: e for e in s.eventos}
+    for p in body.protocolos:
+        anterior = s.postergados.pop(p)
+        if anterior is None:
+            s.decisoes.pop(p, None)
+        else:
+            s.decisoes[p] = anterior
+    _resselecionar(s)
+    _registrar(s, "devolver", body.protocolos, sum(por_protocolo[p].custo_evento for p in body.protocolos),
+               antes, body.justificativa.strip(), body.alvo_cota)
+    return _ajustes_out(s)
+
+
+@router.get("/{mes}/ajustes", response_model=AjustesOut)
+def ver_ajustes(mes: str) -> AjustesOut:
+    return _ajustes_out(_sessao(mes))
+

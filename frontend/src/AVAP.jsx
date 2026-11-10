@@ -10,7 +10,7 @@ const mesAnterior = () => {
 }
 const mascara = (p) => (p ? `${p.slice(0, 3)}****` : "-")
 
-const TABS = { rodar: "Rodar Mês", selecao: "Seleção", lanc: "Lançamentos", resultado: "Resultado", boletos: "Boletos" }
+const TABS = { rodar: "Rodar Mês", selecao: "Seleção", lanc: "Lançamentos", resultado: "Resultado", ajuste: "Ajuste da cota", boletos: "Boletos" }
 const CRITERIOS = {
   VEICULO: "Veículos ativos (critério vigente)",
   AMBOS: "Veículo e associado ativos",
@@ -102,6 +102,7 @@ export default function AVAP({ fenauto = false }) {
         {tab === "lanc" && <Lancamentos mes={mes} sel={sel} rodar={rodar} onAtualizar={atualizarSelecao}
           irParaResultado={() => setTab("resultado")} irParaRodar={() => setTab("rodar")} />}
         {tab === "resultado" && <Resultado nome={nome} mes={mes} sel={sel} res={res} criterio={criterio} setCriterio={setCriterio} calcular={calcular} busy={!!busy} irParaRodar={() => setTab("rodar")} />}
+        {tab === "ajuste" && <AjusteCota mes={mes} sel={sel} rodar={rodar} setSel={setSel} setRes={setRes} irParaRodar={() => setTab("rodar")} />}
         {tab === "boletos" && <Boletos mes={mes} res={res} />}
       </main>
     </div>
@@ -357,6 +358,183 @@ function Lancamentos({ mes, sel, rodar, onAtualizar, irParaResultado, irParaRoda
         <span className="text-sm text-slate-400">Saldo das linhas: <b className={total < 0 ? "text-red-300" : "text-emerald-300"}>R$ {brl(total)}</b></span>
         <button onClick={salvar} className="ml-auto px-6 py-2 bg-emerald-500 text-slate-900 font-bold rounded">Salvar e ir ao resultado</button>
       </div>
+    </div>
+  )
+}
+
+// ─────────────────────────── Ajuste da cota ───────────────────────────
+// Assistente adaptado da AutoTruck para o pote único: o gestor diz a cota que quer, o motor sugere o menor
+// conjunto de eventos a postergar, a tela mostra a cota antes e depois, e cada movimentação fica registrada.
+
+const dataBR = (d) => (d ? d.split("-").reverse().join("/") : "-")
+
+function AjusteCota({ mes, sel, rodar, setSel, setRes, irParaRodar }) {
+  const [estado, setEstado] = useState(null)
+  const [alvo, setAlvo] = useState("")
+  const [sug, setSug] = useState(null)
+  const [marcados, setMarcados] = useState(new Set())
+  const [just, setJust] = useState("")
+  const [erroLocal, setErroLocal] = useState("")
+
+  useEffect(() => {
+    if (!sel) return
+    pedir(`/avap/${enc(mes)}/ajustes`).then(setEstado).catch((e) => setErroLocal(e.message))
+  }, [mes, sel])
+
+  if (!sel) return <Vazio texto="Nenhum fechamento carregado." acao={irParaRodar} rotulo="Carregar arquivos" />
+  if (erroLocal && !estado) return <Vazio texto={erroLocal} />
+  if (!estado) return <Vazio texto="Calculando a cota atual…" />
+
+  const valorAlvo = Number(String(alvo).replace(",", "."))
+  const alvoOk = Number.isFinite(valorAlvo) && valorAlvo > 0
+  const custoMarcado = sug ? sug.eventos_sugeridos.filter((e) => marcados.has(e.protocolo)).reduce((a, e) => a + e.custo_evento, 0) : 0
+  const cotaPrevista = sug ? (sug.numerador - custoMarcado) / sug.total_cotas : estado.cota_atual
+  const justOk = just.trim().length >= 3
+
+  // Depois de postergar ou devolver, seleção e resultado mudam: atualiza as outras abas também.
+  const sincronizar = async (novo) => {
+    setEstado(novo); setSug(null); setMarcados(new Set()); setJust("")
+    setSel(await pedir(`/avap/${enc(mes)}/selecao`))
+    setRes(await pedir(`/avap/${enc(mes)}/resultado`))
+  }
+  const sugerir = () => rodar(async () => {
+    const s = await post(`/avap/${enc(mes)}/sugerir-ajuste`, { alvo_cota: valorAlvo })
+    setSug(s); setMarcados(new Set(s.eventos_sugeridos.map((e) => e.protocolo)))
+  }, "Procurando os eventos")
+  const postergar = () => rodar(async () => {
+    await sincronizar(await post(`/avap/${enc(mes)}/aplicar-ajuste`, { protocolos: [...marcados], justificativa: just, alvo_cota: valorAlvo }))
+  }, "Postergando e recalculando")
+  const devolver = (protocolos) => rodar(async () => {
+    await sincronizar(await post(`/avap/${enc(mes)}/devolver-ajuste`, { protocolos, justificativa: just }))
+  }, "Devolvendo e recalculando")
+  const alternar = (p) => {
+    const n = new Set(marcados)
+    if (n.has(p)) n.delete(p)
+    else n.add(p)
+    setMarcados(n)
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+        <h3 className="font-bold text-white mb-1">Qual cota você quer atingir?</h3>
+        <p className="text-sm text-slate-400 mb-4">
+          O motor sugere o menor número de eventos a postergar para a cota ficar no valor desejado. Postergar exige
+          justificativa: o evento sai deste fechamento e, como não foi rateado, continua na fila do SGA para a próxima competência.
+        </p>
+        <div className="flex gap-4 items-end flex-wrap">
+          <div>
+            <div className="text-xs text-slate-400 mb-1">Cota atual</div>
+            <div className="text-2xl font-bold text-white">R$ {brl(estado.cota_atual)}</div>
+          </div>
+          <label className="text-sm">
+            <div className="text-slate-400 mb-1">Cota desejada (R$)</div>
+            <input value={alvo} onChange={(e) => setAlvo(e.target.value)} inputMode="decimal" placeholder="ex.: 7,00"
+              className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white w-36" />
+          </label>
+          <button onClick={sugerir} disabled={!alvoOk} className="px-5 py-2 bg-emerald-500 text-slate-900 font-bold rounded disabled:opacity-40">
+            Sugerir eventos
+          </button>
+        </div>
+      </section>
+
+      {sug && (
+        <section className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <p className={`text-sm mb-4 ${sug.atingiu_alvo ? "text-emerald-300" : "text-amber-300"}`}>{sug.mensagem}</p>
+          {sug.eventos_sugeridos.length > 0 && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <Card label="Cota atual" value={`R$ ${brl(sug.cota_atual)}`} />
+                <Card label="Cota desejada" value={`R$ ${brl(sug.alvo_cota)}`} />
+                <Card label="Cota com os eventos marcados" value={`R$ ${brl(Math.round(cotaPrevista * 10000) / 10000)}`}
+                  tone={cotaPrevista <= sug.alvo_cota + 0.005 ? "green" : "amber"} sub={`${marcados.size} evento(s), R$ ${brl(custoMarcado)}`} />
+                <Card label="Redução necessária" value={`R$ ${brl(sug.reducao_necessaria)}`} sub="no total a ratear" />
+              </div>
+              <table className="w-full text-sm mb-4">
+                <thead className="text-slate-400"><tr>
+                  <th className="p-2 text-left">Postergar</th><th className="p-2 text-left">Protocolo</th><th className="p-2 text-left">Motivo</th>
+                  <th className="p-2 text-left">Placa</th><th className="p-2 text-left">Finalização</th><th className="p-2 text-right">Custo</th>
+                </tr></thead>
+                <tbody>
+                  {sug.eventos_sugeridos.map((e) => (
+                    <tr key={e.protocolo} className="border-t border-slate-700">
+                      <td className="p-2"><input type="checkbox" checked={marcados.has(e.protocolo)} onChange={() => alternar(e.protocolo)} aria-label={`Postergar o protocolo ${e.protocolo}`} /></td>
+                      <td className="p-2">{e.protocolo}</td><td className="p-2">{e.motivo}</td><td className="p-2">{mascara(e.placa)}</td>
+                      <td className="p-2">{dataBR(e.data_finalizacao)}</td><td className="p-2 text-right">R$ {brl(e.custo_evento)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="flex gap-3 items-end flex-wrap">
+                <label className="text-sm flex-1 min-w-[16rem]">
+                  <div className="text-slate-400 mb-1">Justificativa (vai para a auditoria)</div>
+                  <input value={just} onChange={(e) => setJust(e.target.value)} placeholder="ex.: estabilizar a cota do mês"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white" />
+                </label>
+                <button onClick={postergar} disabled={!justOk || marcados.size === 0}
+                  className="px-5 py-2 bg-emerald-500 text-slate-900 font-bold rounded disabled:opacity-40">
+                  Postergar {marcados.size} evento(s)
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {estado.postergados.length > 0 && (
+        <section className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <h3 className="font-bold text-white mb-2">Eventos postergados neste fechamento</h3>
+          <p className="text-sm text-slate-400 mb-3">Devolver também exige justificativa. Use o campo abaixo.</p>
+          <table className="w-full text-sm mb-3">
+            <tbody>
+              {estado.postergados.map((e) => (
+                <tr key={e.protocolo} className="border-t border-slate-700">
+                  <td className="p-2">{e.protocolo}</td><td className="p-2">{e.motivo}</td><td className="p-2">{mascara(e.placa)}</td>
+                  <td className="p-2 text-right">R$ {brl(e.custo_evento)}</td>
+                  <td className="p-2 text-right">
+                    <button onClick={() => devolver([e.protocolo])} disabled={!justOk} className="px-3 py-1 text-xs bg-slate-600 rounded disabled:opacity-40">Devolver ao rateio</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex gap-3 items-end flex-wrap">
+            <input value={just} onChange={(e) => setJust(e.target.value)} placeholder="Justificativa para devolver"
+              className="flex-1 min-w-[16rem] px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+            <button onClick={() => devolver(estado.postergados.map((e) => e.protocolo))} disabled={!justOk}
+              className="px-4 py-2 bg-slate-600 text-white font-bold rounded text-sm disabled:opacity-40">Devolver todos</button>
+          </div>
+        </section>
+      )}
+
+      <section className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+        <h3 className="font-bold text-white mb-1">Trilha dos ajustes</h3>
+        <p className="text-sm text-slate-400 mb-3">
+          Cada movimentação fica registrada com a cota antes e depois. As decisões também entram na trilha de auditoria da seleção.
+        </p>
+        {estado.ajustes.length === 0 ? <p className="text-sm text-slate-400">Nenhum ajuste feito neste fechamento.</p> : (
+          <table className="w-full text-sm">
+            <thead className="text-slate-400"><tr>
+              <th className="p-2 text-left">Quando</th><th className="p-2 text-left">Ação</th><th className="p-2 text-right">Eventos</th>
+              <th className="p-2 text-right">Valor</th><th className="p-2 text-right">Cota antes</th><th className="p-2 text-right">Cota depois</th>
+              <th className="p-2 text-left">Justificativa</th>
+            </tr></thead>
+            <tbody>
+              {estado.ajustes.map((a, i) => (
+                <tr key={i} className="border-t border-slate-700">
+                  <td className="p-2 whitespace-nowrap">{a.quando}</td>
+                  <td className="p-2">{a.acao === "postergar" ? "Postergou" : "Devolveu"}</td>
+                  <td className="p-2 text-right" title={a.protocolos.join(", ")}>{a.eventos}</td>
+                  <td className="p-2 text-right">R$ {brl(a.valor)}</td>
+                  <td className="p-2 text-right">R$ {brl(a.cota_antes)}</td>
+                  <td className="p-2 text-right font-semibold">R$ {brl(a.cota_depois)}</td>
+                  <td className="p-2">{a.justificativa}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   )
 }
