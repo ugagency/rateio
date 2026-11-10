@@ -222,6 +222,7 @@ export default function Simulador({ equipe = false }) {
     <div className="mut-sim">
       <header className="mut-hero">
         <div className="max-w-5xl mx-auto px-6 py-8 mut-hero-linha">
+          <img className="mut-logo" src="/brand/mutualiza-simbolo-claro.png" alt="Mutualiza" />
           <div>
             <div className="mut-eyebrow">Simulador rápido · Fenaprove 2026</div>
             <h1 className="mut-title mt-1">Quanto daria o rateio da sua associação</h1>
@@ -231,7 +232,6 @@ export default function Simulador({ equipe = false }) {
               ))}
             </div>
           </div>
-          <img className="mut-logo" src="/brand/mutualiza-logo-claro-simbolo-azul.png" alt="Mutualiza" />
         </div>
       </header>
 
