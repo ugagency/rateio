@@ -1,7 +1,7 @@
 /*
   Identidade visual da Mutualiza no simulador (cores lidas do CSS de mutualiza.org em 04/11/2026).
   Todas as cores ficam nas variáveis abaixo: para ajustar a marca, mude só este bloco.
-  Fonte da marca: Grandis Extended (licenciada). Sem o arquivo, cai em Archivo, se instalada, ou na fonte do sistema.
+  Fonte: Evolventa (definida em index.css). A fonte da marca, Grandis Extended, é licenciada e não está no projeto.
 */
 .mut-sim {
   --marinho: #12173e;
@@ -23,7 +23,7 @@
   background: var(--fundo);
   color: var(--texto);
   min-height: calc(100vh - 44px);
-  font-family: "Grandis Extended", "Archivo", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Evolventa', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
 .mut-sim .mut-hero { background: var(--marinho); color: #fff; }

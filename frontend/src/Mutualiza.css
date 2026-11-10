@@ -13,11 +13,11 @@
   --ok: #14633b; --ok-bg: #ddf5e8; --ok-linha: #a9dfc1;
   --aviso: #7a4b00; --aviso-bg: #fff0d6; --aviso-linha: #e8c27a;
   --erro: #9b1c1c; --erro-bg: #fde3e3; --erro-linha: #f3b5b5;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Evolventa', system-ui, 'Segoe UI', Roboto, sans-serif;
   background: var(--fundo);
   color: var(--marinho);
 }
-.mut h1, .mut h2, .mut h3 { font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -0.3px; }
+.mut h1, .mut h2, .mut h3 { font-family: 'Evolventa', system-ui, 'Segoe UI', Roboto, sans-serif; letter-spacing: 0; }
 
 /* ---------- Shell ---------- */
 .mut-shell { display: flex; gap: 20px; padding: 20px; min-height: 100vh; box-sizing: border-box; }
