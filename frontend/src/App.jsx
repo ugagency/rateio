@@ -456,10 +456,11 @@ function CardELLO({ label, value, sub, tone = "slate" }) {
 // Seletor de produto (novo menu). O componente ELLO `App` e seus filhos
 // permanecem inalterados — apenas embrulhados por este wrapper aditivo.
 function Root() {
-  // ?feira na URL: só a demonstração Fenaprove e o simulador (esconde ELLO, AutoTruck e AVAP real).
+  // Por padrão só a demonstração Fenaprove e o simulador (ELLO, AutoTruck e AVAP real ficam escondidos).
+  // ?completo na URL: mostra todos os produtos (uso da equipe de desenvolvimento).
   // ?equipe na URL: mostra no simulador o atalho para ver e baixar os contatos.
   const params = new URLSearchParams(window.location.search)
-  const feira = params.has("feira")
+  const feira = !params.has("completo")
   const equipe = params.has("equipe")
   const todos = [["ello", "ELLO · Rateio & Faturamento"], ["autotruck", "AutoTruck · Modelo Ello retreinado"], ["avap", "AVAP · Rateio em pote único"], ["fenauto", "Fenaprove · Demonstração"], ["simulador", "Simulador rápido"]]
   const produtos = feira ? todos.filter(([k]) => k === "fenauto" || k === "simulador") : todos

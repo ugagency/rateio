@@ -222,8 +222,8 @@ export default function Simulador({ equipe = false }) {
     <div className="mut-sim">
       <header className="mut-hero">
         <div className="max-w-5xl mx-auto px-6 py-6">
-          {/* Logo: trocar o texto abaixo por <img src="/logo-mutualiza.svg" alt="Mutualiza" /> quando o arquivo oficial chegar */}
-          <div className="mut-eyebrow">Mutualiza · Simulador rápido · Fenaprove 2026</div>
+          <img className="mut-logo" src="/brand/mutualiza-logo-claro-simbolo-azul.png" alt="Mutualiza" />
+          <div className="mut-eyebrow mt-3">Simulador rápido · Fenaprove 2026</div>
           <h1 className="mut-title mt-1">Quanto daria o rateio da sua associação</h1>
           <div className="flex gap-2 mt-4 text-xs">
             {[["contato", "1. Seus dados"], ["simulacao", "2. Simulação"], ["resultado", "3. Resultado"]].map(([k, l]) => (

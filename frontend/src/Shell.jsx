@@ -13,8 +13,7 @@ const ROTULOS = { ello: "ELLO", autotruck: "AutoTruck", avap: "AVAP", fenauto: "
 export default function Menu({ produtos, produto, onEscolher }) {
   return (
     <aside className="mut-rail">
-      {/* Logo: trocar o "M" por <img src="/logo-mutualiza.svg" alt="Mutualiza" /> quando houver o arquivo oficial. */}
-      <div className="mut-rail-logo" aria-hidden="true">M</div>
+      <img className="mut-rail-logo" src="/brand/mutualiza-simbolo-claro.png" alt="Mutualiza" />
       <nav aria-label="Produtos" className="mut-rail-nav">
         {produtos.map(([k, nome]) => (
           <button key={k} type="button" onClick={() => onEscolher(k)} title={nome} aria-label={nome}
