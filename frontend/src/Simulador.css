@@ -56,6 +56,7 @@
   color: var(--texto-suave); font-size: .875rem; cursor: pointer;
 }
 .mut-sim .mut-opcao:hover { border-color: var(--lavanda); background: var(--indigo-suave); }
+.mut-sim .mut-opcao-sug { border-style: dashed; border-color: var(--indigo); color: var(--indigo-escuro); }
 .mut-sim .mut-opcao[aria-checked="true"] {
   border-color: var(--indigo); background: var(--indigo-suave); color: var(--texto); font-weight: 600;
   box-shadow: inset 0 0 0 1px var(--indigo);

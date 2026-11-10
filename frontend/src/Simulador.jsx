@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import './Simulador.css'
 
-// Simulador rápido da Fenaprove, em três passos: 1) dados do contato, 2) quatro perguntas com faixas,
-// 3) versão simplificada do rateio. Mesma fórmula do pote único da AVAP:
+// Simulador rápido da Fenaprove, em três passos: 1) dados do contato (e-mail é o principal; WhatsApp só se o visitante quiser),
+// 2) quatro perguntas com faixas, 3) versão simplificada do rateio. Mesma fórmula do pote único da AVAP:
 // valor da cota = (eventos + somas - deduções) / cotas dos veículos ativos. Aqui somas e deduções valem zero.
 // Cada faixa vale pelo seu ponto médio, então o resultado é uma estimativa, e a tela diz isso.
 // O contato vai ao backend (/avap/simulador/lead) já no passo 1, e a mesma linha é atualizada no passo 3.
@@ -19,16 +19,22 @@ const VEICULOS = [["Até 1.000", 700], ["1.001 a 3.000", 2000], ["3.001 a 5.000"
   ["10.001 a 20.000", 15000], ["20.001 a 40.000", 30000], ["Mais de 40.000", 50000]]
 const FIPE = [["Até R$ 30 mil", 25000], ["R$ 30 a 60 mil", 45000], ["R$ 60 a 100 mil", 80000],
   ["R$ 100 a 200 mil", 150000], ["Acima de R$ 200 mil", 250000]]
-const EVENTOS = [["Até 10", 6], ["11 a 25", 18], ["26 a 50", 38], ["51 a 100", 75], ["101 a 200", 150], ["Mais de 200", 250]]
+const EVENTOS = [["Até 50", 40], ["51 a 100", 75], ["101 a 200", 150], ["201 a 400", 300], ["401 a 800", 600], ["Mais de 800", 1000]]
 const CUSTO = [["Até R$ 5 mil", 3000], ["R$ 5 a 10 mil", 7500], ["R$ 10 a 20 mil", 15000],
   ["R$ 20 a 40 mil", 30000], ["Acima de R$ 40 mil", 50000]]
+
+// Sugestões, para o visitante não precisar saber o número de cabeça. Valem enquanto ele não escolher faixa nem digitar.
+// Eventos: 1,75% da frota por mês (informado pela Mutualiza). Custo médio: R$ 8.000 por evento (referência da AVAP).
+// Para ajustar, basta mudar as duas constantes. Na AVAP real (set/2026) foram 103 eventos para 22.530 veículos ativos.
+const PCT_EVENTOS = 0.0175
+const CUSTO_SUGERIDO = 8000
 
 const PERGUNTAS = [
   { k: "veiculos", titulo: "Quantos veículos ativos a associação tem?", faixas: VEICULOS },
   { k: "fipe", titulo: "Qual o valor médio dos veículos (tabela FIPE)?", dica: "Usamos 1 cota a cada R$ 5 mil de FIPE, a regra da AVAP.", faixas: FIPE },
-  { k: "eventos", titulo: "Quantos eventos entraram no rateio no último mês?", faixas: EVENTOS,
+  { k: "eventos", titulo: "Quantos eventos entraram no rateio no último mês?", faixas: EVENTOS, sug: true,
     livre: { rotulo: "Ou digite o número exato de eventos", exemplo: "ex.: 137", max: 100000, inteiro: true } },
-  { k: "custo", titulo: "Qual o custo médio de cada evento?", faixas: CUSTO,
+  { k: "custo", titulo: "Qual o custo médio de cada evento?", faixas: CUSTO, sug: true,
     livre: { rotulo: "Ou digite o custo médio exato (R$)", exemplo: "ex.: 23.500", max: 10000000 } },
 ]
 
@@ -44,8 +50,8 @@ const SISTEMAS = ["SGA (Hinova)", "Outro sistema", "Planilha", "Não sei"]
 const QUEM_FAZ = ["Equipe interna em planilha", "Sistema", "Empresa terceirizada", "Não sei"]
 
 const CONTATO_VAZIO = {
-  nome: "", whatsapp: "", email: "", associacao: "", cargo: "", sistema_gestao: "",
-  rateio_hoje: "", modelo: null, quer_versao: null, consentimento: false,
+  nome: "", email: "", whatsapp: "", associacao: "", cargo: "", sistema_gestao: "",
+  rateio_hoje: "", modelo: null, quer_whatsapp: null, consentimento: false,
 }
 const SEL_VAZIA = { veiculos: null, fipe: null, eventos: null, custo: null }
 const EXATO_VAZIO = { eventos: "", custo: "" }
@@ -75,11 +81,11 @@ function erroWhatsapp(valor) {
   if (numero.length === 9 && numero[0] !== "9") return "Celular com 9 dígitos deve começar com 9."
   return ""
 }
-// E-mail é opcional: vazio passa; preenchido precisa ter um formato válido.
+// E-mail é o contato principal: obrigatório e com formato válido (mesma regra do servidor).
 function erroEmail(valor) {
   const v = String(valor).trim()
-  if (!v) return ""
-  return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[A-Za-z]{2,}$/.test(v) ? "" : "O e-mail não parece válido. Confira ou deixe em branco."
+  if (!v) return "Informe seu e-mail: é por ele que enviamos o resultado."
+  return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[A-Za-z]{2,}$/.test(v) ? "" : "O e-mail não parece válido. Confira os caracteres e o domínio."
 }
 // Número digitado no formato brasileiro: "25.000", "25000" ou "25.000,50". Devolve null se não der para ler.
 function lerNumero(valor) {
@@ -105,7 +111,7 @@ async function enviar(lead) {
   })
   if (!r.ok) {
     const j = await r.json().catch(() => ({}))
-    const e = new Error(typeof j.detail === 'string' ? j.detail : "Falha ao registrar")
+    const e = new Error(typeof j.detail === 'string' ? j.detail : r.status === 422 ? "Confira o e-mail e o WhatsApp informados." : "Falha ao registrar")
     e.validacao = r.status === 422
     throw e
   }
@@ -120,13 +126,21 @@ async function reenviarPendentes() {
   try { localStorage.setItem("mut_leads_pendentes", JSON.stringify(sobra)) } catch { /* sem armazenamento */ }
 }
 
-// Valor usado na conta para cada pergunta: o número exato digitado, se houver, senão o ponto médio da faixa.
+// Sugestão para a pergunta k, ou null se ainda não dá para sugerir (eventos dependem da faixa de veículos).
+function sugestaoDe(k, s) {
+  if (k === "custo") return CUSTO_SUGERIDO
+  if (k === "eventos" && s.veiculos !== null) return Math.max(1, Math.round(VEICULOS[s.veiculos][1] * PCT_EVENTOS))
+  return null
+}
+// Valor usado na conta para cada pergunta: o número exato digitado, senão o ponto médio da faixa, senão a sugestão.
 function valorDe(k, s, exato) {
   const n = exato && k in exato ? exatoValido(k, exato[k]) : null
   if (n !== null) return n
-  if (s[k] === null) return null
-  return PERGUNTAS.find((q) => q.k === k).faixas[s[k]][1]
+  if (s[k] !== null) return PERGUNTAS.find((q) => q.k === k).faixas[s[k]][1]
+  return sugestaoDe(k, s)
 }
+// A sugestão está valendo quando a pergunta tem sugestão e o visitante não escolheu faixa nem digitou número.
+const usandoSugestao = (k, s, exato) => k in exato && s[k] === null && !exato[k].trim() && sugestaoDe(k, s) !== null
 function calcular(s, exato = EXATO_VAZIO) {
   const v = Object.fromEntries(PERGUNTAS.map(({ k }) => [k, valorDe(k, s, exato)]))
   if (Object.values(v).some((x) => x === null)) return null
@@ -155,18 +169,22 @@ export default function Simulador({ equipe = false }) {
   // Tocar numa faixa limpa o número exato daquela pergunta, e digitar o número exato desmarca a faixa.
   const escolherS = (k, i) => { setErro(""); setS({ ...s, [k]: i }); if (k in exato) setExato({ ...exato, [k]: "" }) }
   const digitarExato = (k, texto) => { setErro(""); setExato({ ...exato, [k]: texto }); if (texto.trim()) setS({ ...s, [k]: null }) }
+  // Voltar para a sugestão: limpa faixa e número exato daquela pergunta.
+  const usarSugestao = (k) => { setErro(""); setS({ ...s, [k]: null }); setExato({ ...exato, [k]: "" }) }
   // Texto da faixa para o registro do lead: a faixa escolhida ou o número exato digitado.
   const faixaTexto = (k) => {
     const n = k in exato ? exatoValido(k, exato[k]) : null
     if (n !== null) return k === "custo" ? `exato: ${brl(n)}` : `exato: ${num(n)}`
+    if (usandoSugestao(k, s, exato)) return k === "custo" ? `sugestão: ${brl(sugestaoDe(k, s))}` : `sugestão: ${num(sugestaoDe(k, s))}`
     return PERGUNTAS.find((q) => q.k === k).faixas[s[k]][0]
   }
 
   const montarLead = (etapa, simulacao = {}) => ({
-    id, etapa, nome: c.nome.trim(), whatsapp: c.whatsapp.trim(), email: c.email.trim(),
+    id, etapa, nome: c.nome.trim(), email: c.email.trim(),
+    whatsapp: c.quer_whatsapp === true ? c.whatsapp.trim() : "",
     associacao: c.associacao.trim(), cargo: c.cargo, sistema_gestao: c.sistema_gestao,
     rateio_hoje: c.rateio_hoje, modelo_rateio: c.modelo === null ? "" : MODELOS[c.modelo],
-    quer_versao: c.quer_versao === true, consentimento: c.consentimento, simulacao,
+    quer_whatsapp: c.quer_whatsapp === true, consentimento: c.consentimento, simulacao,
   })
 
   // Grava (ou atualiza) o contato. Sem conexão com o servidor, guarda neste computador e reenvia depois.
@@ -185,11 +203,11 @@ export default function Simulador({ equipe = false }) {
 
   const continuar = async () => {
     if (c.nome.trim().length < 2) return setErro("Informe seu nome.")
-    const eW = erroWhatsapp(c.whatsapp)
-    if (eW) return setErro(eW)
     const eE = erroEmail(c.email)
     if (eE) return setErro(eE)
-    if (c.quer_versao === null) return setErro("Diga se quer receber a versão simplificada do rateio da sua associação.")
+    if (c.quer_whatsapp === null) return setErro("Diga se quer receber também no WhatsApp.")
+    const eW = c.quer_whatsapp ? erroWhatsapp(c.whatsapp) : ""
+    if (eW) return setErro(eW)
     if (!c.consentimento) return setErro("Para continuar, marque a autorização de contato.")
     setErro(""); setEnviando(true)
     try { await salvar(montarLead("contato")) } catch (e) { setEnviando(false); return setErro(e.message) }
@@ -240,13 +258,11 @@ export default function Simulador({ equipe = false }) {
 
         {passo === "contato" && (
           <div className="space-y-6 max-w-4xl">
-            <p className="mut-intro">Primeiro, alguns dados para a gente saber com quem está falando. Depois é só escolher faixas ou, se preferir, digitar os números exatos.</p>
+            <p className="mut-intro">Primeiro, seu e-mail e alguns dados para a gente saber com quem está falando: o resultado chega por e-mail. Depois é só escolher faixas ou, se preferir, digitar os números exatos.</p>
             <Grupo titulo="Seus dados">
               <Campo rotulo="Nome" obrig><Txt value={c.nome} onChange={setc("nome")} /></Campo>
-              <Campo rotulo="WhatsApp com DDD" obrig><Txt value={c.whatsapp} onChange={setc("whatsapp")} placeholder="(31) 9...." inputMode="tel"
-                aria-invalid={Boolean(erro) && Boolean(erroWhatsapp(c.whatsapp))} /></Campo>
-              <Campo rotulo="E-mail (opcional)"><Txt value={c.email} onChange={setc("email")} inputMode="email"
-                aria-invalid={Boolean(erro) && Boolean(erroEmail(c.email))} /></Campo>
+              <Campo rotulo="E-mail" obrig><Txt value={c.email} onChange={setc("email")} inputMode="email" type="email" autoComplete="email"
+                placeholder="nome@associacao.com.br" aria-invalid={Boolean(erro) && Boolean(erroEmail(c.email))} /></Campo>
               <Campo rotulo="Associação"><Txt value={c.associacao} onChange={setc("associacao")} /></Campo>
               <Campo rotulo="Cargo"><Sel value={c.cargo} onChange={setc("cargo")} opcoes={CARGOS} /></Campo>
               <Campo rotulo="Sistema de gestão"><Sel value={c.sistema_gestao} onChange={setc("sistema_gestao")} opcoes={SISTEMAS} /></Campo>
@@ -257,16 +273,22 @@ export default function Simulador({ equipe = false }) {
                 <Campo rotulo="Quem faz o rateio hoje"><Sel value={c.rateio_hoje} onChange={setc("rateio_hoje")} opcoes={QUEM_FAZ} /></Campo>
               </div>
             </Grupo>
-            <Grupo titulo="Quer receber uma versão simplificada do rateio da sua associação?" obrig>
-              <div className="md:col-span-3">
-                <Opcoes opcoes={["Sim, quero receber no WhatsApp", "Agora não"]}
-                  valor={c.quer_versao === null ? null : (c.quer_versao ? 0 : 1)}
-                  onChange={(i) => escolherC("quer_versao", i === 0)} />
+            <Grupo titulo="Quer receber também a versão simplificada do rateio da sua associação no WhatsApp?" obrig>
+              <div className="md:col-span-3 space-y-3">
+                <Opcoes opcoes={["Sim, quero também no WhatsApp", "Não, só por e-mail"]}
+                  valor={c.quer_whatsapp === null ? null : (c.quer_whatsapp ? 0 : 1)}
+                  onChange={(i) => escolherC("quer_whatsapp", i === 0)} />
+                {c.quer_whatsapp === true && (
+                  <div className="max-w-sm">
+                    <Campo rotulo="WhatsApp com DDD" obrig><Txt value={c.whatsapp} onChange={setc("whatsapp")} placeholder="(31) 9...." inputMode="tel"
+                      autoComplete="tel" aria-invalid={Boolean(erro) && Boolean(erroWhatsapp(c.whatsapp))} /></Campo>
+                  </div>
+                )}
               </div>
             </Grupo>
             <label className="mut-consentimento flex gap-3 items-start">
               <input type="checkbox" className="mt-1" checked={c.consentimento} onChange={setc("consentimento")} />
-              <span>Autorizo o contato sobre este resultado e a guarda destes dados para esse fim. Posso pedir a exclusão a qualquer momento.</span>
+              <span>Autorizo o envio deste resultado por e-mail (e por WhatsApp, se eu tiver pedido) e a guarda destes dados para esse fim. Posso pedir a exclusão a qualquer momento.</span>
             </label>
             {erro && <div className="mut-erro" role="alert">{erro}</div>}
             <button onClick={continuar} disabled={enviando} className="mut-botao">{enviando ? "Registrando…" : "Continuar para a simulação"}</button>
@@ -275,12 +297,28 @@ export default function Simulador({ equipe = false }) {
 
         {passo === "simulacao" && (
           <div className="space-y-6">
-            <p className="mut-intro">Quatro perguntas, é só tocar na faixa mais próxima da realidade da associação. Em eventos e custo médio, dá para digitar o número exato.</p>
-            {PERGUNTAS.map(({ k, titulo, dica, faixas, livre }) => (
+            <p className="mut-intro">Quatro perguntas, é só tocar na faixa mais próxima da realidade da associação. Em eventos e custo médio já deixamos uma sugestão: se você souber o número real, escolha uma faixa ou digite.</p>
+            {PERGUNTAS.map(({ k, titulo, dica, faixas, livre, sug }) => (
               <Grupo key={k} titulo={titulo} obrig>
                 <div className="md:col-span-3 space-y-2">
-                  <Opcoes opcoes={faixas.map(([l]) => l)} valor={s[k]} onChange={(i) => escolherS(k, i)} />
+                  <Opcoes opcoes={faixas.map(([l]) => l)} valor={s[k]} onChange={(i) => escolherS(k, i)}
+                    extra={sug && sugestaoDe(k, s) !== null ? {
+                      rotulo: k === "custo" ? `Sugestão: ${brl(sugestaoDe(k, s))}` : `Sugestão: ${num(sugestaoDe(k, s))} eventos`,
+                      ativo: usandoSugestao(k, s, exato), onClick: () => usarSugestao(k),
+                    } : null} />
                   {dica && <span className="mut-dica">{dica}</span>}
+                  {sug && k === "eventos" && (
+                    <span className="mut-dica">
+                      {sugestaoDe(k, s) === null
+                        ? "Responda a quantidade de veículos para ver a sugestão de eventos."
+                        : `Sugestão: ${(PCT_EVENTOS * 100).toLocaleString('pt-BR')}% dos veículos da associação entram em evento por mês, em média (${num(VEICULOS[s.veiculos][1])} veículos, cerca de ${num(sugestaoDe(k, s))} eventos). Se você já sabe o número, escolha uma faixa ou digite abaixo.`}
+                    </span>
+                  )}
+                  {sug && k === "custo" && (
+                    <span className="mut-dica">
+                      {`Sugestão: ${brl(CUSTO_SUGERIDO)} por evento, o custo médio de uma associação de referência. Se você já sabe o custo da sua, escolha uma faixa ou digite abaixo.`}
+                    </span>
+                  )}
                   {livre && (
                     <label className="mut-livre">
                       <span className="mut-rotulo">{livre.rotulo}</span>
@@ -316,6 +354,12 @@ export default function Simulador({ equipe = false }) {
               <Card rotulo="Cotas estimadas" valor={num(r.cotasTotal)} sub={`${r.cotasPorVeiculo.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} cotas por veículo`} />
               <Card rotulo="Rateio do veículo médio" valor={brl(r.rateioMedio)} sub="por mês" />
             </div>
+            {(usandoSugestao("eventos", s, exato) || usandoSugestao("custo", s, exato)) && (
+              <div className="mut-nota">
+                {`Nesta simulação ${[usandoSugestao("eventos", s, exato) && `a quantidade de eventos (${(PCT_EVENTOS * 100).toLocaleString('pt-BR')}% dos veículos por mês)`,
+                  usandoSugestao("custo", s, exato) && `o custo médio por evento (${brl(CUSTO_SUGERIDO)})`].filter(Boolean).join(" e ")} vieram da nossa sugestão, não de dados da associação. Com os números reais, o resultado muda.`}
+              </div>
+            )}
             <div className="mut-nota">
               {c.modelo !== null && c.modelo !== 0
                 ? "Sua associação usa outro modelo de rateio. Além do pote único, temos motores para potes que se somam e para rateio por segmento, adaptáveis à regra de cada associação."
@@ -326,9 +370,7 @@ export default function Simulador({ equipe = false }) {
               com trilha de auditoria, e fecha sem diferença contra o rateio homologado.
             </p>
             <div className="mut-nota">
-              {c.quer_versao
-                ? `Vamos enviar esta versão simplificada para o WhatsApp ${c.whatsapp}. Se quiser, também rodamos o rateio com as exportações reais da associação.`
-                : "Você preferiu não receber a versão simplificada agora. Se mudar de ideia, é só falar com a equipe no estande."}
+              {`Vamos enviar esta versão simplificada para ${c.email.trim()}${c.quer_whatsapp ? ` e para o WhatsApp ${c.whatsapp.trim()}` : ""}. Se quiser, também rodamos o rateio com as exportações reais da associação.`}
             </div>
             {aviso && <div className="mut-aviso">{aviso}</div>}
             <div className="flex gap-3 flex-wrap">
@@ -369,9 +411,11 @@ function Campo({ rotulo, dica, obrig, children }) {
   )
 }
 // Seletor de uma opção entre várias, em botões grandes (bom para tablet). valor é o índice escolhido ou null.
-function Opcoes({ opcoes, valor, onChange }) {
+function Opcoes({ opcoes, valor, onChange, extra = null }) {
   return (
     <div className="flex flex-wrap gap-2" role="radiogroup">
+      {extra && <button type="button" role="radio" aria-checked={extra.ativo} onClick={extra.onClick}
+        className="mut-opcao mut-opcao-sug">{extra.rotulo}</button>}
       {opcoes.map((o, i) => (
         <button key={o} type="button" role="radio" aria-checked={valor === i} onClick={() => onChange(i)}
           className="mut-opcao">{o}</button>
