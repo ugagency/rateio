@@ -15,56 +15,38 @@ const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL
 const num = (v) => Math.round(v).toLocaleString('pt-BR')
 const pct = (v) => (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + "%"
 
-// Perfis de frota: definem as sugestões de eventos (percentual da frota por mês) e de custo médio por evento.
-// Fontes: fechamentos reais das associações atendidas. Para ajustar, basta editar aqui.
-const PERFIS = [
-  // AVAP: 150 eventos em ago/2026 e 103 em set/2026, para 22.530 veículos ativos; R$ 3,51 mi de custo nos dois meses.
-  { rotulo: "Carros de passeio", pct: 0.0056, custo: 13900, ref: "associação de carros, média de ago e set/2026" },
-  // ELLO: 79 eventos por mês para 12.300 motos; custo médio de R$ 11.627,49 em 2025.
-  { rotulo: "Motos", pct: 0.0064, custo: 11600, ref: "associação de motos, média de 2025" },
-  // AutoTruck: 694 eventos de veículo e R$ 15,04 mi de jan a jul/2026, sem terceiros e sem março (181 perdas totais).
-  // O percentual de eventos repete o de carros até chegar a frota real da associação (pendente).
-  { rotulo: "Com pesados ou utilitários", pct: 0.0056, custo: 21700, ref: "associação com pesados, jan a jul/2026, sem eventos de terceiro" },
-]
-
-// Regras de cota: como a associação converte o veículo em cotas. Recebem a FIPE média e devolvem cotas por veículo.
-const REGRAS_COTA = [
-  { rotulo: "1 cota a cada R$ 5 mil de FIPE", cotas: (fipe) => fipe / 5000 },
-  { rotulo: "Faixas de FIPE (1 cota até R$ 10 mil, mais meia cota a cada R$ 10 mil)",
-    cotas: (fipe) => (fipe > 450000 ? 20 : fipe <= 10000 ? 1 : 1 + 0.5 * Math.ceil((fipe - 10000) / 10000)) },
-  { rotulo: "Valor fixo por veículo ou por categoria", cotas: () => 1 },
-  { rotulo: "Não sei", cotas: (fipe) => fipe / 5000 },
-]
+// Referências gerais para as sugestões. Média ponderada de duas associações com frota e eventos conhecidos:
+// AVAP (carros, ago e set/2026: 126,5 eventos por mês para 22.530 veículos, R$ 13.869 por evento) e
+// ELLO (motos, 2025: 78,8 eventos por mês para 12.300 motos, R$ 11.627 por evento). Para ajustar, basta editar aqui.
+const PCT_EVENTOS = 0.0059 // eventos por mês, em % da frota (faixa observada: 0,5% a 0,8%)
+const CUSTO_SUGERIDO = 13000 // custo médio por evento, em R$
+const COTAS_POR_VEICULO_REF = 10.3 // AVAP: 231.556 cotas para 22.530 veículos ativos
+const REF_SUGESTAO = "média de duas associações reais, uma de carros e uma de motos"
 
 // Faixas: [texto mostrado, valor usado na conta (ponto médio)]. Para mudar as faixas, basta editar aqui.
 const VEICULOS = [["Até 1.000", 700], ["1.001 a 3.000", 2000], ["3.001 a 5.000", 4000], ["5.001 a 10.000", 7500],
   ["10.001 a 20.000", 15000], ["20.001 a 40.000", 30000], ["Mais de 40.000", 50000]]
-const FIPE = [["Até R$ 30 mil", 25000], ["R$ 30 a 60 mil", 45000], ["R$ 60 a 100 mil", 80000],
-  ["R$ 100 a 200 mil", 150000], ["Acima de R$ 200 mil", 250000]]
 const EVENTOS = [["Até 50", 40], ["51 a 100", 75], ["101 a 200", 150], ["201 a 400", 300], ["401 a 800", 600], ["Mais de 800", 1000]]
 const CUSTO = [["Até R$ 5 mil", 3000], ["R$ 5 a 10 mil", 7500], ["R$ 10 a 20 mil", 15000],
   ["R$ 20 a 40 mil", 30000], ["Acima de R$ 40 mil", 50000]]
 
-// Perguntas da simulação. "escolha" é só seleção; as demais aceitam faixa, número exato ou (eventos e custo) a sugestão do perfil.
+// Perguntas da simulação (quatro). Veículos e cotas aceitam faixa ou número exato; eventos e custo trazem uma sugestão.
+// O total de cotas é opcional: sem ele, usamos a referência da AVAP e a tela avisa.
 const PERGUNTAS = [
-  { k: "perfil", titulo: "Qual o perfil da frota?", escolha: PERFIS.map((p) => p.rotulo),
-    dica: "O perfil define as sugestões de eventos e de custo médio, tiradas de fechamentos reais." },
-  { k: "regra", titulo: "Como a associação calcula as cotas de cada veículo?", escolha: REGRAS_COTA.map((r) => r.rotulo),
-    dica: "A regra de cota muda o valor da cota, não o quanto cada veículo paga. Na dúvida, use \"Não sei\"." },
   { k: "veiculos", titulo: "Quantos veículos ativos a associação tem?", faixas: VEICULOS,
     livre: { rotulo: "Ou digite o número exato de veículos ativos", exemplo: "ex.: 22.530", max: 1000000, inteiro: true } },
-  { k: "fipe", titulo: "Qual o valor médio dos veículos (tabela FIPE)?", faixas: FIPE,
-    livre: { rotulo: "Ou digite o valor médio exato (R$)", exemplo: "ex.: 51.000", max: 5000000 } },
   { k: "eventos", titulo: "Quantos eventos entraram no rateio no último mês?", faixas: EVENTOS, sug: true,
     dica: "Conte só os eventos do próprio associado. Eventos de terceiro não entram no rateio.",
     livre: { rotulo: "Ou digite o número exato de eventos", exemplo: "ex.: 137", max: 100000, inteiro: true } },
   { k: "custo", titulo: "Qual o custo médio de cada evento?", faixas: CUSTO, sug: true,
     dica: "Custo do evento é o valor do reparo menos a participação do associado.",
     livre: { rotulo: "Ou digite o custo médio exato (R$)", exemplo: "ex.: 23.500", max: 10000000 } },
-  { k: "hoje", titulo: "Quanto cada veículo paga hoje de rateio por mês, em média? (opcional)", opcional: true,
-    dica: "Só a parte do rateio, sem taxa de administração e assistência. Serve para comparar com a estimativa.",
-    livre: { rotulo: "Valor médio por veículo (R$)", exemplo: "ex.: 85", max: 100000 } },
+  { k: "cotas", titulo: "Quantas cotas somam os veículos ativos? (opcional)", opcional: true,
+    dica: "Aparece no relatório de cotas do sistema de gestão. Sem esse número, usamos a referência da AVAP, de cerca de 10 cotas por veículo.",
+    livre: { rotulo: "Total de cotas da associação", exemplo: "ex.: 231.556", max: 100000000, inteiro: true } },
 ]
+// Campo opcional da tela de resultado: quanto cada veículo paga hoje de rateio (não é pergunta da simulação).
+const HOJE = { k: "hoje", livre: { rotulo: "Valor médio por veículo (R$)", exemplo: "ex.: 85", max: 100000 } }
 
 const MODELOS = [
   "Pote único (todos dividem o mesmo total)",
@@ -81,12 +63,12 @@ const CONTATO_VAZIO = {
   nome: "", email: "", whatsapp: "", associacao: "", cargo: "", sistema_gestao: "",
   rateio_hoje: "", modelo: null, quer_whatsapp: null, consentimento: false,
 }
-const SEL_VAZIA = { perfil: null, regra: null, veiculos: null, fipe: null, eventos: null, custo: null }
-const EXATO_VAZIO = { veiculos: "", fipe: "", eventos: "", custo: "", hoje: "" }
+const SEL_VAZIA = { veiculos: null, eventos: null, custo: null }
+const EXATO_VAZIO = { veiculos: "", eventos: "", custo: "", cotas: "", hoje: "" }
 
 // Valor digitado no campo livre, já validado pelos limites da pergunta, ou null.
 function exatoValido(k, texto) {
-  const p = PERGUNTAS.find((q) => q.k === k)
+  const p = [...PERGUNTAS, HOJE].find((q) => q.k === k)
   if (texto === undefined) return null
   const n = lerNumero(texto)
   if (n === null || !p?.livre || n > p.livre.max) return null
@@ -155,24 +137,22 @@ async function reenviarPendentes() {
   try { localStorage.setItem("mut_leads_pendentes", JSON.stringify(sobra)) } catch { /* sem armazenamento */ }
 }
 
-// Valor numérico de veículos ou FIPE (exato digitado, senão ponto médio da faixa), sem sugestão.
+// Valor numérico de veículos (exato digitado, senão ponto médio da faixa), sem sugestão.
 function baseDe(k, s, exato) {
   const n = exatoValido(k, exato[k])
   if (n !== null) return n
   return s[k] !== null ? PERGUNTAS.find((q) => q.k === k).faixas[s[k]][1] : null
 }
-// Sugestão para eventos e custo, a partir do perfil (eventos também dependem dos veículos). null se ainda não dá.
+// Sugestão para eventos (percentual da frota) e custo médio. null se ainda não dá (eventos dependem dos veículos).
 function sugestaoDe(k, s, exato = EXATO_VAZIO) {
-  if (s.perfil === null) return null
-  const p = PERFIS[s.perfil]
-  if (k === "custo") return p.custo
+  if (k === "custo") return CUSTO_SUGERIDO
   if (k === "eventos") {
     const veic = baseDe("veiculos", s, exato)
-    return veic === null ? null : Math.max(1, Math.round(veic * p.pct))
+    return veic === null ? null : Math.max(1, Math.round(veic * PCT_EVENTOS))
   }
   return null
 }
-// Valor usado na conta: o número exato digitado, senão o ponto médio da faixa, senão a sugestão do perfil.
+// Valor usado na conta: o número exato digitado, senão o ponto médio da faixa, senão a sugestão.
 function valorDe(k, s, exato) {
   const n = exatoValido(k, exato[k])
   if (n !== null) return n
@@ -183,18 +163,18 @@ function valorDe(k, s, exato) {
 const usandoSugestao = (k, s, exato) =>
   PERGUNTAS.find((q) => q.k === k)?.sug && s[k] === null && !exato[k].trim() && sugestaoDe(k, s, exato) !== null
 function calcular(s, exato = EXATO_VAZIO) {
-  if (s.perfil === null || s.regra === null) return null
-  const v = Object.fromEntries(["veiculos", "fipe", "eventos", "custo"].map((k) => [k, valorDe(k, s, exato)]))
+  const v = Object.fromEntries(["veiculos", "eventos", "custo"].map((k) => [k, valorDe(k, s, exato)]))
   if (Object.values(v).some((x) => x === null)) return null
   const veiculos = v.veiculos
-  const cotasPorVeiculo = REGRAS_COTA[s.regra].cotas(v.fipe)
-  const cotasTotal = veiculos * cotasPorVeiculo
+  const cotasInformadas = exatoValido("cotas", exato.cotas)
+  const cotasTotal = cotasInformadas ?? veiculos * COTAS_POR_VEICULO_REF
   const eventosQtd = v.eventos
   const eventosValor = eventosQtd * v.custo
-  const valorCota = eventosValor / cotasTotal
-  const rateioMedio = eventosValor / veiculos
   const hoje = exatoValido("hoje", exato.hoje)
-  return { veiculos, fipe: v.fipe, cotasPorVeiculo, cotasTotal, eventosQtd, eventosValor, valorCota, rateioMedio, hoje }
+  return {
+    veiculos, cotasTotal, cotasInformadas: cotasInformadas !== null, cotasPorVeiculo: cotasTotal / veiculos,
+    eventosQtd, eventosValor, valorCota: eventosValor / cotasTotal, rateioMedio: eventosValor / veiculos, hoje,
+  }
 }
 
 export default function Simulador({ equipe = false }) {
@@ -217,7 +197,7 @@ export default function Simulador({ equipe = false }) {
   const usarSugestao = (k) => { setErro(""); setS({ ...s, [k]: null }); setExato({ ...exato, [k]: "" }) }
   // Texto da faixa para o registro do lead: a faixa escolhida ou o número exato digitado.
   const faixaTexto = (k) => {
-    const emReais = k === "custo" || k === "fipe"
+    const emReais = k === "custo"
     const n = exatoValido(k, exato[k])
     if (n !== null) return emReais ? `exato: ${brl(n)}` : `exato: ${num(n)}`
     if (usandoSugestao(k, s, exato)) {
@@ -269,12 +249,12 @@ export default function Simulador({ equipe = false }) {
     }
     if (!r) return setErro("Responda todas as perguntas obrigatórias para simular.")
     setErro(""); setPasso("resultado")
-    // perfil, regra de cota e valor pago hoje ainda não têm coluna própria no CSV de leads; seguem no objeto
+    // cotas_informadas e rateio_veiculo ainda não têm coluna própria no CSV de leads; seguem no objeto
     // para quando o backend passar a gravá-los (hoje o backend ignora chaves que não conhece).
     salvar(montarLead("resultado", {
-      perfil: PERFIS[s.perfil].rotulo, regra_cota: REGRAS_COTA[s.regra].rotulo,
-      rateio_veiculo: r.rateioMedio.toFixed(2), rateio_hoje_informado: r.hoje ?? "",
-      faixa_veiculos: faixaTexto("veiculos"), faixa_fipe: faixaTexto("fipe"),
+      cotas_informadas: r.cotasInformadas ? "sim" : "não",
+      rateio_veiculo: r.rateioMedio.toFixed(2),
+      faixa_veiculos: faixaTexto("veiculos"),
       faixa_eventos: faixaTexto("eventos"), faixa_custo: faixaTexto("custo"),
       veiculos_ativos: r.veiculos, cotas_total: Math.round(r.cotasTotal), eventos_qtd: r.eventosQtd,
       eventos_valor: r.eventosValor.toFixed(2), valor_cota: r.valorCota.toFixed(4),
@@ -349,7 +329,7 @@ export default function Simulador({ equipe = false }) {
 
         {passo === "simulacao" && (
           <div className="space-y-6">
-            <p className="mut-intro">Comece pelo perfil da frota e pela regra de cota. Depois, toque na faixa mais próxima ou digite o número exato. Em eventos e custo médio deixamos uma sugestão tirada de fechamentos reais do mesmo perfil: se você souber o número da sua associação, use o seu.</p>
+            <p className="mut-intro">Quatro perguntas: toque na faixa mais próxima ou digite o número exato. Em eventos e custo médio deixamos uma sugestão tirada de fechamentos reais. Se você souber o número da sua associação, use o seu.</p>
             {PERGUNTAS.map(({ k, titulo, dica, faixas, escolha, livre, sug, opcional }) => (
               <Grupo key={k} titulo={titulo} obrig={!opcional}>
                 <div className="md:col-span-3 space-y-2">
@@ -364,15 +344,13 @@ export default function Simulador({ equipe = false }) {
                   {sug && k === "eventos" && (
                     <span className="mut-dica">
                       {sugestaoDe(k, s, exato) === null
-                        ? "Escolha o perfil da frota e informe os veículos para ver a sugestão de eventos."
-                        : `Sugestão: ${pct(PERFIS[s.perfil].pct)} dos veículos entram em evento por mês (${PERFIS[s.perfil].ref}), cerca de ${num(sugestaoDe(k, s, exato))} eventos.`}
+                        ? "Informe os veículos para ver a sugestão de eventos."
+                        : `Sugestão: ${pct(PCT_EVENTOS)} dos veículos entram em evento por mês (faixa observada de 0,5% a 0,8%), cerca de ${num(sugestaoDe(k, s, exato))} eventos.`}
                     </span>
                   )}
                   {sug && k === "custo" && (
                     <span className="mut-dica">
-                      {s.perfil === null
-                        ? "Escolha o perfil da frota para ver a sugestão de custo médio."
-                        : `Sugestão: ${brl(PERFIS[s.perfil].custo)} por evento (${PERFIS[s.perfil].ref}).`}
+                      {`Sugestão: ${brl(CUSTO_SUGERIDO)} por evento (${REF_SUGESTAO}).`}
                     </span>
                   )}
                   {livre && (
@@ -407,6 +385,16 @@ export default function Simulador({ equipe = false }) {
                 Valor só do rateio dos eventos: não inclui taxa de administração, assistência 24h, produtos e benefícios nem contribuição de estabilização.
               </div>
             </div>
+            <section className="mut-cartao">
+              <h3>Quer comparar com o que a associação cobra hoje?</h3>
+              <label className="mut-livre">
+                <span className="mut-rotulo">Quanto cada veículo paga de rateio por mês, em média (R$)</span>
+                <input className="mut-campo" inputMode="decimal" placeholder={HOJE.livre.exemplo} value={exato.hoje}
+                  onChange={(e) => setExato({ ...exato, hoje: e.target.value })}
+                  aria-invalid={Boolean(exato.hoje.trim()) && exatoValido("hoje", exato.hoje) === null} />
+              </label>
+              <span className="mut-dica">Só a parte do rateio, sem taxa de administração e assistência.</span>
+            </section>
             {r.hoje !== null && (
               <div className="mut-nota">
                 {`Hoje cada veículo paga cerca de ${brl(r.hoje)} de rateio. A estimativa dá ${brl(r.rateioMedio)}, `}
@@ -420,16 +408,21 @@ export default function Simulador({ equipe = false }) {
               <Card rotulo="Eventos do mês (estimado)" valor={brl(r.eventosValor)} sub={`${num(r.eventosQtd)} eventos de ${brl(r.eventosValor / r.eventosQtd)} em média`} />
               <Card rotulo="Veículos ativos" valor={num(r.veiculos)} sub={exatoValido("veiculos", exato.veiculos) !== null ? "número informado" : "ponto médio da faixa"} />
               <Card rotulo="Cotas estimadas" valor={num(r.cotasTotal)} sub={`${r.cotasPorVeiculo.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} cotas por veículo`} />
-              <Card rotulo="Valor da cota" valor={brl(r.valorCota)} sub={REGRAS_COTA[s.regra].rotulo} />
+              <Card rotulo="Valor da cota" valor={brl(r.valorCota)} sub={r.cotasInformadas ? "com o total de cotas informado" : "com a referência da AVAP"} />
             </div>
             <div className="mut-nota">
-              O valor da cota depende da régua de cada associação: com o mesmo custo, quem usa cotas maiores tem um valor de cota maior.
-              Por isso o número para comparar entre associações é o rateio por veículo.
+              {r.cotasInformadas
+                ? "O valor da cota usa o total de cotas que você informou, então segue a régua da sua associação."
+                : "O valor da cota usa a referência da AVAP (1 cota a cada R$ 5 mil de FIPE, cerca de 10 cotas por veículo). Cada associação tem a sua régua: com cotas maiores, o valor da cota sobe. Para ver o valor na sua régua, volte e informe o total de cotas."}
+              {" O número para comparar entre associações é o rateio por veículo."}
             </div>
             {(usandoSugestao("eventos", s, exato) || usandoSugestao("custo", s, exato)) && (
               <div className="mut-nota">
-                {`Nesta simulação ${[usandoSugestao("eventos", s, exato) && `a quantidade de eventos (${pct(PERFIS[s.perfil].pct)} dos veículos por mês)`,
-                  usandoSugestao("custo", s, exato) && `o custo médio por evento (${brl(PERFIS[s.perfil].custo)})`].filter(Boolean).join(" e ")} veio da referência de ${PERFIS[s.perfil].ref}, não de dados da sua associação. Com os números reais, o resultado muda.`}
+                {(() => {
+                  const itens = [usandoSugestao("eventos", s, exato) && `a quantidade de eventos (${pct(PCT_EVENTOS)} dos veículos por mês)`,
+                    usandoSugestao("custo", s, exato) && `o custo médio por evento (${brl(CUSTO_SUGERIDO)})`].filter(Boolean)
+                  return `Nesta simulação ${itens.join(" e ")} ${itens.length > 1 ? "vieram" : "veio"} da referência (${REF_SUGESTAO}), não de dados da sua associação. Com os números reais, o resultado muda.`
+                })()}
               </div>
             )}
             <div className="mut-nota">
