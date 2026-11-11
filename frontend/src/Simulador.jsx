@@ -403,6 +403,9 @@ export default function Simulador({ equipe = false }) {
               <div className="mut-destaque-sub">
                 {brl(r.eventosValor)} de eventos dividido entre cerca de {num(r.veiculos)} veículos ativos. É o número para comparar com a parte de rateio do boleto.
               </div>
+              <div className="mut-destaque-sub">
+                Valor só do rateio dos eventos: não inclui taxa de administração, assistência 24h, produtos e benefícios nem contribuição de estabilização.
+              </div>
             </div>
             {r.hoje !== null && (
               <div className="mut-nota">
@@ -435,7 +438,7 @@ export default function Simulador({ equipe = false }) {
                 : "Este é o modelo do motor que você acabou de ver na demonstração. Também temos motores para potes que se somam e para rateio por segmento, adaptáveis à regra de cada associação."}
             </div>
             <p className="mut-fino">
-              Simulação com faixas e premissas aproximadas, não é um fechamento. No rateio real, o motor lê as exportações do SGA evento a evento,
+              Simulação com faixas e premissas aproximadas, não é um fechamento, e não inclui taxa de administração nem demais itens do boleto. No rateio real, o motor lê as exportações do SGA evento a evento,
               com trilha de auditoria, e fecha sem diferença contra o rateio homologado.
             </p>
             <div className="mut-nota">
